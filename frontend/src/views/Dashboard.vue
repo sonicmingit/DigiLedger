@@ -1036,7 +1036,7 @@ const parseDate = (value: string) => {
 }
 
 // 统一输出 YYYY-MM-DD 字符串
-const formatDate = (date: Date) => {
+function formatDate(date: Date): string {
   const yyyy = date.getFullYear()
   const mm = `${date.getMonth() + 1}`.padStart(2, '0')
   const dd = `${date.getDate()}`.padStart(2, '0')
