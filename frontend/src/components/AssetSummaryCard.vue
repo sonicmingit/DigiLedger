@@ -30,14 +30,17 @@
 <script setup lang="ts">
 import type { AssetStatus, AssetSummary } from '@/types'
 
+// 接收父组件传入的资产概要数据
 defineProps<{ asset: AssetSummary }>()
 
+// 将数字格式化为中文地区友好的金额展示
 const formatNumber = (value: number | string) => {
   const num = Number(value)
   if (Number.isNaN(num)) return value
   return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// 百分比格式化，兼容空值
 const formatPercent = (value: number | string | undefined) => {
   if (value === undefined) return '--'
   const num = Number(value)
@@ -45,6 +48,7 @@ const formatPercent = (value: number | string | undefined) => {
   return `${(num * 100).toFixed(1)}%`
 }
 
+// 状态中文含义映射
 const statusLabel = (status: AssetStatus) => {
   switch (status) {
     case 'IN_USE':
@@ -62,6 +66,7 @@ const statusLabel = (status: AssetStatus) => {
   }
 }
 
+// 不同状态对应的标签颜色
 const statusTagType = (status: AssetStatus) => {
   switch (status) {
     case 'IN_USE':

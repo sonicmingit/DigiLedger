@@ -482,9 +482,12 @@ interface SaleFormState extends Omit<SaleRecord, 'id' | 'assetId' | 'netIncome' 
   assetId?: number
 }
 
+// 仪表盘的核心状态：资产列表、加载状态与当前选中资产
 const assets = ref<AssetSummary[]>([])
 const loading = ref(false)
 const activeAssetId = ref<number | null>(null)
+
+// 弹窗与表单引用，用于控制 CRUD 交互
 const assetDialogVisible = ref(false)
 const purchaseDialogVisible = ref(false)
 const maintenanceDialogVisible = ref(false)
@@ -496,6 +499,7 @@ const maintenanceFormRef = ref<FormInstance>()
 const saleFormRef = ref<FormInstance>()
 const defaultAnnualRate = 0.5
 
+// CRUD 表单的默认数据模型
 const assetForm = reactive<AssetForm>(createDefaultAssetForm())
 const purchaseForm = reactive<PurchaseForm>(createDefaultPurchaseForm())
 const maintenanceForm = reactive<MaintenanceFormState>(createDefaultMaintenanceForm())
@@ -517,6 +521,7 @@ const wishStatusOptions = [
   { label: '必须出售', value: 'MUST_SELL' }
 ]
 
+// 资产主档校验规则
 const assetFormRules: FormRules<AssetForm> = {
   name: [{ required: true, message: '请输入资产名称', trigger: 'blur' }],
   category: [{ required: true, message: '请输入分类', trigger: 'blur' }],
@@ -527,6 +532,7 @@ const assetFormRules: FormRules<AssetForm> = {
   price: [{ required: true, message: '请输入价格', trigger: 'change', type: 'number', min: 0 }]
 }
 
+// 购买记录校验规则
 const purchaseFormRules: FormRules<PurchaseForm> = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择类型', trigger: 'change' }],
@@ -534,19 +540,23 @@ const purchaseFormRules: FormRules<PurchaseForm> = {
   price: [{ required: true, message: '请输入价格', trigger: 'change', type: 'number', min: 0 }]
 }
 
+// 维护记录校验规则
 const maintenanceFormRules: FormRules<MaintenanceFormState> = {
   title: [{ required: true, message: '请输入维护项目', trigger: 'blur' }],
   cost: [{ required: true, message: '请输入费用', trigger: 'change', type: 'number', min: 0 }],
   date: [{ required: true, message: '请选择维护日期', trigger: 'change' }]
 }
 
+// 售出记录校验规则
 const saleFormRules: FormRules<SaleFormState> = {
   saleDate: [{ required: true, message: '请选择售出日期', trigger: 'change' }],
   salePrice: [{ required: true, message: '请输入售出价格', trigger: 'change', type: 'number', min: 0 }]
 }
 
+// 当前界面需要展示的选中资产
 const activeAsset = computed(() => assets.value.find((item) => item.id === activeAssetId.value) ?? null)
 
+// KPI 区域使用的聚合指标
 const totalAssets = computed(() => assets.value.length)
 const totalDepreciation = computed(() =>
   assets.value.reduce((sum, asset) => sum + (Number(asset.accumulatedDepreciation) || 0), 0)
@@ -555,24 +565,28 @@ const totalAvgCostPerDay = computed(() =>
   assets.value.reduce((sum, asset) => sum + (Number(asset.avgCostPerDay) || 0), 0)
 )
 
+// 所有资产的标签汇总，便于下拉选择
 const tagOptions = computed(() => {
   const set = new Set<string>()
   assets.value.forEach((asset) => asset.tags?.forEach((tag) => set.add(tag)))
   return Array.from(set)
 })
 
+// 关联设备下拉列表选项（排除自身）
 const relatedAssetOptions = computed(() =>
   assets.value
     .filter((asset) => asset.id !== assetForm.id)
     .map((asset) => ({ label: asset.name, value: asset.id }))
 )
 
+// 根据 ID 映射出关联资产名称
 const relatedAssetNames = computed(() => {
   if (!activeAsset.value?.relatedAssets?.length) return [] as string[]
   const map = new Map(assets.value.map((item) => [item.id, item.name]))
   return activeAsset.value.relatedAssets.map((id) => map.get(id)).filter(Boolean) as string[]
 })
 
+// 根据保修期限和待售状态生成提醒时间线
 const reminders = computed<ReminderItem[]>(() => {
   const today = new Date()
   return assets.value
@@ -606,6 +620,7 @@ const reminders = computed<ReminderItem[]>(() => {
     .sort((a, b) => a.daysLeft - b.daysLeft)
 })
 
+// 从后端加载资产数据，失败时回退到内置示例数据
 const loadAssets = async () => {
   loading.value = true
   try {
@@ -628,17 +643,20 @@ const loadAssets = async () => {
   }
 }
 
+// 使用内置示例数据，方便演示交互
 const useMockAssets = () => {
   assets.value = createMockAssets()
   activeAssetId.value = assets.value[0]?.id ?? null
 }
 
+// 打开新建资产弹窗
 const openCreateAsset = () => {
   assetFormMode.value = 'create'
   Object.assign(assetForm, createDefaultAssetForm())
   assetDialogVisible.value = true
 }
 
+// 打开编辑资产弹窗并填充已有数据
 const openEditAsset = (asset: AssetSummary) => {
   assetFormMode.value = 'edit'
   Object.assign(assetForm, {
@@ -670,13 +688,16 @@ const selectAsset = (asset: AssetSummary) => {
   activeAssetId.value = asset.id
 }
 
+// 表格行点击时切换选中资产
 const handleRowClick = (asset: AssetSummary) => {
   selectAsset(asset)
 }
 
+// 高亮当前选中行
 const rowClassName = ({ row }: { row: AssetSummary }) =>
   row.id === activeAssetId.value ? 'active-row' : ''
 
+// 创建或更新资产主档，并在前端计算折旧相关指标
 const submitAssetForm = async () => {
   const form = assetFormRef.value
   if (!form) return
@@ -788,6 +809,7 @@ const submitAssetForm = async () => {
   ElMessage.success('资产已保存')
 }
 
+// 删除资产前弹出确认提示
 const confirmDelete = (asset: AssetSummary) => {
   ElMessageBox.confirm(`确定要删除资产 “${asset.name}” 吗？`, '提示', {
     type: 'warning'
@@ -808,6 +830,7 @@ const openPurchaseForm = () => {
   purchaseDialogVisible.value = true
 }
 
+// 追加购买记录后同步折旧计算
 const submitPurchaseForm = async () => {
   const form = purchaseFormRef.value
   const asset = activeAsset.value
@@ -839,6 +862,7 @@ const openMaintenanceForm = () => {
   maintenanceDialogVisible.value = true
 }
 
+// 添加维护记录并保留原有列表
 const submitMaintenanceForm = async () => {
   const form = maintenanceFormRef.value
   const asset = activeAsset.value
@@ -865,6 +889,7 @@ const openSaleForm = () => {
   saleDialogVisible.value = true
 }
 
+// 保存售出记录并更新资产状态
 const submitSaleForm = async () => {
   const form = saleFormRef.value
   const asset = activeAsset.value
@@ -895,6 +920,7 @@ const submitSaleForm = async () => {
   ElMessage.success('售出记录已添加')
 }
 
+// 更新 assets 数组中的对应元素，触发视图刷新
 const replaceAsset = (asset: AssetSummary) => {
   const index = assets.value.findIndex((item) => item.id === asset.id)
   if (index !== -1) {
@@ -902,23 +928,27 @@ const replaceAsset = (asset: AssetSummary) => {
   }
 }
 
+// 金额格式化工具函数
 const formatCurrency = (value: number | string) => {
   const num = Number(value)
   if (Number.isNaN(num)) return '0.00'
   return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// 比例格式化工具函数
 const formatPercent = (value: number | string) => {
   const num = Number(value)
   if (Number.isNaN(num)) return '--'
   return `${(num * 100).toFixed(1)}%`
 }
 
+// 状态中文映射
 const statusLabel = (status: AssetStatus) => {
   const item = statusOptions.find((opt) => opt.value === status)
   return item ? item.label : status
 }
 
+// 状态对应的标签类型
 const statusTagType = (status: AssetStatus) => {
   switch (status) {
     case 'IN_USE':
@@ -941,6 +971,7 @@ const wishStatusLabel = (status: string) => {
   return item ? item.label : status
 }
 
+// 购买类型中文映射
 const purchaseTypeLabel = (type: PurchaseType) => {
   switch (type) {
     case 'PRIMARY':
@@ -954,9 +985,11 @@ const purchaseTypeLabel = (type: PurchaseType) => {
   }
 }
 
+// 获取资产的主购买记录，便于同步基础金额
 const findPrimaryPurchase = (asset: AssetSummary) =>
   asset.purchases.find((item) => item.type === 'PRIMARY') || null
 
+// 根据当前购买/售出记录重新计算折旧、账面价值等指标
 const recalcAssetFinancials = (asset: AssetSummary) => {
   const totalInvest = asset.purchases.reduce(
     (sum, item) => sum + (Number(item.price) || 0) + (Number(item.shippingCost) || 0),
@@ -970,6 +1003,7 @@ const recalcAssetFinancials = (asset: AssetSummary) => {
   asset.avgCostPerDay = round(asset.totalInvest / Math.max(asset.useDays, 1))
 }
 
+// 计算启用天数：售出/退役后取对应日期
 const calcUseDays = (asset: AssetSummary) => {
   if (!asset.enabledDate) return 1
   const start = parseDate(asset.enabledDate)
@@ -985,12 +1019,14 @@ const calcUseDays = (asset: AssetSummary) => {
   return Math.max(calcDaysBetween(start, end), 1)
 }
 
+// 计算自然日差值（含首日）
 const calcDaysBetween = (from: Date, to: Date) => {
   const start = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())
   const end = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate())
   return Math.floor((end - start) / (24 * 3600 * 1000)) + 1
 }
 
+// 字符串日期容错解析
 const parseDate = (value: string) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
@@ -999,6 +1035,7 @@ const parseDate = (value: string) => {
   return date
 }
 
+// 统一输出 YYYY-MM-DD 字符串
 const formatDate = (date: Date) => {
   const yyyy = date.getFullYear()
   const mm = `${date.getMonth() + 1}`.padStart(2, '0')
@@ -1006,11 +1043,14 @@ const formatDate = (date: Date) => {
   return `${yyyy}-${mm}-${dd}`
 }
 
+// 金额数值统一保留两位小数
 const round = (value: number) => Number(value.toFixed(2))
 
 let idSeed = Date.now()
+// 简易的自增 ID，便于前端临时演示
 const generateId = () => ++idSeed
 
+// 将后端返回的数据转换为前端可用结构
 const normalizeAsset = (raw: any): AssetSummary => {
   const purchases: PurchaseRecord[] = Array.isArray(raw.purchases)
     ? raw.purchases.map((item: any) => ({
@@ -1131,6 +1171,7 @@ const normalizeAsset = (raw: any): AssetSummary => {
   return asset
 }
 
+// 资产主档表单默认值
 function createDefaultAssetForm(): AssetForm {
   return {
     name: '',
@@ -1155,6 +1196,7 @@ function createDefaultAssetForm(): AssetForm {
   }
 }
 
+// 购买记录表单默认值
 function createDefaultPurchaseForm(): PurchaseForm {
   return {
     name: '',
@@ -1169,6 +1211,7 @@ function createDefaultPurchaseForm(): PurchaseForm {
   }
 }
 
+// 维护记录表单默认值
 function createDefaultMaintenanceForm(): MaintenanceFormState {
   return {
     title: '',
@@ -1179,6 +1222,7 @@ function createDefaultMaintenanceForm(): MaintenanceFormState {
   }
 }
 
+// 售出记录表单默认值
 function createDefaultSaleForm(): SaleFormState {
   return {
     platform: '',
@@ -1191,6 +1235,7 @@ function createDefaultSaleForm(): SaleFormState {
   }
 }
 
+// 本地演示使用的示例资产数据
 const createMockAssets = (): AssetSummary[] => {
   const today = new Date()
   const asset1: AssetSummary = {
@@ -1396,12 +1441,14 @@ const createMockAssets = (): AssetSummary[] => {
   return [asset1, asset2, asset3]
 }
 
+// 日期偏移工具函数
 const addDays = (date: Date, days: number) => {
   const cloned = new Date(date)
   cloned.setDate(cloned.getDate() + days)
   return cloned
 }
 
+// 页面初始化时加载资产数据
 onMounted(loadAssets)
 </script>
 

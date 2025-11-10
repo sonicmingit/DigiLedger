@@ -1,7 +1,9 @@
+// 资产状态枚举，对应设计文档中的状态机
 export type AssetStatus = 'IN_USE' | 'IDLE' | 'FOR_SALE' | 'SOLD' | 'RETIRED'
 
 export type PurchaseType = 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
 
+// 资产购买记录的前端模型
 export interface PurchaseRecord {
   id: number
   assetId: number
@@ -16,6 +18,7 @@ export interface PurchaseRecord {
   notes?: string
 }
 
+// 维护记录的前端模型
 export interface MaintenanceRecord {
   id: number
   assetId: number
@@ -26,6 +29,7 @@ export interface MaintenanceRecord {
   type?: string
 }
 
+// 售出记录的前端模型
 export interface SaleRecord {
   id: number
   assetId: number
@@ -40,6 +44,7 @@ export interface SaleRecord {
   notes?: string
 }
 
+// 仪表盘提醒模块使用的轻量数据模型
 export interface ReminderItem {
   assetId: number
   name: string
@@ -49,6 +54,7 @@ export interface ReminderItem {
   message: string
 }
 
+// 仪表盘界面使用的资产汇总对象
 export interface AssetSummary {
   id: number
   name: string
