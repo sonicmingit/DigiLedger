@@ -1,15 +1,9 @@
 :root {
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-  color: #1f2933;
-  background-color: #f8fafc;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 body, html, #app {
   margin: 0;
   padding: 0;
   height: 100%;
-}
-
-#app {
-  background-image: radial-gradient(circle at top left, rgba(64, 158, 255, 0.2), transparent 60%);
 }

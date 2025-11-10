@@ -5,8 +5,14 @@
 
     <resultMap id="settingResultMap" type="com.digiledger.backend.model.entity.SystemSetting">
         <id column="id" property="id" />
-        <result column="annual_rate" property="annualRate" />
         <result column="currency" property="currency" />
+        <result column="storage_provider" property="storageProvider" />
+        <result column="storage_endpoint" property="storageEndpoint" />
+        <result column="storage_region" property="storageRegion" />
+        <result column="storage_bucket" property="storageBucket" />
+        <result column="storage_access_key" property="storageAccessKey" />
+        <result column="storage_secret_key" property="storageSecretKey" />
+        <result column="storage_base_url" property="storageBaseUrl" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
