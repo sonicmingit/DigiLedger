@@ -14,18 +14,96 @@
         <result column="purchase_id" property="purchaseId" />
         <result column="purchase_date" property="purchaseDate" />
         <result column="enabled_date" property="enabledDate" />
-        <result column="sale_date" property="saleDate" />
         <result column="retired_date" property="retiredDate" />
+        <result column="tags" property="tags" />
+        <result column="cover_image_url" property="coverImageUrl" />
+        <result column="notes" property="notes" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
 
+    <sql id="baseColumns">
+        id, name, category, brand, model, serial_no, status,
+        purchase_id, purchase_date, enabled_date, retired_date,
+        tags, cover_image_url, notes, created_at, updated_at
+    </sql>
+
     <select id="findAll" resultMap="assetResultMap">
-        SELECT * FROM device_asset ORDER BY id DESC
+        SELECT <include refid="baseColumns"/> FROM device_asset
+        <where>
+            <if test="status != null and status != ''">
+                status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <choose>
+                    <when test="status != null and status != ''">
+                        AND
+                    </when>
+                </choose>
+                (
+                    name LIKE CONCAT('%', #{keyword}, '%')
+                    OR brand LIKE CONCAT('%', #{keyword}, '%')
+                    OR model LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY updated_at DESC
     </select>
 
     <select id="findById" parameterType="long" resultMap="assetResultMap">
-        SELECT * FROM device_asset WHERE id = #{id}
+        SELECT <include refid="baseColumns"/> FROM device_asset WHERE id = #{id}
     </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO device_asset (
+            name, category, brand, model, serial_no, status,
+            purchase_id, purchase_date, enabled_date, retired_date,
+            tags, cover_image_url, notes
+        ) VALUES (
+            #{name}, #{category}, #{brand}, #{model}, #{serialNo}, #{status},
+            #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
+            #{tags}, #{coverImageUrl}, #{notes}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.DeviceAsset">
+        UPDATE device_asset
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="serialNo != null">serial_no = #{serialNo},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="purchaseId != null">purchase_id = #{purchaseId},</if>
+            <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
+            <if test="enabledDate != null">enabled_date = #{enabledDate},</if>
+            <if test="retiredDate != null">retired_date = #{retiredDate},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="coverImageUrl != null">cover_image_url = #{coverImageUrl},</if>
+            <if test="notes != null">notes = #{notes},</if>
+            updated_at = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM device_asset WHERE id = #{id}
+    </delete>
+
+    <update id="updateStatus">
+        UPDATE device_asset
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePrimaryInfo">
+        UPDATE device_asset
+        SET purchase_id = #{purchaseId},
+            purchase_date = #{purchaseDate},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
 
 </mapper>

@@ -1,0 +1,101 @@
+<template>
+  <el-dialog v-model="visible" title="出售向导" width="500px" @closed="reset">
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+      <el-form-item label="平台" prop="platform">
+        <el-input v-model="form.platform" placeholder="如：闲鱼" />
+      </el-form-item>
+      <el-form-item label="买家" prop="buyer">
+        <el-input v-model="form.buyer" placeholder="可选填写" />
+      </el-form-item>
+      <el-form-item label="售出价格" prop="salePrice">
+        <el-input-number v-model="form.salePrice" :min="0" :precision="2" :step="100" />
+      </el-form-item>
+      <el-form-item label="手续费" prop="fee">
+        <el-input-number v-model="form.fee" :min="0" :precision="2" :step="10" />
+      </el-form-item>
+      <el-form-item label="运费" prop="shippingCost">
+        <el-input-number v-model="form.shippingCost" :min="0" :precision="2" :step="10" />
+      </el-form-item>
+      <el-form-item label="其他费用" prop="otherCost">
+        <el-input-number v-model="form.otherCost" :min="0" :precision="2" :step="10" />
+      </el-form-item>
+      <el-form-item label="售出日期" prop="saleDate">
+        <el-date-picker v-model="form.saleDate" type="date" value-format="YYYY-MM-DD" />
+      </el-form-item>
+      <el-form-item label="备注" prop="notes">
+        <el-input v-model="form.notes" type="textarea" rows="3" placeholder="可记录交易说明" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" :loading="loading" @click="submit">确认出售</el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive } from 'vue'
+import { sellAsset } from '@/api/asset'
+import { ElMessage } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+
+const emit = defineEmits<{ (e: 'success'): void }>()
+
+const visible = ref(false)
+const assetInfo = ref<{ id: number; name: string } | null>(null)
+const loading = ref(false)
+
+const form = reactive({
+  platform: '',
+  buyer: '',
+  salePrice: 0,
+  fee: 0,
+  shippingCost: 0,
+  otherCost: 0,
+  saleDate: '',
+  notes: ''
+})
+
+const formRef = ref<FormInstance>()
+
+const rules = {
+  salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }],
+  saleDate: [{ required: true, message: '请选择售出日期', trigger: 'change' }]
+}
+
+const open = (asset: { id: number; name: string }) => {
+  assetInfo.value = asset
+  visible.value = true
+}
+
+const reset = () => {
+  Object.assign(form, {
+    platform: '',
+    buyer: '',
+    salePrice: 0,
+    fee: 0,
+    shippingCost: 0,
+    otherCost: 0,
+    saleDate: '',
+    notes: ''
+  })
+}
+
+const submit = () => {
+  if (!assetInfo.value) return
+  formRef.value?.validate(async (valid: boolean) => {
+    if (!valid) return
+    loading.value = true
+    try {
+      await sellAsset(assetInfo.value!.id, { ...form })
+      ElMessage.success('售出成功')
+      visible.value = false
+      emit('success')
+    } finally {
+      loading.value = false
+    }
+  })
+}
+
+defineExpose({ open })
+</script>
