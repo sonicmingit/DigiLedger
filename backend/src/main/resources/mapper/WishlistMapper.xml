@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.WishlistMapper">
+
+    <resultMap id="wishlistResultMap" type="com.digiledger.backend.model.entity.WishlistItem">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="category" property="category" />
+        <result column="brand" property="brand" />
+        <result column="model" property="model" />
+        <result column="expected_price" property="expectedPrice" />
+        <result column="planned_platform" property="plannedPlatform" />
+        <result column="link" property="link" />
+        <result column="notes" property="notes" />
+        <result column="priority" property="priority" />
+        <result column="converted_asset_id" property="convertedAssetId" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findAll" resultMap="wishlistResultMap">
+        SELECT * FROM wishlist ORDER BY priority ASC, updated_at DESC
+    </select>
+
+    <select id="findById" resultMap="wishlistResultMap">
+        SELECT * FROM wishlist WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wishlist (
+            name, category, brand, model, expected_price,
+            planned_platform, link, notes, priority, converted_asset_id
+        ) VALUES (
+            #{name}, #{category}, #{brand}, #{model}, #{expectedPrice},
+            #{plannedPlatform}, #{link}, #{notes}, #{priority}, #{convertedAssetId}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.WishlistItem">
+        UPDATE wishlist
+        SET name = #{name},
+            category = #{category},
+            brand = #{brand},
+            model = #{model},
+            expected_price = #{expectedPrice},
+            planned_platform = #{plannedPlatform},
+            link = #{link},
+            notes = #{notes},
+            priority = #{priority},
+            converted_asset_id = #{convertedAssetId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM wishlist WHERE id = #{id}
+    </delete>
+
+    <update id="markConverted">
+        UPDATE wishlist
+        SET converted_asset_id = #{assetId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

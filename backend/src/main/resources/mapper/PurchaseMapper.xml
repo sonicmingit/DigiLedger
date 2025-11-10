@@ -3,10 +3,54 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.digiledger.backend.mapper.PurchaseMapper">
 
+    <resultMap id="purchaseResultMap" type="com.digiledger.backend.model.entity.Purchase">
+        <id column="id" property="id" />
+        <result column="asset_id" property="assetId" />
+        <result column="type" property="type" />
+        <result column="platform" property="platform" />
+        <result column="seller" property="seller" />
+        <result column="price" property="price" />
+        <result column="currency" property="currency" />
+        <result column="quantity" property="quantity" />
+        <result column="shipping_cost" property="shippingCost" />
+        <result column="purchase_date" property="purchaseDate" />
+        <result column="invoice_no" property="invoiceNo" />
+        <result column="warranty_months" property="warrantyMonths" />
+        <result column="warranty_expire_date" property="warrantyExpireDate" />
+        <result column="attachments" property="attachments" />
+        <result column="notes" property="notes" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findByAssetId" resultMap="purchaseResultMap">
+        SELECT * FROM purchase WHERE asset_id = #{assetId} ORDER BY purchase_date DESC, id DESC
+    </select>
+
     <select id="sumInvestByAsset" parameterType="long" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(price + shipping_cost + tax + other_cost), 0)
+        SELECT COALESCE(SUM(price + COALESCE(shipping_cost,0)), 0)
         FROM purchase
         WHERE asset_id = #{assetId}
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.Purchase" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO purchase (
+            asset_id, type, platform, seller, price, currency, quantity,
+            shipping_cost, purchase_date, invoice_no, warranty_months,
+            warranty_expire_date, attachments, notes
+        ) VALUES (
+            #{assetId}, #{type}, #{platform}, #{seller}, #{price}, #{currency}, #{quantity},
+            #{shippingCost}, #{purchaseDate}, #{invoiceNo}, #{warrantyMonths},
+            #{warrantyExpireDate}, #{attachments}, #{notes}
+        )
+    </insert>
+
+    <delete id="deleteByAsset" parameterType="long">
+        DELETE FROM purchase WHERE asset_id = #{assetId}
+    </delete>
+
+    <select id="countByAsset" parameterType="long" resultType="int">
+        SELECT COUNT(1) FROM purchase WHERE asset_id = #{assetId}
     </select>
 
 </mapper>

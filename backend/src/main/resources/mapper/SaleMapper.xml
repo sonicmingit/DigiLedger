@@ -6,14 +6,16 @@
     <resultMap id="saleResultMap" type="com.digiledger.backend.model.entity.Sale">
         <id column="id" property="id" />
         <result column="asset_id" property="assetId" />
+        <result column="platform" property="platform" />
+        <result column="buyer" property="buyer" />
         <result column="sale_price" property="salePrice" />
         <result column="fee" property="fee" />
         <result column="shipping_cost" property="shippingCost" />
         <result column="other_cost" property="otherCost" />
         <result column="net_income" property="netIncome" />
-        <result column="realized_pnl" property="realizedPnl" />
-        <result column="platform" property="platform" />
         <result column="sale_date" property="saleDate" />
+        <result column="attachments" property="attachments" />
+        <result column="notes" property="notes" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
@@ -24,6 +26,28 @@
         WHERE asset_id = #{assetId}
         ORDER BY sale_date DESC, id DESC
         LIMIT 1
+    </select>
+
+    <select id="findByAssetId" resultMap="saleResultMap">
+        SELECT * FROM sale WHERE asset_id = #{assetId} ORDER BY sale_date DESC, id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.Sale" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sale (
+            asset_id, platform, buyer, sale_price, fee, shipping_cost,
+            other_cost, net_income, sale_date, attachments, notes
+        ) VALUES (
+            #{assetId}, #{platform}, #{buyer}, #{salePrice}, #{fee}, #{shippingCost},
+            #{otherCost}, #{netIncome}, #{saleDate}, #{attachments}, #{notes}
+        )
+    </insert>
+
+    <delete id="deleteByAsset" parameterType="long">
+        DELETE FROM sale WHERE asset_id = #{assetId}
+    </delete>
+
+    <select id="countByAsset" parameterType="long" resultType="int">
+        SELECT COUNT(1) FROM sale WHERE asset_id = #{assetId}
     </select>
 
 </mapper>

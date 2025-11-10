@@ -1,19 +1,40 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
-// 创建 axios 实例并统一设置接口根路径与超时时间
-const http = axios.create({
+interface ApiEnvelope<T> {
+  code: number
+  data: T
+  msg: string
+}
+
+// 统一创建 axios 实例，保持所有请求指向同一 API 前缀
+const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 15000
 })
 
-// 统一拦截响应：约定后端返回 { code, data, msg }
-http.interceptors.response.use(
-  (resp) => {
-    const { code, data, msg } = resp.data
-    if (code !== 200) return Promise.reject(new Error(msg || 'Request Error'))
-    return data
+// 解包 `{code,data,msg}` 响应结构，统一处理业务错误
+const unwrap = async <T>(promise: Promise<AxiosResponse<ApiEnvelope<T>>>) => {
+  const resp = await promise
+  const { code, data, msg } = resp.data
+  if (code !== 200) {
+    throw new Error(msg || '请求失败')
+  }
+  return data
+}
+
+const http = {
+  get<T>(url: string, config?: AxiosRequestConfig) {
+    return unwrap<T>(axiosInstance.get<ApiEnvelope<T>>(url, config))
   },
-  (err) => Promise.reject(err)
-)
+  post<T>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    return unwrap<T>(axiosInstance.post<ApiEnvelope<T>>(url, data, config))
+  },
+  put<T>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    return unwrap<T>(axiosInstance.put<ApiEnvelope<T>>(url, data, config))
+  },
+  delete<T>(url: string, config?: AxiosRequestConfig) {
+    return unwrap<T>(axiosInstance.delete<ApiEnvelope<T>>(url, config))
+  }
+}
 
 export default http

@@ -8,15 +8,38 @@ import java.time.LocalDateTime;
 
 @Data
 public class Purchase {
+    /** 主键 ID */
     private Long id;
+    /** 资产 ID */
     private Long assetId;
+    /** 购买类型 */
     private String type;
+    /** 购买平台 */
+    private String platform;
+    /** 卖家信息 */
+    private String seller;
+    /** 金额 */
     private BigDecimal price;
+    /** 币种 */
+    private String currency;
+    /** 数量 */
+    private Integer quantity;
+    /** 运费 */
     private BigDecimal shippingCost;
-    private BigDecimal tax;
-    private BigDecimal otherCost;
+    /** 购买日期 */
     private LocalDate purchaseDate;
-    private String note;
+    /** 发票号 */
+    private String invoiceNo;
+    /** 质保月数 */
+    private Integer warrantyMonths;
+    /** 质保到期日期 */
+    private LocalDate warrantyExpireDate;
+    /** 附件 JSON */
+    private String attachments;
+    /** 备注 */
+    private String notes;
+    /** 创建时间 */
     private LocalDateTime createdAt;
+    /** 更新时间 */
     private LocalDateTime updatedAt;
 }

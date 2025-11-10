@@ -21,4 +21,17 @@ logging:
     com.digiledger: DEBUG
 
 app:
-  annual-rate-default: 0.5
+  upload:
+    max-size-mb: 5
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+  storage:
+    provider: ${DL_STORAGE_PROVIDER:minio}
+    endpoint: ${DL_STORAGE_ENDPOINT:http://minio:9000}
+    region: ${DL_STORAGE_REGION:}
+    bucket: ${DL_STORAGE_BUCKET:digiledger}
+    access-key: ${DL_STORAGE_ACCESS_KEY:minioadmin}
+    secret-key: ${DL_STORAGE_SECRET_KEY:minioadmin}
+    base-url: ${DL_STORAGE_BASE_URL:http://localhost:9000}
