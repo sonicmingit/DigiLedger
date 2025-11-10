@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.AssetMapper">
+
+    <resultMap id="assetResultMap" type="com.digiledger.backend.model.entity.DeviceAsset">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="category" property="category" />
+        <result column="brand" property="brand" />
+        <result column="model" property="model" />
+        <result column="serial_no" property="serialNo" />
+        <result column="status" property="status" />
+        <result column="purchase_id" property="purchaseId" />
+        <result column="purchase_date" property="purchaseDate" />
+        <result column="enabled_date" property="enabledDate" />
+        <result column="sale_date" property="saleDate" />
+        <result column="retired_date" property="retiredDate" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findAll" resultMap="assetResultMap">
+        SELECT * FROM device_asset ORDER BY id DESC
+    </select>
+
+    <select id="findById" parameterType="long" resultMap="assetResultMap">
+        SELECT * FROM device_asset WHERE id = #{id}
+    </select>
+
+</mapper>
