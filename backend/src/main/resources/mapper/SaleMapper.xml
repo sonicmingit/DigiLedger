@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.SaleMapper">
+
+    <resultMap id="saleResultMap" type="com.digiledger.backend.model.entity.Sale">
+        <id column="id" property="id" />
+        <result column="asset_id" property="assetId" />
+        <result column="sale_price" property="salePrice" />
+        <result column="fee" property="fee" />
+        <result column="shipping_cost" property="shippingCost" />
+        <result column="other_cost" property="otherCost" />
+        <result column="net_income" property="netIncome" />
+        <result column="realized_pnl" property="realizedPnl" />
+        <result column="platform" property="platform" />
+        <result column="sale_date" property="saleDate" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findLatestByAsset" parameterType="long" resultMap="saleResultMap">
+        SELECT *
+        FROM sale
+        WHERE asset_id = #{assetId}
+        ORDER BY sale_date DESC, id DESC
+        LIMIT 1
+    </select>
+
+</mapper>
