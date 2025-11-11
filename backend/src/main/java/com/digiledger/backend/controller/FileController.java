@@ -24,7 +24,7 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ApiResponse<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
+    public ApiResponse<Map<String, String>> upload(@RequestParam(name = "file") MultipartFile file) {
         String url = fileService.upload(file);
         return ApiResponse.success(Map.of("url", url));
     }
