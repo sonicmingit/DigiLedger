@@ -10,7 +10,8 @@ import java.util.List;
 public record AssetSummaryDTO(
         Long id,
         String name,
-        String category,
+        Long categoryId,
+        String categoryPath,
         String status,
         String coverImageUrl,
         BigDecimal totalInvest,
@@ -19,6 +20,6 @@ public record AssetSummaryDTO(
         BigDecimal lastNetIncome,
         LocalDate enabledDate,
         LocalDate purchaseDate,
-        List<String> tags
+        List<TagDTO> tags
 ) {
 }

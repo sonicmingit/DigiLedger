@@ -1,11 +1,19 @@
-// 资产状态枚举（中文）
+// 物品状态枚举（中文）
 export type AssetStatus = '使用中' | '已闲置' | '待出售' | '已出售' | '已丢弃'
 
-// 资产列表摘要
+export interface TagItem {
+  id: number
+  name: string
+  color?: string
+  icon?: string
+}
+
+// 物品列表摘要
 export interface AssetSummary {
   id: number
   name: string
-  category: string
+  categoryId?: number
+  categoryPath?: string
   status: AssetStatus
   coverImageUrl?: string
   totalInvest: number
@@ -14,14 +22,15 @@ export interface AssetSummary {
   lastNetIncome: number
   enabledDate: string
   purchaseDate?: string
-  tags: string[]
+  tags: TagItem[]
 }
 
 // 购买记录
 export interface PurchaseRecord {
   id: number
   type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
-  platform?: string
+  platformId?: number
+  platformName?: string
   seller?: string
   price: number
   shippingCost: number
@@ -38,7 +47,8 @@ export interface PurchaseRecord {
 // 售出记录
 export interface SaleRecord {
   id: number
-  platform?: string
+  platformId?: number
+  platformName?: string
   buyer?: string
   salePrice: number
   fee: number
@@ -50,7 +60,7 @@ export interface SaleRecord {
   notes?: string
 }
 
-// 资产详情
+// 物品详情
 export interface AssetDetail extends AssetSummary {
   brand?: string
   model?: string

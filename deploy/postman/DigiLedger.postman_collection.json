@@ -1,0 +1,355 @@
+{
+    "info": {
+        "_postman_id": "f2e47fda-6c20-4d3d-94f7-6a0ef1a33c4c",
+        "name": "DigiLedger API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Postman collection for DigiLedger V0.3.3 with dictionary and item management APIs."
+    },
+    "item": [
+        {
+            "name": "Dictionary",
+            "item": [
+                {
+                    "name": "Get Category Tree",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/categories/tree",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "categories",
+                                "tree"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Category",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u76f8\u673a\",\n  \"parentId\": null,\n  \"sort\": 10\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Category",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u955c\u5934\",\n  \"parentId\": 1,\n  \"sort\": 20\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/categories/2",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "categories",
+                                "2"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Category",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/categories/3",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "categories",
+                                "3"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Platforms",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/platforms",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "platforms"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Platform",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u95f2\u9c7c\",\n  \"link\": \"https://goofish.com\",\n  \"sort\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/platforms",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "platforms"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Platform",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u4eac\u4e1c\",\n  \"link\": \"https://jd.com\",\n  \"sort\": 5\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/platforms/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "platforms",
+                                "1"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Platform",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/platforms/4",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "platforms",
+                                "4"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Tag Tree",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/tags/tree",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "tags",
+                                "tree"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Tag",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u968f\u8eab\",\n  \"parentId\": null,\n  \"color\": \"#FF8A65\",\n  \"icon\": \"Backpack\",\n  \"sort\": 10\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/tags",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "tags"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Tag",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\u5916\u62cd\",\n  \"parentId\": 5,\n  \"color\": \"#4DB6AC\",\n  \"icon\": \"Camera\",\n  \"sort\": 20\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/tags/6",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "tags",
+                                "6"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Tag",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/tags/7",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "tags",
+                                "7"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Items",
+            "item": [
+                {
+                    "name": "Create Item",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Sony A7C II\",\n  \"categoryId\": 2,\n  \"brand\": \"Sony\",\n  \"model\": \"ILCE-7CM2\",\n  \"enabledDate\": \"2025-01-10\",\n  \"tagIds\": [5, 6],\n  \"coverImageUrl\": \"https://cdn.example.com/items/a7c2.png\",\n  \"notes\": \"\u968f\u8eab\u5907\u673a\",\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"platformId\": 1,\n      \"seller\": \"\u7d22\u5c3c\u76f4\u8425\u5e97\",\n      \"price\": 12345.00,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-01-05\",\n      \"invoiceNo\": \"SN20250105\",\n      \"attachments\": [],\n      \"notes\": \"\u5e74\u8d27\u8282\u6d3b\u52a8\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Query Items",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/assets?categoryId=2&platformId=1&tagIds=5,6&page=1&size=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "categoryId",
+                                    "value": "2"
+                                },
+                                {
+                                    "key": "platformId",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "tagIds",
+                                    "value": "5,6"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080/api"
+        }
+    ]
+}

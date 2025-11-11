@@ -13,8 +13,7 @@ import java.util.List;
  */
 public class AssetSellRequest {
 
-    @Size(max = 100, message = "平台名称过长")
-    private String platform;
+    private Long platformId;
 
     @Size(max = 200, message = "买家信息过长")
     private String buyer;
@@ -39,12 +38,12 @@ public class AssetSellRequest {
 
     private String notes;
 
-    public String getPlatform() {
-        return platform;
+    public Long getPlatformId() {
+        return platformId;
     }
 
-    public void setPlatform(String platform) {
-        this.platform = platform;
+    public void setPlatformId(Long platformId) {
+        this.platformId = platformId;
     }
 
     public String getBuyer() {
