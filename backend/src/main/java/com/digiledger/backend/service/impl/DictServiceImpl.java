@@ -24,9 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -338,7 +341,8 @@ public class DictServiceImpl implements DictService {
     }
 
     private void ensureNoTagCycle(Long tagId, Long newParentId) {
-        Set<Long> visited = new java.util.HashSet<>();
+        Set<Long> visited = new HashSet<>();
+
         Long current = newParentId;
         while (current != null) {
             if (!visited.add(current)) {
@@ -359,7 +363,9 @@ public class DictServiceImpl implements DictService {
         if (newParentId == null) {
             return;
         }
-        Set<Long> visited = new java.util.HashSet<>();
+        Set<Long> visited = new HashSet<>();
+
+
         Long current = newParentId;
         while (current != null) {
             if (!visited.add(current)) {
@@ -379,6 +385,31 @@ public class DictServiceImpl implements DictService {
             current = parent.getParentId();
         }
     }
+
+    private String buildCategoryPath(Long categoryId, Map<Long, DictCategory> categoryMap) {
+        List<Long> path = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        DictCategory current = categoryMap.get(categoryId);
+        while (current != null) {
+            if (!visited.add(current.getId())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "类别层级存在循环");
+            }
+            path.add(current.getId());
+            Long parentId = current.getParentId();
+            if (parentId == null) {
+                break;
+            }
+            current = categoryMap.get(parentId);
+            if (current == null) {
+                current = Optional.ofNullable(dictCategoryMapper.findById(parentId))
+                        .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "类别层级不完整"));
+                categoryMap.put(current.getId(), current);
+            }
+        }
+        Collections.reverse(path);
+        return path.stream().map(String::valueOf).collect(Collectors.joining("/", "/", ""));
+    }
+
 
     private String buildCategoryLikePattern(Long categoryId, boolean includeDescendants) {
         if (categoryId == null) {
