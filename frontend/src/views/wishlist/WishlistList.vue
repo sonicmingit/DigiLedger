@@ -18,7 +18,7 @@
         <el-table-column label="操作" width="220">
           <template #default="{ row }">
             <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-button link type="success" @click="convert(row.id)" :disabled="!!row.convertedAssetId">转为资产</el-button>
+            <el-button link type="success" @click="convert(row)" :disabled="!!row.convertedAssetId">转为物品</el-button>
             <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
@@ -65,6 +65,7 @@
         <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
       </template>
     </el-dialog>
+    <wishlist-convert-dialog ref="convertDialog" @success="refresh" />
   </div>
 </template>
 
@@ -72,8 +73,9 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
+import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
+import WishlistConvertDialog from './components/WishlistConvertDialog.vue'
 
 const items = ref<WishlistItem[]>([])
 const loading = ref(false)
@@ -167,10 +169,10 @@ const remove = async (id: number) => {
   refresh()
 }
 
-const convert = async (id: number) => {
-  await convertWishlist(id)
-  ElMessage.success('已转为资产')
-  refresh()
+const convertDialog = ref<InstanceType<typeof WishlistConvertDialog> | null>(null)
+
+const convert = (item: WishlistItem) => {
+  convertDialog.value?.open(item)
 }
 
 const formatNumber = (value: number) => value.toFixed(2)

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.DictPlatformMapper">
+
+    <resultMap id="platformResultMap" type="com.digiledger.backend.model.entity.DictPlatform">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="link" column="link" />
+        <result property="sort" column="sort" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, name, link, sort, created_at, updated_at
+    </sql>
+
+    <select id="findAll" resultMap="platformResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM dict_platform
+        ORDER BY sort ASC, id ASC
+    </select>
+
+    <select id="findById" parameterType="long" resultMap="platformResultMap">
+        SELECT <include refid="baseColumns"/> FROM dict_platform WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.DictPlatform" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dict_platform (name, link, sort)
+        VALUES (#{name}, #{link}, #{sort})
+    </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.DictPlatform">
+        UPDATE dict_platform
+        SET name = #{name},
+            link = #{link},
+            sort = #{sort},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM dict_platform WHERE id = #{id}
+    </delete>
+
+    <select id="countByName" resultType="long">
+        SELECT COUNT(1) FROM dict_platform
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id <> #{excludeId}
+        </if>
+    </select>
+
+</mapper>

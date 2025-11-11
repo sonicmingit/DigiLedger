@@ -18,4 +18,6 @@ public interface SaleMapper {
     int deleteByAsset(@Param("assetId") Long assetId);
 
     int countByAsset(@Param("assetId") Long assetId);
+
+    long countByPlatform(@Param("platformId") Long platformId);
 }

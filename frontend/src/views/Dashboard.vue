@@ -2,16 +2,16 @@
   <div class="dashboard">
     <section class="hero">
       <div>
-        <h1>欢迎回来，资产管家</h1>
-        <p>快速浏览资产分布与投入情况，开始今日的设备管理工作。</p>
-        <el-button type="primary" @click="goAsset">创建资产</el-button>
+        <h1>欢迎回来，物品管家</h1>
+        <p>快速浏览物品分布与投入情况，开始今日的设备管理工作。</p>
+        <el-button type="primary" @click="goAsset">创建物品</el-button>
       </div>
     </section>
     <el-row :gutter="16" class="metrics">
       <el-col :xs="24" :md="8">
         <el-card class="metric-card">
           <div class="metric-value">{{ summaries.length }}</div>
-          <div class="metric-label">资产总数</div>
+          <div class="metric-label">物品总数</div>
         </el-card>
       </el-col>
       <el-col :xs="24" :md="8">
@@ -30,13 +30,15 @@
     <el-card shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>最新资产</span>
+          <span>最新物品</span>
           <el-button size="small" @click="refresh" :loading="loading">刷新</el-button>
         </div>
       </template>
-      <el-table :data="summaries.slice(0, 5)" empty-text="暂无资产，请先创建" stripe>
+      <el-table :data="summaries.slice(0, 5)" empty-text="暂无物品，请先创建" stripe>
         <el-table-column prop="name" label="名称" min-width="180" />
-        <el-table-column prop="category" label="类别" width="120" />
+        <el-table-column label="类别" width="160">
+          <template #default="{ row }">{{ resolveCategoryName(row) }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
             <el-tag size="small">{{ row.status }}</el-tag>
@@ -66,11 +68,13 @@ import { useRouter } from 'vue-router'
 import { fetchAssets } from '@/api/asset'
 import type { AssetSummary } from '@/types'
 import SellDialog from './assets/components/SellDialog.vue'
+import { useDictionaries } from '@/composables/useDictionaries'
 
 const router = useRouter()
 const summaries = ref<AssetSummary[]>([])
 const loading = ref(false)
 const sellDialog = ref<InstanceType<typeof SellDialog> | null>(null)
+const { load: loadDicts, categoryPathMap } = useDictionaries()
 
 const refresh = async () => {
   loading.value = true
@@ -96,7 +100,17 @@ const sell = (asset: AssetSummary) => {
   sellDialog.value?.open({ id: asset.id, name: asset.name })
 }
 
-onMounted(refresh)
+const resolveCategoryName = (asset: AssetSummary) => {
+  if (!asset.categoryId) {
+    return '-'
+  }
+  return categoryPathMap.value.get(asset.categoryId) || '-'
+}
+
+onMounted(async () => {
+  await loadDicts()
+  await refresh()
+})
 </script>
 
 <style scoped>

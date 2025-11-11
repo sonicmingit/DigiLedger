@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface AssetService {
 
-    List<AssetSummaryDTO> listAssets(String status, String keyword);
+    List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds);
 
     AssetDetailDTO getAssetDetail(Long id);
 

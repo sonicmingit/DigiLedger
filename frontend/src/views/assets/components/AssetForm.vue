@@ -1,15 +1,23 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑资产' : '新建资产'" width="720px" @closed="reset">
+  <el-dialog v-model="visible" :title="isEdit ? '编辑物品' : '新建物品'" width="720px" @closed="reset">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="110px" status-icon>
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
-          <el-form-item label="资产名称" prop="name">
-            <el-input v-model="form.name" placeholder="请输入资产名称" />
+          <el-form-item label="物品名称" prop="name">
+            <el-input v-model="form.name" placeholder="请输入物品名称" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :md="12">
-          <el-form-item label="资产类别" prop="category">
-            <el-input v-model="form.category" placeholder="如：笔记本/相机" />
+          <el-form-item label="物品类别" prop="categoryId">
+            <el-tree-select
+              v-model="form.categoryId"
+              :data="categoryOptions"
+              :props="treeProps"
+              check-strictly
+              filterable
+              placeholder="请选择类别（叶子节点）"
+              style="width: 100%"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -59,9 +67,17 @@
         </el-col>
         <el-col :xs="24" :md="12">
           <el-form-item label="标签">
-            <el-select v-model="form.tags" multiple filterable allow-create default-first-option placeholder="输入标签">
-              <el-option v-for="tag in form.tags" :key="tag" :label="tag" :value="tag" />
-            </el-select>
+            <el-tree-select
+              v-model="form.tagIds"
+              :data="tagOptions"
+              :props="treeProps"
+              multiple
+              show-checkbox
+              filterable
+              collapse-tags
+              placeholder="选择标签"
+              style="width: 100%"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -88,7 +104,9 @@
                 </el-select>
               </el-col>
               <el-col :xs="24" :md="8">
-                <el-input v-model="purchase.platform" placeholder="平台" />
+                <el-select v-model="purchase.platformId" placeholder="来源平台" filterable clearable>
+                  <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
               </el-col>
               <el-col :xs="24" :md="8">
                 <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
@@ -96,16 +114,64 @@
             </el-row>
             <el-row :gutter="12" class="mt">
               <el-col :xs="24" :md="8">
+                <el-input v-model="purchase.currency" placeholder="币种（如 CNY）" />
+              </el-col>
+              <el-col :xs="24" :md="8">
+                <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
+              </el-col>
+              <el-col :xs="24" :md="8">
+                <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
+              </el-col>
+            </el-row>
+            <el-row :gutter="12" class="mt">
+              <el-col :xs="24" :md="8">
                 <el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" :step="10" placeholder="运费" />
               </el-col>
               <el-col :xs="24" :md="8">
-                <el-date-picker v-model="purchase.purchaseDate" type="date" value-format="YYYY-MM-DD" />
+                <el-date-picker v-model="purchase.purchaseDate" type="date" value-format="YYYY-MM-DD" placeholder="购买日期" clearable />
               </el-col>
               <el-col :xs="24" :md="8">
+                <el-input v-model="purchase.invoiceNo" placeholder="发票编号" />
+              </el-col>
+            </el-row>
+            <el-row :gutter="12" class="mt">
+              <el-col :xs="24" :md="8">
+                <el-input-number
+                  v-model="purchase.warrantyMonths"
+                  :min="0"
+                  :step="1"
+                  placeholder="质保（月）"
+                  controls-position="right"
+                />
+              </el-col>
+              <el-col :xs="24" :md="8">
+                <el-date-picker
+                  v-model="purchase.warrantyExpireDate"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="质保到期日"
+                  clearable
+                />
+              </el-col>
+              <el-col :xs="24" :md="8">
+                <el-input v-model="purchase.notes" placeholder="备注" />
+              </el-col>
+            </el-row>
+            <el-row :gutter="12" class="mt">
+              <el-col :xs="24">
                 <el-upload :http-request="(options) => uploadAttachment(options, purchase)" :show-file-list="false" accept="image/*">
                   <el-button text>上传附件</el-button>
                 </el-upload>
-                <el-tag v-for="url in purchase.attachments" :key="url" size="small" class="tag">附件</el-tag>
+                <el-tag
+                  v-for="(url, idx) in purchase.attachments"
+                  :key="url"
+                  size="small"
+                  class="tag"
+                  closable
+                  @close="removeAttachment(purchase, url)"
+                >
+                  附件{{ idx + 1 }}
+                </el-tag>
               </el-col>
             </el-row>
             <div class="purchase-actions">
@@ -123,12 +189,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
+import { useDictionaries } from '@/composables/useDictionaries'
+import type { CategoryNode, TagNode } from '@/api/dict'
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 
@@ -143,7 +211,7 @@ const formRef = ref<FormInstance>()
 const form = reactive({
   id: 0,
   name: '',
-  category: '',
+  categoryId: null as number | null,
   brand: '',
   model: '',
   serialNo: '',
@@ -152,23 +220,57 @@ const form = reactive({
   enabledDate: '',
   retiredDate: '',
   coverImageUrl: '',
-  tags: [] as string[],
+  tagIds: [] as number[],
   notes: '',
   purchases: [] as Array<{
     type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
-    platform?: string
+    platformId?: number
+    seller?: string
     price: number
     shippingCost: number
+    currency: string
+    quantity: number
     purchaseDate: string
+    invoiceNo?: string
+    warrantyMonths?: number
+    warrantyExpireDate?: string
+    notes?: string
     attachments: string[]
   }>
 })
 
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  category: [{ required: true, message: '请输入类别', trigger: 'blur' }],
+  categoryId: [{ required: true, message: '请选择类别', trigger: 'change' }],
   enabledDate: [{ required: true, message: '请选择启用日期', trigger: 'change' }]
 }
+
+const { load: loadDicts, categoryTree, tagTree, platforms } = useDictionaries()
+
+const treeProps = {
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  disabled: 'disabled'
+}
+
+const buildCategoryOptions = (nodes: CategoryNode[]): any[] =>
+  nodes.map((node) => ({
+    value: node.id,
+    label: node.name,
+    disabled: node.children?.length ? true : false,
+    children: node.children ? buildCategoryOptions(node.children) : []
+  }))
+
+const buildTagOptions = (nodes: TagNode[]): any[] =>
+  nodes.map((node) => ({
+    value: node.id,
+    label: node.name,
+    children: node.children ? buildTagOptions(node.children) : []
+  }))
+
+const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
+const tagOptions = computed(() => buildTagOptions(tagTree.value))
 
 const open = (asset?: AssetDetail) => {
   visible.value = true
@@ -176,7 +278,7 @@ const open = (asset?: AssetDetail) => {
   if (asset) {
     form.id = asset.id
     form.name = asset.name
-    form.category = asset.category
+    form.categoryId = asset.categoryId ?? null
     form.brand = asset.brand || ''
     form.model = asset.model || ''
     form.serialNo = asset.serialNo || ''
@@ -185,15 +287,22 @@ const open = (asset?: AssetDetail) => {
     form.enabledDate = asset.enabledDate
     form.retiredDate = (asset as AssetDetail).retiredDate || ''
     form.coverImageUrl = asset.coverImageUrl || ''
-    form.tags = [...(asset.tags || [])]
+    form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = (asset as AssetDetail).notes || ''
     form.purchases = asset.purchases
       ? asset.purchases.map((p) => ({
           type: p.type,
-          platform: p.platform,
+          platformId: p.platformId,
+          seller: p.seller || '',
           price: p.price,
-          shippingCost: p.shippingCost,
+          shippingCost: p.shippingCost ?? 0,
+          currency: p.currency || 'CNY',
+          quantity: p.quantity || 1,
           purchaseDate: p.purchaseDate,
+          invoiceNo: p.invoiceNo || '',
+          warrantyMonths: p.warrantyMonths ?? undefined,
+          warrantyExpireDate: p.warrantyExpireDate || '',
+          notes: p.notes || '',
           attachments: [...(p.attachments || [])]
         }))
       : []
@@ -205,7 +314,7 @@ const open = (asset?: AssetDetail) => {
 const reset = () => {
   form.id = 0
   form.name = ''
-  form.category = ''
+  form.categoryId = null
   form.brand = ''
   form.model = ''
   form.serialNo = ''
@@ -214,7 +323,7 @@ const reset = () => {
   form.enabledDate = ''
   form.retiredDate = ''
   form.coverImageUrl = ''
-  form.tags = []
+  form.tagIds = []
   form.notes = ''
   form.purchases = []
 }
@@ -222,10 +331,17 @@ const reset = () => {
 const addPurchase = () => {
   form.purchases.push({
     type: 'PRIMARY',
-    platform: '',
+    platformId: undefined,
+    seller: '',
     price: 0,
     shippingCost: 0,
+    currency: 'CNY',
+    quantity: 1,
     purchaseDate: '',
+    invoiceNo: '',
+    warrantyMonths: undefined,
+    warrantyExpireDate: '',
+    notes: '',
     attachments: []
   })
 }
@@ -259,6 +375,10 @@ const uploadAttachment = async (options: UploadRequestOptions, purchase: any) =>
   }
 }
 
+const removeAttachment = (purchase: any, url: string) => {
+  purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
+}
+
 const submit = () => {
   formRef.value?.validate(async (valid) => {
     if (!valid) return
@@ -266,7 +386,7 @@ const submit = () => {
     try {
       const payload = {
         name: form.name,
-        category: form.category,
+        categoryId: form.categoryId!,
         brand: form.brand,
         model: form.model,
         serialNo: form.serialNo,
@@ -276,13 +396,20 @@ const submit = () => {
         retiredDate: form.retiredDate || undefined,
         coverImageUrl: form.coverImageUrl || undefined,
         notes: form.notes || undefined,
-        tags: form.tags,
+        tagIds: form.tagIds,
         purchases: form.purchases.map((p) => ({
           type: p.type,
-          platform: p.platform,
+          platformId: p.platformId,
+          seller: p.seller || undefined,
           price: p.price,
           shippingCost: p.shippingCost,
+          currency: p.currency || 'CNY',
+          quantity: p.quantity,
           purchaseDate: p.purchaseDate,
+          invoiceNo: p.invoiceNo || undefined,
+          warrantyMonths: p.warrantyMonths ?? undefined,
+          warrantyExpireDate: p.warrantyExpireDate || undefined,
+          notes: p.notes || undefined,
           attachments: p.attachments
         }))
       }
@@ -302,6 +429,10 @@ const submit = () => {
 }
 
 defineExpose({ open })
+
+onMounted(async () => {
+  await loadDicts()
+})
 </script>
 
 <style scoped>
@@ -324,6 +455,8 @@ defineExpose({ open })
   background: rgba(15, 23, 42, 0.4);
   padding: 12px;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .mt {
