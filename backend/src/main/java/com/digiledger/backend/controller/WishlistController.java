@@ -1,6 +1,7 @@
 package com.digiledger.backend.controller;
 
 import com.digiledger.backend.common.ApiResponse;
+import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.wishlist.WishlistDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistRequest;
 import com.digiledger.backend.service.WishlistService;
@@ -53,7 +54,8 @@ public class WishlistController {
     }
 
     @PostMapping("/{id}/convert")
-    public ApiResponse<Long> convert(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
-        return ApiResponse.success(wishlistService.convertToAsset(id));
+    public ApiResponse<Long> convert(@PathVariable(name = "id") @NotNull @Min(1) Long id,
+                                     @RequestBody @Valid AssetCreateRequest request) {
+        return ApiResponse.success(wishlistService.convertToAsset(id, request));
     }
 }

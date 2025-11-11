@@ -13,32 +13,72 @@ CREATE TABLE IF NOT EXISTS sys_setting (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) COMMENT='系统设置表';
 
+CREATE TABLE IF NOT EXISTS dict_category (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '类别名称',
+  parent_id BIGINT DEFAULT NULL COMMENT '父级ID',
+  level INT NOT NULL DEFAULT 1 COMMENT '层级',
+  sort INT NOT NULL DEFAULT 0 COMMENT '排序值',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  UNIQUE KEY uk_category_parent_name (parent_id, name),
+  INDEX idx_category_parent (parent_id),
+  CONSTRAINT fk_category_parent FOREIGN KEY (parent_id) REFERENCES dict_category(id) ON DELETE SET NULL
+) COMMENT='类别字典（树形）';
+
+CREATE TABLE IF NOT EXISTS dict_platform (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '平台名称',
+  link VARCHAR(255) COMMENT '平台链接',
+  sort INT NOT NULL DEFAULT 0 COMMENT '排序值',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  UNIQUE KEY uk_platform_name (name)
+) COMMENT='平台字典';
+
+CREATE TABLE IF NOT EXISTS dict_tag (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '标签名称',
+  parent_id BIGINT DEFAULT NULL COMMENT '父级ID',
+  color VARCHAR(16) COMMENT '颜色值',
+  icon VARCHAR(64) COMMENT '图标',
+  sort INT NOT NULL DEFAULT 0 COMMENT '排序值',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  UNIQUE KEY uk_tag_parent_name (parent_id, name),
+  INDEX idx_tag_parent (parent_id),
+  CONSTRAINT fk_tag_parent FOREIGN KEY (parent_id) REFERENCES dict_tag(id) ON DELETE SET NULL
+) COMMENT='标签字典（树形）';
+
 CREATE TABLE IF NOT EXISTS device_asset (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-  name VARCHAR(200) NOT NULL COMMENT '资产名称',
-  category VARCHAR(100) NOT NULL COMMENT '资产分类',
+  name VARCHAR(200) NOT NULL COMMENT '物品名称',
+  category_id BIGINT COMMENT '类别ID',
+  category_path VARCHAR(500) COMMENT '类别路径（/1/12/118）',
   brand VARCHAR(100) COMMENT '品牌',
   model VARCHAR(200) COMMENT '型号',
   serial_no VARCHAR(200) COMMENT '序列号',
-  status ENUM('使用中','已闲置','待出售','已出售','已丢弃') NOT NULL DEFAULT '使用中' COMMENT '资产状态',
+  status ENUM('使用中','已闲置','待出售','已出售','已丢弃') NOT NULL DEFAULT '使用中' COMMENT '状态',
   purchase_id BIGINT COMMENT '关联采购记录ID',
   purchase_date DATE COMMENT '采购日期',
   enabled_date DATE NOT NULL COMMENT '启用日期',
   retired_date DATE COMMENT '退役日期',
-  tags JSON COMMENT '标签（JSON）',
   cover_image_url VARCHAR(500) COMMENT '封面图片地址',
   notes TEXT COMMENT '备注',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_status (status),
-  INDEX idx_cat_brand (category, brand)
-) COMMENT='设备资产表';
+  INDEX idx_category (category_id),
+  INDEX idx_category_path (category_path(191)),
+  CONSTRAINT fk_asset_category FOREIGN KEY (category_id) REFERENCES dict_category(id)
+) COMMENT='设备物品表';
 
 CREATE TABLE IF NOT EXISTS purchase (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   asset_id BIGINT NOT NULL COMMENT '关联资产ID',
   type ENUM('PRIMARY','ACCESSORY','SERVICE') NOT NULL COMMENT '采购类型',
-  platform VARCHAR(100) COMMENT '采购平台',
+  platform_id BIGINT COMMENT '采购平台ID',
+  platform_name VARCHAR(100) COMMENT '采购平台名称',
   seller VARCHAR(200) COMMENT '卖家',
   price DECIMAL(12,2) NOT NULL COMMENT '采购金额',
   currency VARCHAR(10) DEFAULT 'CNY' COMMENT '货币类型',
@@ -53,13 +93,15 @@ CREATE TABLE IF NOT EXISTS purchase (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_purchase_asset (asset_id),
-  CONSTRAINT fk_purchase_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id)
+  CONSTRAINT fk_purchase_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id),
+  CONSTRAINT fk_purchase_platform FOREIGN KEY (platform_id) REFERENCES dict_platform(id)
 ) COMMENT='采购记录表';
 
 CREATE TABLE IF NOT EXISTS sale (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   asset_id BIGINT NOT NULL COMMENT '关联资产ID',
-  platform VARCHAR(100) COMMENT '出售平台',
+  platform_id BIGINT COMMENT '出售平台ID',
+  platform_name VARCHAR(100) COMMENT '出售平台名称',
   buyer VARCHAR(200) COMMENT '买家',
   sale_price DECIMAL(12,2) NOT NULL COMMENT '出售金额',
   fee DECIMAL(12,2) DEFAULT 0 COMMENT '手续费',
@@ -72,8 +114,19 @@ CREATE TABLE IF NOT EXISTS sale (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_sale_asset (asset_id),
-  CONSTRAINT fk_sale_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id)
+  CONSTRAINT fk_sale_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id),
+  CONSTRAINT fk_sale_platform FOREIGN KEY (platform_id) REFERENCES dict_platform(id)
 ) COMMENT='出售记录表';
+
+CREATE TABLE IF NOT EXISTS asset_tag_map (
+  asset_id BIGINT NOT NULL COMMENT '物品ID',
+  tag_id BIGINT NOT NULL COMMENT '标签ID',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (asset_id, tag_id),
+  INDEX idx_asset_tag_tag (tag_id),
+  CONSTRAINT fk_asset_tag_asset FOREIGN KEY (asset_id) REFERENCES device_asset(id) ON DELETE CASCADE,
+  CONSTRAINT fk_asset_tag_tag FOREIGN KEY (tag_id) REFERENCES dict_tag(id) ON DELETE CASCADE
+) COMMENT='物品标签映射表';
 
 CREATE TABLE IF NOT EXISTS wishlist (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',

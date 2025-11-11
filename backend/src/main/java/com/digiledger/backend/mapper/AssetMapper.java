@@ -10,7 +10,13 @@ import java.util.List;
 public interface AssetMapper {
 
     List<DeviceAsset> findAll(@Param("status") String status,
-                              @Param("keyword") String keyword);
+                              @Param("keyword") String keyword,
+                              @Param("categoryId") Long categoryId,
+                              @Param("categoryPathLike") String categoryPathLike,
+                              @Param("categoryPathSuffix") String categoryPathSuffix,
+                              @Param("platformId") Long platformId,
+                              @Param("tagIds") List<Long> tagIds,
+                              @Param("tagCount") Integer tagCount);
 
     DeviceAsset findById(@Param("id") Long id);
 
@@ -25,4 +31,11 @@ public interface AssetMapper {
     int updatePrimaryInfo(@Param("id") Long id,
                           @Param("purchaseId") Long purchaseId,
                           @Param("purchaseDate") java.time.LocalDate purchaseDate);
+
+    long countByCategory(@Param("categoryId") Long categoryId,
+                         @Param("categoryPathLike") String categoryPathLike,
+                         @Param("categoryPathSuffix") String categoryPathSuffix);
+
+    int updateCategoryPathForCategory(@Param("categoryId") Long categoryId,
+                                      @Param("categoryPath") String categoryPath);
 }

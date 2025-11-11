@@ -14,8 +14,7 @@ public class PurchaseRequest {
     @NotBlank(message = "购买类型不能为空")
     private String type;
 
-    @Size(max = 100, message = "平台名称过长")
-    private String platform;
+    private Long platformId;
 
     @Size(max = 200, message = "卖家信息过长")
     private String seller;
@@ -55,12 +54,12 @@ public class PurchaseRequest {
         this.type = type;
     }
 
-    public String getPlatform() {
-        return platform;
+    public Long getPlatformId() {
+        return platformId;
     }
 
-    public void setPlatform(String platform) {
-        this.platform = platform;
+    public void setPlatformId(Long platformId) {
+        this.platformId = platformId;
     }
 
     public String getSeller() {
