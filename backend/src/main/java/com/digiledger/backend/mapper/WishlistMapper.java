@@ -21,5 +21,5 @@ public interface WishlistMapper {
     int update(WishlistItem item);
 
     int delete(@Param("id") Long id);
-+    int markConverted(@Param("id") Long id, @Param("assetId") Long assetId);
+    int markConverted(@Param("id") Long id, @Param("assetId") Long assetId);
  }
