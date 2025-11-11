@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -341,6 +342,7 @@ public class DictServiceImpl implements DictService {
 
     private void ensureNoTagCycle(Long tagId, Long newParentId) {
         Set<Long> visited = new HashSet<>();
+
         Long current = newParentId;
         while (current != null) {
             if (!visited.add(current)) {
@@ -362,6 +364,8 @@ public class DictServiceImpl implements DictService {
             return;
         }
         Set<Long> visited = new HashSet<>();
+
+
         Long current = newParentId;
         while (current != null) {
             if (!visited.add(current)) {
@@ -405,6 +409,7 @@ public class DictServiceImpl implements DictService {
         Collections.reverse(path);
         return path.stream().map(String::valueOf).collect(Collectors.joining("/", "/", ""));
     }
+
 
     private String buildCategoryLikePattern(Long categoryId, boolean includeDescendants) {
         if (categoryId == null) {
