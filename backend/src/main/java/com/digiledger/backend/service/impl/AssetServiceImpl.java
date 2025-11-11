@@ -3,10 +3,18 @@ package com.digiledger.backend.service.impl;
 import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.mapper.AssetMapper;
+import com.digiledger.backend.mapper.AssetTagMapMapper;
+import com.digiledger.backend.mapper.DictCategoryMapper;
+import com.digiledger.backend.mapper.DictPlatformMapper;
+import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
 import com.digiledger.backend.mapper.SaleMapper;
 import com.digiledger.backend.model.dto.asset.*;
+import com.digiledger.backend.model.entity.AssetTagMap;
 import com.digiledger.backend.model.entity.DeviceAsset;
+import com.digiledger.backend.model.entity.DictCategory;
+import com.digiledger.backend.model.entity.DictPlatform;
+import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
 import com.digiledger.backend.model.entity.Sale;
 import com.digiledger.backend.service.AssetService;
@@ -19,11 +27,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -37,25 +50,51 @@ public class AssetServiceImpl implements AssetService {
     private final AssetMapper assetMapper;
     private final PurchaseMapper purchaseMapper;
     private final SaleMapper saleMapper;
+    private final DictCategoryMapper dictCategoryMapper;
+    private final DictPlatformMapper dictPlatformMapper;
+    private final DictTagMapper dictTagMapper;
+    private final AssetTagMapMapper assetTagMapMapper;
     private final ObjectMapper objectMapper;
 
     public AssetServiceImpl(AssetMapper assetMapper,
                             PurchaseMapper purchaseMapper,
                             SaleMapper saleMapper,
+                            DictCategoryMapper dictCategoryMapper,
+                            DictPlatformMapper dictPlatformMapper,
+                            DictTagMapper dictTagMapper,
+                            AssetTagMapMapper assetTagMapMapper,
                             ObjectMapper objectMapper) {
         this.assetMapper = assetMapper;
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
+        this.dictCategoryMapper = dictCategoryMapper;
+        this.dictPlatformMapper = dictPlatformMapper;
+        this.dictTagMapper = dictTagMapper;
+        this.assetTagMapMapper = assetTagMapMapper;
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public List<AssetSummaryDTO> listAssets(String status, String keyword) {
-        return assetMapper.findAll(status, keyword).stream()
+    public List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds) {
+        if (categoryId != null) {
+            Optional.ofNullable(dictCategoryMapper.findById(categoryId))
+                    .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "类别不存在"));
+        }
+        if (platformId != null) {
+            Optional.ofNullable(dictPlatformMapper.findById(platformId))
+                    .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "平台不存在"));
+        }
+        List<Long> normalizedTagIds = tagIds == null ? null : validateTagIds(tagIds);
+        String categoryLike = buildCategoryLikePattern(categoryId, true);
+        String categorySuffix = buildCategoryLikePattern(categoryId, false);
+        List<DeviceAsset> assets = assetMapper.findAll(status, keyword, categoryId, categoryLike, categorySuffix,
+                platformId, normalizedTagIds, normalizedTagIds == null ? null : normalizedTagIds.size());
+        return assets.stream()
                 .map(asset -> {
                     List<Purchase> purchases = purchaseMapper.findByAssetId(asset.getId());
                     List<Sale> sales = saleMapper.findByAssetId(asset.getId());
-                    return buildSummary(asset, purchases, sales);
+                    List<TagDTO> tags = toTagDTOs(dictTagMapper.findByAssetId(asset.getId()));
+                    return buildSummary(asset, purchases, sales, tags);
                 })
                 .collect(Collectors.toList());
     }
@@ -66,12 +105,14 @@ public class AssetServiceImpl implements AssetService {
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
         List<Purchase> purchases = purchaseMapper.findByAssetId(id);
         List<Sale> sales = saleMapper.findByAssetId(id);
+        List<TagDTO> tags = toTagDTOs(dictTagMapper.findByAssetId(id));
 
         AssetMetrics metrics = calculateMetrics(asset, purchases, sales);
         return new AssetDetailDTO(
                 asset.getId(),
                 asset.getName(),
-                asset.getCategory(),
+                asset.getCategoryId(),
+                asset.getCategoryPath(),
                 asset.getBrand(),
                 asset.getModel(),
                 asset.getSerialNo(),
@@ -81,7 +122,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getRetiredDate(),
                 asset.getCoverImageUrl(),
                 asset.getNotes(),
-                parseTags(asset.getTags()),
+                tags,
                 metrics.totalInvest,
                 metrics.useDays,
                 metrics.avgCostPerDay,
@@ -95,9 +136,14 @@ public class AssetServiceImpl implements AssetService {
     @Transactional
     public Long createAsset(AssetCreateRequest request) {
         validateDates(request);
-        DeviceAsset asset = buildDeviceAsset(request);
+        Map<Long, DictCategory> categoryMap = loadCategoryMap();
+        DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
+        String categoryPath = buildCategoryPath(category.getId(), categoryMap);
+        List<Long> tagIds = validateTagIds(request.getTagIds());
+        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath);
         assetMapper.insert(asset);
-        persistPurchases(asset.getId(), request.getPurchases());
+        persistTags(asset.getId(), tagIds);
+        persistPurchases(asset.getId(), request.getPurchases(), new HashMap<>());
         refreshPrimaryPurchase(asset.getId());
         return asset.getId();
     }
@@ -105,14 +151,19 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public void updateAsset(Long id, AssetCreateRequest request) {
-        DeviceAsset existing = Optional.ofNullable(assetMapper.findById(id))
+        Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
         validateDates(request);
-        DeviceAsset asset = buildDeviceAsset(request);
+        Map<Long, DictCategory> categoryMap = loadCategoryMap();
+        DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
+        String categoryPath = buildCategoryPath(category.getId(), categoryMap);
+        List<Long> tagIds = validateTagIds(request.getTagIds());
+        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath);
         asset.setId(id);
         assetMapper.update(asset);
+        persistTags(id, tagIds);
         purchaseMapper.deleteByAsset(id);
-        persistPurchases(id, request.getPurchases());
+        persistPurchases(id, request.getPurchases(), new HashMap<>());
         refreshPrimaryPurchase(id);
         // 状态变化若为已丢弃则重置售出记录
         if ("已丢弃".equals(asset.getStatus())) {
@@ -144,9 +195,14 @@ public class AssetServiceImpl implements AssetService {
         if (!List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
             throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "资产状态不允许售出");
         }
+        Map<Long, DictPlatform> platformCache = new HashMap<>();
+        DictPlatform salePlatform = resolvePlatform(request.getPlatformId(), platformCache);
         Sale sale = new Sale();
         sale.setAssetId(id);
-        sale.setPlatform(request.getPlatform());
+        if (salePlatform != null) {
+            sale.setPlatformId(salePlatform.getId());
+            sale.setPlatformName(salePlatform.getName());
+        }
         sale.setBuyer(request.getBuyer());
         sale.setSalePrice(request.getSalePrice());
         sale.setFee(defaultZero(request.getFee()));
@@ -185,13 +241,14 @@ public class AssetServiceImpl implements AssetService {
         }
     }
 
-    private DeviceAsset buildDeviceAsset(AssetCreateRequest request) {
+    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
         }
         DeviceAsset asset = new DeviceAsset();
         asset.setName(request.getName());
-        asset.setCategory(request.getCategory());
+        asset.setCategoryId(category != null ? category.getId() : null);
+        asset.setCategoryPath(categoryPath);
         asset.setBrand(request.getBrand());
         asset.setModel(request.getModel());
         asset.setSerialNo(request.getSerialNo());
@@ -201,11 +258,10 @@ public class AssetServiceImpl implements AssetService {
         asset.setRetiredDate(request.getRetiredDate());
         asset.setCoverImageUrl(request.getCoverImageUrl());
         asset.setNotes(request.getNotes());
-        asset.setTags(toJson(request.getTags()));
         return asset;
     }
 
-    private void persistPurchases(Long assetId, List<PurchaseRequest> purchaseRequests) {
+    private void persistPurchases(Long assetId, List<PurchaseRequest> purchaseRequests, Map<Long, DictPlatform> platformCache) {
         if (purchaseRequests == null || purchaseRequests.isEmpty()) {
             return;
         }
@@ -213,11 +269,15 @@ public class AssetServiceImpl implements AssetService {
             Purchase purchase = new Purchase();
             purchase.setAssetId(assetId);
             purchase.setType(request.getType());
-            purchase.setPlatform(request.getPlatform());
+            DictPlatform platform = resolvePlatform(request.getPlatformId(), platformCache);
+            if (platform != null) {
+                purchase.setPlatformId(platform.getId());
+                purchase.setPlatformName(platform.getName());
+            }
             purchase.setSeller(request.getSeller());
             purchase.setPrice(request.getPrice());
-            purchase.setCurrency(request.getCurrency());
-            purchase.setQuantity(request.getQuantity());
+            purchase.setCurrency(Optional.ofNullable(request.getCurrency()).filter(s -> !s.isBlank()).orElse("CNY"));
+            purchase.setQuantity(Optional.ofNullable(request.getQuantity()).orElse(1));
             purchase.setShippingCost(defaultZero(request.getShippingCost()));
             purchase.setPurchaseDate(request.getPurchaseDate());
             purchase.setInvoiceNo(request.getInvoiceNo());
@@ -242,12 +302,13 @@ public class AssetServiceImpl implements AssetService {
         assetMapper.updatePrimaryInfo(assetId, primary.getId(), primary.getPurchaseDate());
     }
 
-    private AssetSummaryDTO buildSummary(DeviceAsset asset, List<Purchase> purchases, List<Sale> sales) {
+    private AssetSummaryDTO buildSummary(DeviceAsset asset, List<Purchase> purchases, List<Sale> sales, List<TagDTO> tags) {
         AssetMetrics metrics = calculateMetrics(asset, purchases, sales);
         return new AssetSummaryDTO(
                 asset.getId(),
                 asset.getName(),
-                asset.getCategory(),
+                asset.getCategoryId(),
+                asset.getCategoryPath(),
                 asset.getStatus(),
                 asset.getCoverImageUrl(),
                 metrics.totalInvest,
@@ -256,7 +317,7 @@ public class AssetServiceImpl implements AssetService {
                 metrics.lastNetIncome,
                 asset.getEnabledDate(),
                 asset.getPurchaseDate(),
-                parseTags(asset.getTags())
+                tags
         );
     }
 
@@ -285,12 +346,12 @@ public class AssetServiceImpl implements AssetService {
         return Math.max(days, 1);
     }
 
-    private List<String> parseTags(String tagsJson) {
-        if (tagsJson == null || tagsJson.isBlank()) {
+    private List<String> parseStringList(String jsonArray) {
+        if (jsonArray == null || jsonArray.isBlank()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(tagsJson, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return objectMapper.readValue(jsonArray, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
@@ -311,7 +372,8 @@ public class AssetServiceImpl implements AssetService {
         return new PurchaseDTO(
                 purchase.getId(),
                 purchase.getType(),
-                purchase.getPlatform(),
+                purchase.getPlatformId(),
+                purchase.getPlatformName(),
                 purchase.getSeller(),
                 purchase.getPrice(),
                 purchase.getShippingCost(),
@@ -321,7 +383,7 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getInvoiceNo(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
-                parseTags(purchase.getAttachments()),
+                parseStringList(purchase.getAttachments()),
                 purchase.getNotes()
         );
     }
@@ -332,7 +394,8 @@ public class AssetServiceImpl implements AssetService {
         }
         return new SaleDTO(
                 sale.getId(),
-                sale.getPlatform(),
+                sale.getPlatformId(),
+                sale.getPlatformName(),
                 sale.getBuyer(),
                 sale.getSalePrice(),
                 sale.getFee(),
@@ -340,9 +403,113 @@ public class AssetServiceImpl implements AssetService {
                 sale.getOtherCost(),
                 sale.getNetIncome(),
                 sale.getSaleDate(),
-                parseTags(sale.getAttachments()),
+                parseStringList(sale.getAttachments()),
                 sale.getNotes()
         );
+    }
+
+    private Map<Long, DictCategory> loadCategoryMap() {
+        return dictCategoryMapper.findAll().stream()
+                .collect(Collectors.toMap(DictCategory::getId, category -> category));
+    }
+
+    private DictCategory resolveLeafCategory(Long categoryId, Map<Long, DictCategory> categoryMap) {
+        if (categoryId == null) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "类别不能为空");
+        }
+        DictCategory category = categoryMap.get(categoryId);
+        if (category == null) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "类别不存在");
+        }
+        if (dictCategoryMapper.countChildren(categoryId) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "类别需选择叶子节点");
+        }
+        return category;
+    }
+
+    private String buildCategoryPath(Long categoryId, Map<Long, DictCategory> categoryMap) {
+        List<Long> path = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        DictCategory current = categoryMap.get(categoryId);
+        while (current != null) {
+            if (!visited.add(current.getId())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "类别层级存在循环");
+            }
+            path.add(current.getId());
+            Long parentId = current.getParentId();
+            if (parentId == null) {
+                break;
+            }
+            current = categoryMap.get(parentId);
+            if (current == null) {
+                current = Optional.ofNullable(dictCategoryMapper.findById(parentId))
+                        .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "类别层级不完整"));
+                categoryMap.put(current.getId(), current);
+            }
+        }
+        Collections.reverse(path);
+        return path.stream().map(String::valueOf).collect(Collectors.joining("/", "/", ""));
+    }
+
+    private List<Long> validateTagIds(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> distinct = tagIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (distinct.isEmpty()) {
+            return List.of();
+        }
+        List<DictTag> tags = dictTagMapper.findByIds(distinct);
+        if (tags.size() != distinct.size()) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "存在无效的标签ID");
+        }
+        return distinct;
+    }
+
+    private void persistTags(Long assetId, List<Long> tagIds) {
+        assetTagMapMapper.deleteByAssetId(assetId);
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        List<AssetTagMap> mappings = tagIds.stream()
+                .map(tagId -> {
+                    AssetTagMap map = new AssetTagMap();
+                    map.setAssetId(assetId);
+                    map.setTagId(tagId);
+                    return map;
+                })
+                .toList();
+        assetTagMapMapper.batchInsert(mappings);
+    }
+
+    private DictPlatform resolvePlatform(Long platformId, Map<Long, DictPlatform> platformCache) {
+        if (platformId == null) {
+            return null;
+        }
+        return platformCache.computeIfAbsent(platformId, id -> Optional.ofNullable(dictPlatformMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "平台不存在")));
+    }
+
+    private String buildCategoryLikePattern(Long categoryId, boolean includeDescendants) {
+        if (categoryId == null) {
+            return null;
+        }
+        if (includeDescendants) {
+            return "%/" + categoryId + "/%";
+        }
+        return "%/" + categoryId;
+    }
+
+    private List<TagDTO> toTagDTOs(List<DictTag> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        return tags.stream()
+                .map(tag -> new TagDTO(tag.getId(), tag.getName(), tag.getColor(), tag.getIcon()))
+                .toList();
     }
 
     private BigDecimal defaultZero(BigDecimal value) {

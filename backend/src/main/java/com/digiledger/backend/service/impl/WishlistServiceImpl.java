@@ -12,6 +12,7 @@ import com.digiledger.backend.service.WishlistService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,19 +72,30 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     @Transactional
-    public Long convertToAsset(Long id) {
+    public Long convertToAsset(Long id, AssetCreateRequest request) {
         WishlistItem item = Optional.ofNullable(wishlistMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
         if (item.getConvertedAssetId() != null) {
             return item.getConvertedAssetId();
         }
-        AssetCreateRequest request = new AssetCreateRequest();
-        request.setName(item.getName());
-        request.setCategory(Optional.ofNullable(item.getCategory()).orElse("心愿资产"));
-        request.setBrand(item.getBrand());
-        request.setModel(item.getModel());
-        request.setStatus("使用中");
-        request.setEnabledDate(java.time.LocalDate.now());
+        if (request.getName() == null || request.getName().isBlank()) {
+            request.setName(item.getName());
+        }
+        if (request.getBrand() == null || request.getBrand().isBlank()) {
+            request.setBrand(item.getBrand());
+        }
+        if (request.getModel() == null || request.getModel().isBlank()) {
+            request.setModel(item.getModel());
+        }
+        if (request.getNotes() == null || request.getNotes().isBlank()) {
+            request.setNotes(item.getNotes());
+        }
+        if (request.getStatus() == null || request.getStatus().isBlank()) {
+            request.setStatus("使用中");
+        }
+        if (request.getEnabledDate() == null) {
+            request.setEnabledDate(LocalDate.now());
+        }
         Long assetId = assetService.createAsset(request);
         wishlistMapper.markConverted(id, assetId);
         return assetId;

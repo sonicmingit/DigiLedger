@@ -12,8 +12,10 @@ public class Sale {
     private Long id;
     /** 资产 ID */
     private Long assetId;
-    /** 出售平台 */
-    private String platform;
+    /** 出售平台 ID */
+    private Long platformId;
+    /** 出售平台名称（冗余） */
+    private String platformName;
     /** 买家名称 */
     private String buyer;
     /** 售价 */

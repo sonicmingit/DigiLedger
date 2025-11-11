@@ -6,7 +6,8 @@
     <resultMap id="assetResultMap" type="com.digiledger.backend.model.entity.DeviceAsset">
         <id column="id" property="id" />
         <result column="name" property="name" />
-        <result column="category" property="category" />
+        <result column="category_id" property="categoryId" />
+        <result column="category_path" property="categoryPath" />
         <result column="brand" property="brand" />
         <result column="model" property="model" />
         <result column="serial_no" property="serialNo" />
@@ -15,7 +16,6 @@
         <result column="purchase_date" property="purchaseDate" />
         <result column="enabled_date" property="enabledDate" />
         <result column="retired_date" property="retiredDate" />
-        <result column="tags" property="tags" />
         <result column="cover_image_url" property="coverImageUrl" />
         <result column="notes" property="notes" />
         <result column="created_at" property="createdAt" />
@@ -23,31 +23,52 @@
     </resultMap>
 
     <sql id="baseColumns">
-        id, name, category, brand, model, serial_no, status,
+        id, name, category_id, category_path, brand, model, serial_no, status,
         purchase_id, purchase_date, enabled_date, retired_date,
-        tags, cover_image_url, notes, created_at, updated_at
+        cover_image_url, notes, created_at, updated_at
     </sql>
 
     <select id="findAll" resultMap="assetResultMap">
-        SELECT <include refid="baseColumns"/> FROM device_asset
+        SELECT <include refid="baseColumns"/>
+        FROM device_asset da
+        <if test="tagIds != null and tagIds.size() > 0">
+            INNER JOIN (
+                SELECT atm.asset_id
+                FROM asset_tag_map atm
+                WHERE atm.tag_id IN
+                <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+                    #{tagId}
+                </foreach>
+                GROUP BY atm.asset_id
+                HAVING COUNT(DISTINCT atm.tag_id) = #{tagCount}
+            ) tag_filter ON tag_filter.asset_id = da.id
+        </if>
         <where>
             <if test="status != null and status != ''">
-                status = #{status}
+                AND da.status = #{status}
             </if>
             <if test="keyword != null and keyword != ''">
-                <choose>
-                    <when test="status != null and status != ''">
-                        AND
-                    </when>
-                </choose>
-                (
-                    name LIKE CONCAT('%', #{keyword}, '%')
-                    OR brand LIKE CONCAT('%', #{keyword}, '%')
-                    OR model LIKE CONCAT('%', #{keyword}, '%')
+                AND (
+                    da.name LIKE CONCAT('%', #{keyword}, '%')
+                    OR da.brand LIKE CONCAT('%', #{keyword}, '%')
+                    OR da.model LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="categoryId != null">
+                AND (
+                    da.category_id = #{categoryId}
+                    <if test="categoryPathLike != null">OR da.category_path LIKE #{categoryPathLike}</if>
+                    <if test="categoryPathSuffix != null">OR da.category_path LIKE #{categoryPathSuffix}</if>
+                )
+            </if>
+            <if test="platformId != null">
+                AND EXISTS (
+                    SELECT 1 FROM purchase p
+                    WHERE p.asset_id = da.id AND p.platform_id = #{platformId}
                 )
             </if>
         </where>
-        ORDER BY updated_at DESC
+        ORDER BY da.updated_at DESC
     </select>
 
     <select id="findById" parameterType="long" resultMap="assetResultMap">
@@ -56,13 +77,13 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_asset (
-            name, category, brand, model, serial_no, status,
+            name, category_id, category_path, brand, model, serial_no, status,
             purchase_id, purchase_date, enabled_date, retired_date,
-            tags, cover_image_url, notes
+            cover_image_url, notes
         ) VALUES (
-            #{name}, #{category}, #{brand}, #{model}, #{serialNo}, #{status},
+            #{name}, #{categoryId}, #{categoryPath}, #{brand}, #{model}, #{serialNo}, #{status},
             #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
-            #{tags}, #{coverImageUrl}, #{notes}
+            #{coverImageUrl}, #{notes}
         )
     </insert>
 
@@ -70,7 +91,8 @@
         UPDATE device_asset
         <set>
             <if test="name != null">name = #{name},</if>
-            <if test="category != null">category = #{category},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="categoryPath != null">category_path = #{categoryPath},</if>
             <if test="brand != null">brand = #{brand},</if>
             <if test="model != null">model = #{model},</if>
             <if test="serialNo != null">serial_no = #{serialNo},</if>
@@ -79,7 +101,6 @@
             <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
             <if test="enabledDate != null">enabled_date = #{enabledDate},</if>
             <if test="retiredDate != null">retired_date = #{retiredDate},</if>
-            <if test="tags != null">tags = #{tags},</if>
             <if test="coverImageUrl != null">cover_image_url = #{coverImageUrl},</if>
             <if test="notes != null">notes = #{notes},</if>
             updated_at = CURRENT_TIMESTAMP
@@ -104,6 +125,23 @@
             purchase_date = #{purchaseDate},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
+    </update>
+
+    <select id="countByCategory" resultType="long">
+        SELECT COUNT(1)
+        FROM device_asset da
+        WHERE (
+            da.category_id = #{categoryId}
+            <if test="categoryPathLike != null">OR da.category_path LIKE #{categoryPathLike}</if>
+            <if test="categoryPathSuffix != null">OR da.category_path LIKE #{categoryPathSuffix}</if>
+        )
+    </select>
+
+    <update id="updateCategoryPathForCategory">
+        UPDATE device_asset
+        SET category_path = #{categoryPath},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE category_id = #{categoryId}
     </update>
 
 </mapper>

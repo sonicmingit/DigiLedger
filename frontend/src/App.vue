@@ -5,12 +5,13 @@
         <div class="logo">DigiLedger</div>
         <el-menu :default-active="active" router>
           <el-menu-item index="/">仪表盘</el-menu-item>
-          <el-menu-item index="/assets">资产中心</el-menu-item>
+          <el-menu-item index="/assets">物品中心</el-menu-item>
           <el-menu-item index="/wishlist">心愿单</el-menu-item>
+          <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>
-        <el-header class="header">数码资产全生命周期管理</el-header>
+        <el-header class="header">数码物品全生命周期管理</el-header>
         <el-main class="main">
           <RouterView />
         </el-main>
@@ -27,6 +28,7 @@ const route = useRoute()
 const active = computed(() => {
   if (route.path.startsWith('/assets')) return '/assets'
   if (route.path.startsWith('/wishlist')) return '/wishlist'
+  if (route.path.startsWith('/settings')) return '/settings'
   return '/'
 })
 </script>

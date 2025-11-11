@@ -10,7 +10,8 @@ import java.util.List;
 public record PurchaseDTO(
         Long id,
         String type,
-        String platform,
+        Long platformId,
+        String platformName,
         String seller,
         BigDecimal price,
         BigDecimal shippingCost,

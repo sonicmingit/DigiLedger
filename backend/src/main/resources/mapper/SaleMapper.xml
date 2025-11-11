@@ -6,7 +6,8 @@
     <resultMap id="saleResultMap" type="com.digiledger.backend.model.entity.Sale">
         <id column="id" property="id" />
         <result column="asset_id" property="assetId" />
-        <result column="platform" property="platform" />
+        <result column="platform_id" property="platformId" />
+        <result column="platform_name" property="platformName" />
         <result column="buyer" property="buyer" />
         <result column="sale_price" property="salePrice" />
         <result column="fee" property="fee" />
@@ -34,10 +35,10 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.Sale" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sale (
-            asset_id, platform, buyer, sale_price, fee, shipping_cost,
+            asset_id, platform_id, platform_name, buyer, sale_price, fee, shipping_cost,
             other_cost, net_income, sale_date, attachments, notes
         ) VALUES (
-            #{assetId}, #{platform}, #{buyer}, #{salePrice}, #{fee}, #{shippingCost},
+            #{assetId}, #{platformId}, #{platformName}, #{buyer}, #{salePrice}, #{fee}, #{shippingCost},
             #{otherCost}, #{netIncome}, #{saleDate}, #{attachments}, #{notes}
         )
     </insert>
@@ -48,6 +49,10 @@
 
     <select id="countByAsset" parameterType="long" resultType="int">
         SELECT COUNT(1) FROM sale WHERE asset_id = #{assetId}
+    </select>
+
+    <select id="countByPlatform" parameterType="long" resultType="long">
+        SELECT COUNT(1) FROM sale WHERE platform_id = #{platformId}
     </select>
 
 </mapper>

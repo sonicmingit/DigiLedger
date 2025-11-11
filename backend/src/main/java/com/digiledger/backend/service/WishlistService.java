@@ -1,5 +1,6 @@
 package com.digiledger.backend.service;
 
+import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.wishlist.WishlistDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistRequest;
 
@@ -20,5 +21,5 @@ public interface WishlistService {
 
     void delete(Long id);
 
-    Long convertToAsset(Long id);
+    Long convertToAsset(Long id, AssetCreateRequest request);
 }

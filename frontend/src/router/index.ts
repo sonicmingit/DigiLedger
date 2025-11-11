@@ -3,6 +3,7 @@ import Dashboard from '@/views/Dashboard.vue'
 import AssetList from '@/views/assets/AssetList.vue'
 import AssetDetail from '@/views/assets/AssetDetail.vue'
 import WishlistList from '@/views/wishlist/WishlistList.vue'
+import SystemSettings from '@/views/settings/SystemSettings.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,6 +28,11 @@ const router = createRouter({
       path: '/wishlist',
       name: 'wishlist',
       component: WishlistList
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SystemSettings
     }
   ]
 })

@@ -1,8 +1,10 @@
 <template>
   <el-dialog v-model="visible" title="出售向导" width="500px" @closed="reset">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-      <el-form-item label="平台" prop="platform">
-        <el-input v-model="form.platform" placeholder="如：闲鱼" />
+      <el-form-item label="平台" prop="platformId">
+        <el-select v-model="form.platformId" placeholder="选择平台" filterable clearable>
+          <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="买家" prop="buyer">
         <el-input v-model="form.buyer" placeholder="可选填写" />
@@ -34,10 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { sellAsset } from '@/api/asset'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import { useDictionaries } from '@/composables/useDictionaries'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
 
@@ -45,8 +48,10 @@ const visible = ref(false)
 const assetInfo = ref<{ id: number; name: string } | null>(null)
 const loading = ref(false)
 
+const { load: loadDicts, platforms } = useDictionaries()
+
 const form = reactive({
-  platform: '',
+  platformId: undefined as number | undefined,
   buyer: '',
   salePrice: 0,
   fee: 0,
@@ -70,7 +75,7 @@ const open = (asset: { id: number; name: string }) => {
 
 const reset = () => {
   Object.assign(form, {
-    platform: '',
+    platformId: undefined,
     buyer: '',
     salePrice: 0,
     fee: 0,
@@ -98,4 +103,8 @@ const submit = () => {
 }
 
 defineExpose({ open })
+
+onMounted(async () => {
+  await loadDicts()
+})
 </script>
