@@ -1,4 +1,5 @@
 import http from './http'
+import type { AssetPayload } from './asset'
 import type { WishlistItem } from '../types'
 
 // 获取心愿单列表
@@ -36,5 +37,5 @@ export const updateWishlist = (
 // 删除心愿条目
 export const deleteWishlist = (id: number) => http.delete<void>(`/wishlist/${id}`)
 
-// 转换心愿条目为资产，返回新资产 ID
-export const convertWishlist = (id: number) => http.post<number>(`/wishlist/${id}/convert`, {})
+// 转换心愿条目为物品，返回新物品 ID
+export const convertWishlist = (id: number, payload: AssetPayload) => http.post<number>(`/wishlist/${id}/convert`, payload)

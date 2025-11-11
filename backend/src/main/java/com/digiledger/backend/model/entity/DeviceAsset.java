@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 public class DeviceAsset {
     /** 主键 ID */
     private Long id;
-    /** 资产名称 */
+    /** 物品名称 */
     private String name;
-    /** 资产类别 */
-    private String category;
+    /** 类别 ID（叶子节点） */
+    private Long categoryId;
+    /** 类别路径（/1/2/3） */
+    private String categoryPath;
     /** 品牌 */
     private String brand;
     /** 型号 */
@@ -29,8 +31,6 @@ public class DeviceAsset {
     private LocalDate enabledDate;
     /** 报废日期 */
     private LocalDate retiredDate;
-    /** 标签 JSON 字符串 */
-    private String tags;
     /** 封面图 URL */
     private String coverImageUrl;
     /** 备注 */

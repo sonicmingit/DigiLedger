@@ -14,8 +14,10 @@ public class Purchase {
     private Long assetId;
     /** 购买类型 */
     private String type;
-    /** 购买平台 */
-    private String platform;
+    /** 购买平台 ID */
+    private Long platformId;
+    /** 购买平台名称（冗余） */
+    private String platformName;
     /** 卖家信息 */
     private String seller;
     /** 金额 */
