@@ -30,7 +30,7 @@ public class WishlistController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<WishlistDTO> detail(@PathVariable @NotNull @Min(1) Long id) {
+    public ApiResponse<WishlistDTO> detail(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         return ApiResponse.success(wishlistService.getById(id));
     }
 
@@ -40,20 +40,20 @@ public class WishlistController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Void> update(@PathVariable @NotNull @Min(1) Long id,
+    public ApiResponse<Void> update(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                     @RequestBody @Valid WishlistRequest request) {
         wishlistService.update(id, request);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable @NotNull @Min(1) Long id) {
+    public ApiResponse<Void> delete(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         wishlistService.delete(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/convert")
-    public ApiResponse<Long> convert(@PathVariable @NotNull @Min(1) Long id) {
+    public ApiResponse<Long> convert(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         return ApiResponse.success(wishlistService.convertToAsset(id));
     }
 }
