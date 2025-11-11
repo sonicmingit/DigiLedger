@@ -31,8 +31,8 @@ public class AssetController {
      * 资产列表，支持状态与关键词过滤。
      */
     @GetMapping
-    public ApiResponse<List<AssetSummaryDTO>> listAssets(@RequestParam(required = false) String status,
-                                                         @RequestParam(required = false) String keyword) {
+    public ApiResponse<List<AssetSummaryDTO>> listAssets(@RequestParam(name = "status", required = false) String status,
+                                                         @RequestParam(name = "keyword", required = false) String keyword) {
         return ApiResponse.success(assetService.listAssets(status, keyword));
     }
 
@@ -40,7 +40,7 @@ public class AssetController {
      * 获取资产详情。
      */
     @GetMapping("/{id}")
-    public ApiResponse<AssetDetailDTO> getAsset(@PathVariable @NotNull @Min(1) Long id) {
+    public ApiResponse<AssetDetailDTO> getAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         return ApiResponse.success(assetService.getAssetDetail(id));
     }
 
@@ -56,7 +56,7 @@ public class AssetController {
      * 更新资产信息。
      */
     @PutMapping("/{id}")
-    public ApiResponse<Void> updateAsset(@PathVariable @NotNull @Min(1) Long id,
+    public ApiResponse<Void> updateAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                          @RequestBody @Valid AssetCreateRequest request) {
         assetService.updateAsset(id, request);
         return ApiResponse.success();
@@ -66,7 +66,7 @@ public class AssetController {
      * 删除资产，存在关联记录时将返回业务冲突错误。
      */
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteAsset(@PathVariable @NotNull @Min(1) Long id) {
+    public ApiResponse<Void> deleteAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         assetService.deleteAsset(id);
         return ApiResponse.success();
     }
@@ -75,7 +75,7 @@ public class AssetController {
      * 出售向导，创建售出记录并更新资产状态。
      */
     @PostMapping("/{id}/sell")
-    public ApiResponse<SaleDTO> sellAsset(@PathVariable @NotNull @Min(1) Long id,
+    public ApiResponse<SaleDTO> sellAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                           @RequestBody @Valid AssetSellRequest request) {
         return ApiResponse.success(assetService.sellAsset(id, request));
     }
