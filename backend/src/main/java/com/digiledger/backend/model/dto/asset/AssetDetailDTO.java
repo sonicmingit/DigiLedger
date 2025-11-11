@@ -13,7 +13,8 @@ import java.util.List;
 public record AssetDetailDTO(
         Long id,
         String name,
-        String category,
+        Long categoryId,
+        String categoryPath,
         String brand,
         String model,
         String serialNo,
@@ -23,7 +24,7 @@ public record AssetDetailDTO(
         LocalDate retiredDate,
         String coverImageUrl,
         String notes,
-        List<String> tags,
+        List<TagDTO> tags,
         BigDecimal totalInvest,
         long useDays,
         BigDecimal avgCostPerDay,

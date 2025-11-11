@@ -15,9 +15,8 @@ public class AssetCreateRequest {
     @Size(max = 200, message = "名称长度需在 200 字以内")
     private String name;
 
-    @NotBlank(message = "类别不能为空")
-    @Size(max = 100, message = "类别长度需在 100 字以内")
-    private String category;
+    @NotNull(message = "类别不能为空")
+    private Long categoryId;
 
     @Size(max = 100, message = "品牌长度需在 100 字以内")
     private String brand;
@@ -43,7 +42,7 @@ public class AssetCreateRequest {
 
     private String notes;
 
-    private List<@Size(max = 50, message = "单个标签长度需在 50 字以内") String> tags;
+    private List<@NotNull(message = "标签ID不能为空") Long> tagIds;
 
     @Valid
     private List<PurchaseRequest> purchases;
@@ -56,12 +55,12 @@ public class AssetCreateRequest {
         this.name = name;
     }
 
-    public String getCategory() {
-        return category;
+    public Long getCategoryId() {
+        return categoryId;
     }
 
-    public void setCategory(String category) {
-        this.category = category;
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public String getBrand() {
@@ -136,12 +135,12 @@ public class AssetCreateRequest {
         this.notes = notes;
     }
 
-    public List<String> getTags() {
-        return tags;
+    public List<Long> getTagIds() {
+        return tagIds;
     }
 
-    public void setTags(List<String> tags) {
-        this.tags = tags;
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds;
     }
 
     public List<PurchaseRequest> getPurchases() {

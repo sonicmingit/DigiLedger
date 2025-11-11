@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.AssetTagMapMapper">
+
+    <delete id="deleteByAssetId" parameterType="long">
+        DELETE FROM asset_tag_map WHERE asset_id = #{assetId}
+    </delete>
+
+    <insert id="batchInsert">
+        INSERT INTO asset_tag_map (asset_id, tag_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.assetId}, #{item.tagId})
+        </foreach>
+    </insert>
+
+    <select id="countByTagId" parameterType="long" resultType="long">
+        SELECT COUNT(1) FROM asset_tag_map WHERE tag_id = #{tagId}
+    </select>
+
+</mapper>

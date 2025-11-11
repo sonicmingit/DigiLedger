@@ -9,7 +9,8 @@ import java.util.List;
  */
 public record SaleDTO(
         Long id,
-        String platform,
+        Long platformId,
+        String platformName,
         String buyer,
         BigDecimal salePrice,
         BigDecimal fee,

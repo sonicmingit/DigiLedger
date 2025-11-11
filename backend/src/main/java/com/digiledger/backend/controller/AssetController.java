@@ -32,8 +32,13 @@ public class AssetController {
      */
     @GetMapping
     public ApiResponse<List<AssetSummaryDTO>> listAssets(@RequestParam(name = "status", required = false) String status,
-                                                         @RequestParam(name = "keyword", required = false) String keyword) {
-        return ApiResponse.success(assetService.listAssets(status, keyword));
+                                                         @RequestParam(name = "keyword", required = false) String keyword,
+                                                         @RequestParam(name = "q", required = false) String q,
+                                                         @RequestParam(name = "category_id", required = false) Long categoryId,
+                                                         @RequestParam(name = "platform_id", required = false) Long platformId,
+                                                         @RequestParam(name = "tag_ids", required = false) List<Long> tagIds) {
+        String search = keyword != null ? keyword : q;
+        return ApiResponse.success(assetService.listAssets(status, search, categoryId, platformId, tagIds));
     }
 
     /**
