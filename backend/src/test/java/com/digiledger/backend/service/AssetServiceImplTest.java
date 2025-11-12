@@ -61,10 +61,10 @@ class AssetServiceImplTest {
                 purchaseMapper,
                 saleMapper,
                 dictCategoryMapper,
+                dictBrandMapper,
                 dictPlatformMapper,
                 dictTagMapper,
                 assetTagMapMapper,
-                dictBrandMapper,
                 new ObjectMapper()
         );
     }
