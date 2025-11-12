@@ -8,6 +8,7 @@
         <result column="name" property="name" />
         <result column="category_id" property="categoryId" />
         <result column="category_path" property="categoryPath" />
+        <result column="brand_id" property="brandId" />
         <result column="brand" property="brand" />
         <result column="model" property="model" />
         <result column="serial_no" property="serialNo" />
@@ -23,7 +24,7 @@
     </resultMap>
 
     <sql id="baseColumns">
-        id, name, category_id, category_path, brand, model, serial_no, status,
+        id, name, category_id, category_path, brand_id, brand, model, serial_no, status,
         purchase_id, purchase_date, enabled_date, retired_date,
         cover_image_url, notes, created_at, updated_at
     </sql>
@@ -77,11 +78,11 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_asset (
-            name, category_id, category_path, brand, model, serial_no, status,
+            name, category_id, category_path, brand_id, brand, model, serial_no, status,
             purchase_id, purchase_date, enabled_date, retired_date,
             cover_image_url, notes
         ) VALUES (
-            #{name}, #{categoryId}, #{categoryPath}, #{brand}, #{model}, #{serialNo}, #{status},
+            #{name}, #{categoryId}, #{categoryPath}, #{brandId}, #{brand}, #{model}, #{serialNo}, #{status},
             #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
             #{coverImageUrl}, #{notes}
         )
@@ -93,6 +94,7 @@
             <if test="name != null">name = #{name},</if>
             <if test="categoryId != null">category_id = #{categoryId},</if>
             <if test="categoryPath != null">category_path = #{categoryPath},</if>
+            <if test="brandId != null">brand_id = #{brandId},</if>
             <if test="brand != null">brand = #{brand},</if>
             <if test="model != null">model = #{model},</if>
             <if test="serialNo != null">serial_no = #{serialNo},</if>
@@ -143,5 +145,9 @@
             updated_at = CURRENT_TIMESTAMP
         WHERE category_id = #{categoryId}
     </update>
+
+    <select id="countByBrandId" resultType="long">
+        SELECT COUNT(1) FROM device_asset WHERE brand_id = #{brandId}
+    </select>
 
 </mapper>

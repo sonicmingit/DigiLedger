@@ -18,6 +18,8 @@ public class AssetCreateRequest {
     @NotNull(message = "类别不能为空")
     private Long categoryId;
 
+    private Long brandId;
+
     @Size(max = 100, message = "品牌长度需在 100 字以内")
     private String brand;
 
@@ -61,6 +63,14 @@ public class AssetCreateRequest {
 
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public Long getBrandId() {
+        return brandId;
+    }
+
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
     }
 
     public String getBrand() {

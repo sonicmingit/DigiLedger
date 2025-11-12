@@ -81,8 +81,11 @@ public class WishlistServiceImpl implements WishlistService {
         if (request.getName() == null || request.getName().isBlank()) {
             request.setName(item.getName());
         }
-        if (request.getBrand() == null || request.getBrand().isBlank()) {
-            request.setBrand(item.getBrand());
+        if (request.getCategoryId() == null) {
+            request.setCategoryId(item.getCategoryId());
+        }
+        if (request.getBrandId() == null) {
+            request.setBrandId(item.getBrandId());
         }
         if (request.getModel() == null || request.getModel().isBlank()) {
             request.setModel(item.getModel());
@@ -102,16 +105,17 @@ public class WishlistServiceImpl implements WishlistService {
     }
 
     private WishlistItem buildEntity(WishlistRequest request) {
+        validateStatus(request.getStatus());
         WishlistItem item = new WishlistItem();
         item.setName(request.getName());
-        item.setCategory(request.getCategory());
-        item.setBrand(request.getBrand());
+        item.setCategoryId(request.getCategoryId());
+        item.setBrandId(request.getBrandId());
         item.setModel(request.getModel());
         item.setExpectedPrice(request.getExpectedPrice());
-        item.setPlannedPlatform(request.getPlannedPlatform());
+        item.setImageUrl(request.getImageUrl());
         item.setLink(request.getLink());
+        item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
         item.setNotes(request.getNotes());
-        item.setPriority(request.getPriority());
         return item;
     }
 
@@ -119,17 +123,26 @@ public class WishlistServiceImpl implements WishlistService {
         return new WishlistDTO(
                 item.getId(),
                 item.getName(),
-                item.getCategory(),
-                item.getBrand(),
+                item.getCategoryId(),
+                item.getBrandId(),
                 item.getModel(),
                 item.getExpectedPrice(),
-                item.getPlannedPlatform(),
+                item.getImageUrl(),
                 item.getLink(),
+                item.getStatus(),
                 item.getNotes(),
-                item.getPriority(),
                 item.getConvertedAssetId(),
                 item.getCreatedAt(),
                 item.getUpdatedAt()
         );
+    }
+
+    private void validateStatus(String status) {
+        if (status == null) {
+            return;
+        }
+        if (!List.of("未购买", "已购买").contains(status)) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "心愿状态非法");
+        }
     }
 }

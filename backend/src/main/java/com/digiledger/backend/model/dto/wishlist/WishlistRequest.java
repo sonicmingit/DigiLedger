@@ -15,11 +15,9 @@ public class WishlistRequest {
     @Size(max = 200, message = "名称过长")
     private String name;
 
-    @Size(max = 100, message = "类别过长")
-    private String category;
+    private Long categoryId;
 
-    @Size(max = 100, message = "品牌过长")
-    private String brand;
+    private Long brandId;
 
     @Size(max = 200, message = "型号过长")
     private String model;
@@ -27,15 +25,16 @@ public class WishlistRequest {
     @DecimalMin(value = "0", message = "期望价格需大于等于 0")
     private BigDecimal expectedPrice;
 
-    @Size(max = 100, message = "平台名称过长")
-    private String plannedPlatform;
+    @Size(max = 500, message = "图片链接过长")
+    private String imageUrl;
 
     @Size(max = 500, message = "链接过长")
     private String link;
 
-    private String notes;
+    @NotBlank(message = "状态不能为空")
+    private String status;
 
-    private Integer priority;
+    private String notes;
 
     public String getName() {
         return name;
@@ -45,20 +44,20 @@ public class WishlistRequest {
         this.name = name;
     }
 
-    public String getCategory() {
-        return category;
+    public Long getCategoryId() {
+        return categoryId;
     }
 
-    public void setCategory(String category) {
-        this.category = category;
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
-    public String getBrand() {
-        return brand;
+    public Long getBrandId() {
+        return brandId;
     }
 
-    public void setBrand(String brand) {
-        this.brand = brand;
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
     }
 
     public String getModel() {
@@ -77,12 +76,12 @@ public class WishlistRequest {
         this.expectedPrice = expectedPrice;
     }
 
-    public String getPlannedPlatform() {
-        return plannedPlatform;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setPlannedPlatform(String plannedPlatform) {
-        this.plannedPlatform = plannedPlatform;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getLink() {
@@ -93,19 +92,19 @@ public class WishlistRequest {
         this.link = link;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getNotes() {
         return notes;
     }
 
     public void setNotes(String notes) {
         this.notes = notes;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
     }
 }

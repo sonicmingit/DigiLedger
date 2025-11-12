@@ -15,6 +15,7 @@ public record AssetDetailDTO(
         String name,
         Long categoryId,
         String categoryPath,
+        Long brandId,
         String brand,
         String model,
         String serialNo,

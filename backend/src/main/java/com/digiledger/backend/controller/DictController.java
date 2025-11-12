@@ -1,6 +1,8 @@
 package com.digiledger.backend.controller;
 
 import com.digiledger.backend.common.ApiResponse;
+import com.digiledger.backend.model.dto.dict.BrandDTO;
+import com.digiledger.backend.model.dto.dict.BrandRequest;
 import com.digiledger.backend.model.dto.dict.CategoryRequest;
 import com.digiledger.backend.model.dto.dict.CategoryTreeNodeDTO;
 import com.digiledger.backend.model.dto.dict.PlatformDTO;
@@ -75,6 +77,29 @@ public class DictController {
     @DeleteMapping("/platforms/{id}")
     public ApiResponse<Void> deletePlatform(@PathVariable("id") @NotNull @Min(1) Long id) {
         dictService.deletePlatform(id);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/brands")
+    public ApiResponse<List<BrandDTO>> listBrands() {
+        return ApiResponse.success(dictService.listBrands());
+    }
+
+    @PostMapping("/brands")
+    public ApiResponse<Long> createBrand(@RequestBody @Valid BrandRequest request) {
+        return ApiResponse.success(dictService.createBrand(request));
+    }
+
+    @PutMapping("/brands/{id}")
+    public ApiResponse<Void> updateBrand(@PathVariable("id") @NotNull @Min(1) Long id,
+                                         @RequestBody @Valid BrandRequest request) {
+        dictService.updateBrand(id, request);
+        return ApiResponse.success();
+    }
+
+    @DeleteMapping("/brands/{id}")
+    public ApiResponse<Void> deleteBrand(@PathVariable("id") @NotNull @Min(1) Long id) {
+        dictService.deleteBrand(id);
         return ApiResponse.success();
     }
 

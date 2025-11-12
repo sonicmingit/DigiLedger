@@ -4,6 +4,7 @@ import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.mapper.AssetMapper;
 import com.digiledger.backend.mapper.AssetTagMapMapper;
+import com.digiledger.backend.mapper.DictBrandMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictPlatformMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
@@ -12,6 +13,7 @@ import com.digiledger.backend.mapper.SaleMapper;
 import com.digiledger.backend.model.dto.asset.*;
 import com.digiledger.backend.model.entity.AssetTagMap;
 import com.digiledger.backend.model.entity.DeviceAsset;
+import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
@@ -51,6 +53,7 @@ public class AssetServiceImpl implements AssetService {
     private final PurchaseMapper purchaseMapper;
     private final SaleMapper saleMapper;
     private final DictCategoryMapper dictCategoryMapper;
+    private final DictBrandMapper dictBrandMapper;
     private final DictPlatformMapper dictPlatformMapper;
     private final DictTagMapper dictTagMapper;
     private final AssetTagMapMapper assetTagMapMapper;
@@ -60,6 +63,7 @@ public class AssetServiceImpl implements AssetService {
                             PurchaseMapper purchaseMapper,
                             SaleMapper saleMapper,
                             DictCategoryMapper dictCategoryMapper,
+                            DictBrandMapper dictBrandMapper,
                             DictPlatformMapper dictPlatformMapper,
                             DictTagMapper dictTagMapper,
                             AssetTagMapMapper assetTagMapMapper,
@@ -68,6 +72,7 @@ public class AssetServiceImpl implements AssetService {
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
         this.dictCategoryMapper = dictCategoryMapper;
+        this.dictBrandMapper = dictBrandMapper;
         this.dictPlatformMapper = dictPlatformMapper;
         this.dictTagMapper = dictTagMapper;
         this.assetTagMapMapper = assetTagMapMapper;
@@ -113,6 +118,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getName(),
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
+                asset.getBrandId(),
                 asset.getBrand(),
                 asset.getModel(),
                 asset.getSerialNo(),
@@ -140,7 +146,8 @@ public class AssetServiceImpl implements AssetService {
         DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
         List<Long> tagIds = validateTagIds(request.getTagIds());
-        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath);
+        DictBrand brand = resolveBrand(request.getBrandId());
+        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
         assetMapper.insert(asset);
         persistTags(asset.getId(), tagIds);
         persistPurchases(asset.getId(), request.getPurchases(), new HashMap<>());
@@ -158,7 +165,8 @@ public class AssetServiceImpl implements AssetService {
         DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
         List<Long> tagIds = validateTagIds(request.getTagIds());
-        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath);
+        DictBrand brand = resolveBrand(request.getBrandId());
+        DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
         asset.setId(id);
         assetMapper.update(asset);
         persistTags(id, tagIds);
@@ -241,7 +249,7 @@ public class AssetServiceImpl implements AssetService {
         }
     }
 
-    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath) {
+    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brandDict) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
         }
@@ -249,7 +257,13 @@ public class AssetServiceImpl implements AssetService {
         asset.setName(request.getName());
         asset.setCategoryId(category != null ? category.getId() : null);
         asset.setCategoryPath(categoryPath);
-        asset.setBrand(request.getBrand());
+        if (brandDict != null) {
+            asset.setBrandId(brandDict.getId());
+            asset.setBrand(brandDict.getName());
+        } else {
+            asset.setBrandId(request.getBrandId());
+            asset.setBrand(request.getBrand());
+        }
         asset.setModel(request.getModel());
         asset.setSerialNo(request.getSerialNo());
         asset.setStatus(request.getStatus());
@@ -266,9 +280,11 @@ public class AssetServiceImpl implements AssetService {
             return;
         }
         for (PurchaseRequest request : purchaseRequests) {
+            validatePurchaseName(request);
             Purchase purchase = new Purchase();
             purchase.setAssetId(assetId);
             purchase.setType(request.getType());
+            purchase.setName(request.getName());
             DictPlatform platform = resolvePlatform(request.getPlatformId(), platformCache);
             if (platform != null) {
                 purchase.setPlatformId(platform.getId());
@@ -372,6 +388,7 @@ public class AssetServiceImpl implements AssetService {
         return new PurchaseDTO(
                 purchase.getId(),
                 purchase.getType(),
+                purchase.getName(),
                 purchase.getPlatformId(),
                 purchase.getPlatformName(),
                 purchase.getSeller(),
@@ -491,6 +508,27 @@ public class AssetServiceImpl implements AssetService {
         }
         return platformCache.computeIfAbsent(platformId, id -> Optional.ofNullable(dictPlatformMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "平台不存在")));
+    }
+
+    private DictBrand resolveBrand(Long brandId) {
+        if (brandId == null) {
+            return null;
+        }
+        return Optional.ofNullable(dictBrandMapper.findById(brandId))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+    }
+
+    private void validatePurchaseName(PurchaseRequest request) {
+        if (request == null) {
+            return;
+        }
+        String type = request.getType();
+        if (type == null) {
+            return;
+        }
+        if (List.of("ACCESSORY", "SERVICE").contains(type) && (request.getName() == null || request.getName().isBlank())) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "配件/服务名称必填");
+        }
     }
 
     private String buildCategoryLikePattern(Long categoryId, boolean includeDescendants) {

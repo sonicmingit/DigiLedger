@@ -7,6 +7,7 @@
         <id column="id" property="id" />
         <result column="asset_id" property="assetId" />
         <result column="type" property="type" />
+        <result column="name" property="name" />
         <result column="platform_id" property="platformId" />
         <result column="platform_name" property="platformName" />
         <result column="seller" property="seller" />
@@ -36,11 +37,11 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.Purchase" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO purchase (
-            asset_id, type, platform_id, platform_name, seller, price, currency, quantity,
+            asset_id, type, name, platform_id, platform_name, seller, price, currency, quantity,
             shipping_cost, purchase_date, invoice_no, warranty_months,
             warranty_expire_date, attachments, notes
         ) VALUES (
-            #{assetId}, #{type}, #{platformId}, #{platformName}, #{seller}, #{price}, #{currency}, #{quantity},
+            #{assetId}, #{type}, #{name}, #{platformId}, #{platformName}, #{seller}, #{price}, #{currency}, #{quantity},
             #{shippingCost}, #{purchaseDate}, #{invoiceNo}, #{warrantyMonths},
             #{warrantyExpireDate}, #{attachments}, #{notes}
         )
