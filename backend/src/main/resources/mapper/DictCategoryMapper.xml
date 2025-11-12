@@ -60,7 +60,7 @@
             AND parent_id = #{parentId}
         </if>
         <if test="excludeId != null">
-            AND id <> #{excludeId}
+            AND id != #{excludeId}
         </if>
     </select>
 

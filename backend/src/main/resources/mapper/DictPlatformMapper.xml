@@ -48,7 +48,7 @@
         SELECT COUNT(1) FROM dict_platform
         WHERE name = #{name}
         <if test="excludeId != null">
-            AND id <> #{excludeId}
+            AND id != #{excludeId}
         </if>
     </select>
 
