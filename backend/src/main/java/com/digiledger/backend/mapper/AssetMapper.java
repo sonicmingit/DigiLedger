@@ -38,4 +38,6 @@ public interface AssetMapper {
 
     int updateCategoryPathForCategory(@Param("categoryId") Long categoryId,
                                       @Param("categoryPath") String categoryPath);
+
+    long countByBrand(@Param("brandId") Long brandId);
 }
