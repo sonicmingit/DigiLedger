@@ -21,4 +21,6 @@ public interface AssetService {
     void deleteAsset(Long id);
 
     SaleDTO sellAsset(Long id, AssetSellRequest request);
+
+    void updateAssetStatus(Long id, String status);
 }

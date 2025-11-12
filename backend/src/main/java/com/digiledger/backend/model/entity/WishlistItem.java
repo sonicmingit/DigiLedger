@@ -2,7 +2,6 @@ package com.digiledger.backend.model.entity;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -14,16 +13,14 @@ public class WishlistItem {
     private Long id;
     /** 名称 */
     private String name;
-    /** 类别 */
-    private String category;
-    /** 品牌 */
-    private String brand;
-    /** 型号 */
-    private String model;
-    /** 期望价格 */
-    private BigDecimal expectedPrice;
-    /** 计划购买平台 */
-    private String plannedPlatform;
+    /** 目标类别 ID */
+    private Long categoryId;
+    /** 目标品牌 ID */
+    private Long brandId;
+    /** 商品图片 */
+    private String imageUrl;
+    /** 状态 */
+    private String status;
     /** 商品链接 */
     private String link;
     /** 备注 */

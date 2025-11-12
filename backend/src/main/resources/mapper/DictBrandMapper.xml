@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.DictBrandMapper">
+
+    <resultMap id="brandResultMap" type="com.digiledger.backend.model.entity.DictBrand">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="alias" property="alias" />
+        <result column="initial" property="initial" />
+        <result column="sort" property="sort" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findAll" resultMap="brandResultMap">
+        SELECT * FROM dict_brand ORDER BY sort ASC, name ASC
+    </select>
+
+    <select id="findById" resultMap="brandResultMap">
+        SELECT * FROM dict_brand WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.DictBrand" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dict_brand (name, alias, initial, sort)
+        VALUES (#{name}, #{alias}, #{initial}, #{sort})
+    </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.DictBrand">
+        UPDATE dict_brand
+        SET name = #{name},
+            alias = #{alias},
+            initial = #{initial},
+            sort = #{sort},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM dict_brand WHERE id = #{id}
+    </delete>
+
+    <select id="countByName" resultType="long">
+        SELECT COUNT(1)
+        FROM dict_brand
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper>

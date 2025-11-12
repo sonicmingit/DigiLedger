@@ -1,5 +1,7 @@
 package com.digiledger.backend.service;
 
+import com.digiledger.backend.model.dto.dict.BrandDTO;
+import com.digiledger.backend.model.dto.dict.BrandRequest;
 import com.digiledger.backend.model.dto.dict.CategoryRequest;
 import com.digiledger.backend.model.dto.dict.CategoryTreeNodeDTO;
 import com.digiledger.backend.model.dto.dict.PlatformDTO;
@@ -34,4 +36,12 @@ public interface DictService {
     void updateTag(Long id, TagRequest request);
 
     void deleteTag(Long id);
+
+    List<BrandDTO> listBrands();
+
+    Long createBrand(BrandRequest request);
+
+    void updateBrand(Long id, BrandRequest request);
+
+    void deleteBrand(Long id);
 }
