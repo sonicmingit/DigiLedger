@@ -17,6 +17,7 @@ export type AssetPayload = {
   tagIds?: number[]
   purchases?: Array<{
     type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
+    name?: string
     platformId?: number
     seller?: string
     price: number
