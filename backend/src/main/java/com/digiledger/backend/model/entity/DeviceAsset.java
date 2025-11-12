@@ -15,6 +15,8 @@ public class DeviceAsset {
     private Long categoryId;
     /** 类别路径（/1/2/3） */
     private String categoryPath;
+    /** 品牌 ID */
+    private Long brandId;
     /** 品牌 */
     private String brand;
     /** 型号 */

@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
 public record WishlistDTO(
         Long id,
         String name,
-        String category,
-        String brand,
+        Long categoryId,
+        Long brandId,
         String model,
         BigDecimal expectedPrice,
-        String plannedPlatform,
+        String imageUrl,
         String link,
+        String status,
         String notes,
-        Integer priority,
         Long convertedAssetId,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

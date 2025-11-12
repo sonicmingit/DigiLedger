@@ -6,21 +6,21 @@
     <resultMap id="wishlistResultMap" type="com.digiledger.backend.model.entity.WishlistItem">
         <id column="id" property="id" />
         <result column="name" property="name" />
-        <result column="category" property="category" />
-        <result column="brand" property="brand" />
+        <result column="category_id" property="categoryId" />
+        <result column="brand_id" property="brandId" />
         <result column="model" property="model" />
         <result column="expected_price" property="expectedPrice" />
-        <result column="planned_platform" property="plannedPlatform" />
+        <result column="image_url" property="imageUrl" />
         <result column="link" property="link" />
+        <result column="status" property="status" />
         <result column="notes" property="notes" />
-        <result column="priority" property="priority" />
         <result column="converted_asset_id" property="convertedAssetId" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
 
     <select id="findAll" resultMap="wishlistResultMap">
-        SELECT * FROM wishlist ORDER BY priority ASC, updated_at DESC
+        SELECT * FROM wishlist ORDER BY updated_at DESC
     </select>
 
     <select id="findById" resultMap="wishlistResultMap">
@@ -29,25 +29,25 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO wishlist (
-            name, category, brand, model, expected_price,
-            planned_platform, link, notes, priority, converted_asset_id
+            name, category_id, brand_id, model, expected_price,
+            image_url, link, status, notes, converted_asset_id
         ) VALUES (
-            #{name}, #{category}, #{brand}, #{model}, #{expectedPrice},
-            #{plannedPlatform}, #{link}, #{notes}, #{priority}, #{convertedAssetId}
+            #{name}, #{categoryId}, #{brandId}, #{model}, #{expectedPrice},
+            #{imageUrl}, #{link}, #{status}, #{notes}, #{convertedAssetId}
         )
     </insert>
 
     <update id="update" parameterType="com.digiledger.backend.model.entity.WishlistItem">
         UPDATE wishlist
         SET name = #{name},
-            category = #{category},
-            brand = #{brand},
+            category_id = #{categoryId},
+            brand_id = #{brandId},
             model = #{model},
             expected_price = #{expectedPrice},
-            planned_platform = #{plannedPlatform},
+            image_url = #{imageUrl},
             link = #{link},
+            status = #{status},
             notes = #{notes},
-            priority = #{priority},
             converted_asset_id = #{convertedAssetId},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
@@ -60,6 +60,7 @@
     <update id="markConverted">
         UPDATE wishlist
         SET converted_asset_id = #{assetId},
+            status = '已购买',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>

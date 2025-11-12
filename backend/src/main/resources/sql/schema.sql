@@ -50,11 +50,23 @@ CREATE TABLE IF NOT EXISTS dict_tag (
   CONSTRAINT fk_tag_parent FOREIGN KEY (parent_id) REFERENCES dict_tag(id) ON DELETE SET NULL
 ) COMMENT='标签字典（树形）';
 
+CREATE TABLE IF NOT EXISTS dict_brand (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '品牌名称',
+  alias VARCHAR(200) COMMENT '别名',
+  initial CHAR(1) COMMENT '首字母',
+  sort INT NOT NULL DEFAULT 0 COMMENT '排序值',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  UNIQUE KEY uk_brand_name (name)
+) COMMENT='品牌字典';
+
 CREATE TABLE IF NOT EXISTS device_asset (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   name VARCHAR(200) NOT NULL COMMENT '物品名称',
   category_id BIGINT COMMENT '类别ID',
   category_path VARCHAR(500) COMMENT '类别路径（/1/12/118）',
+  brand_id BIGINT COMMENT '品牌ID',
   brand VARCHAR(100) COMMENT '品牌',
   model VARCHAR(200) COMMENT '型号',
   serial_no VARCHAR(200) COMMENT '序列号',
@@ -70,13 +82,16 @@ CREATE TABLE IF NOT EXISTS device_asset (
   INDEX idx_status (status),
   INDEX idx_category (category_id),
   INDEX idx_category_path (category_path(191)),
-  CONSTRAINT fk_asset_category FOREIGN KEY (category_id) REFERENCES dict_category(id)
+  INDEX idx_brand (brand_id),
+  CONSTRAINT fk_asset_category FOREIGN KEY (category_id) REFERENCES dict_category(id),
+  CONSTRAINT fk_asset_brand FOREIGN KEY (brand_id) REFERENCES dict_brand(id)
 ) COMMENT='设备物品表';
 
 CREATE TABLE IF NOT EXISTS purchase (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   asset_id BIGINT NOT NULL COMMENT '关联资产ID',
   type ENUM('PRIMARY','ACCESSORY','SERVICE') NOT NULL COMMENT '采购类型',
+  name VARCHAR(200) COMMENT '采购名称',
   platform_id BIGINT COMMENT '采购平台ID',
   platform_name VARCHAR(100) COMMENT '采购平台名称',
   seller VARCHAR(200) COMMENT '卖家',
@@ -131,16 +146,16 @@ CREATE TABLE IF NOT EXISTS asset_tag_map (
 CREATE TABLE IF NOT EXISTS wishlist (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   name VARCHAR(200) NOT NULL COMMENT '心愿单名称',
-  category VARCHAR(100) COMMENT '期望分类',
-  brand VARCHAR(100) COMMENT '期望品牌',
+  category_id BIGINT COMMENT '期望分类ID',
+  brand_id BIGINT COMMENT '期望品牌ID',
   model VARCHAR(200) COMMENT '期望型号',
   expected_price DECIMAL(12,2) COMMENT '期望价格',
-  planned_platform VARCHAR(100) COMMENT '计划购买平台',
+  image_url VARCHAR(500) COMMENT '图片链接',
   link VARCHAR(500) COMMENT '参考链接',
+  status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '状态',
   notes TEXT COMMENT '备注',
-  priority TINYINT DEFAULT 3 COMMENT '优先级',
   converted_asset_id BIGINT COMMENT '已转化资产ID',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX idx_wishlist_priority (priority)
+  INDEX idx_wishlist_status (status)
 ) COMMENT='心愿单记录表';
