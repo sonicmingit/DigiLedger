@@ -4,17 +4,22 @@ import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.mapper.AssetMapper;
 import com.digiledger.backend.mapper.AssetTagMapMapper;
+import com.digiledger.backend.mapper.DictBrandMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictPlatformMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
 import com.digiledger.backend.mapper.SaleMapper;
+import com.digiledger.backend.mapper.WishlistMapper;
+import com.digiledger.backend.model.dto.dict.BrandDTO;
+import com.digiledger.backend.model.dto.dict.BrandRequest;
 import com.digiledger.backend.model.dto.dict.CategoryRequest;
 import com.digiledger.backend.model.dto.dict.CategoryTreeNodeDTO;
 import com.digiledger.backend.model.dto.dict.PlatformDTO;
 import com.digiledger.backend.model.dto.dict.PlatformRequest;
 import com.digiledger.backend.model.dto.dict.TagRequest;
 import com.digiledger.backend.model.dto.dict.TagTreeNodeDTO;
+import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
@@ -29,7 +34,6 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,25 +48,31 @@ public class DictServiceImpl implements DictService {
     private final DictCategoryMapper dictCategoryMapper;
     private final DictPlatformMapper dictPlatformMapper;
     private final DictTagMapper dictTagMapper;
+    private final DictBrandMapper dictBrandMapper;
     private final AssetMapper assetMapper;
     private final PurchaseMapper purchaseMapper;
     private final SaleMapper saleMapper;
     private final AssetTagMapMapper assetTagMapMapper;
+    private final WishlistMapper wishlistMapper;
 
     public DictServiceImpl(DictCategoryMapper dictCategoryMapper,
                            DictPlatformMapper dictPlatformMapper,
                            DictTagMapper dictTagMapper,
+                           DictBrandMapper dictBrandMapper,
                            AssetMapper assetMapper,
                            PurchaseMapper purchaseMapper,
                            SaleMapper saleMapper,
-                           AssetTagMapMapper assetTagMapMapper) {
+                           AssetTagMapMapper assetTagMapMapper,
+                           WishlistMapper wishlistMapper) {
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictPlatformMapper = dictPlatformMapper;
         this.dictTagMapper = dictTagMapper;
+        this.dictBrandMapper = dictBrandMapper;
         this.assetMapper = assetMapper;
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
         this.assetTagMapMapper = assetTagMapMapper;
+        this.wishlistMapper = wishlistMapper;
     }
 
     @Override
@@ -165,7 +175,7 @@ public class DictServiceImpl implements DictService {
         if (assetMapper.countByCategory(id, categoryLike, categorySuffix) > 0) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "存在关联物品，无法删除");
         }
-        dictCategoryMapper.delete(id);
+        dictCategoryMapper.delete(category.getId());
     }
 
     @Override
@@ -300,6 +310,54 @@ public class DictServiceImpl implements DictService {
         dictTagMapper.delete(tag.getId());
     }
 
+    @Override
+    public List<BrandDTO> listBrands() {
+        return dictBrandMapper.findAll().stream()
+                .map(brand -> new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public Long createBrand(BrandRequest request) {
+        if (dictBrandMapper.countByName(request.getName(), null) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+        DictBrand brand = new DictBrand();
+        brand.setName(request.getName());
+        brand.setAlias(request.getAlias());
+        brand.setInitial(request.getInitial());
+        brand.setSort(Optional.ofNullable(request.getSort()).orElse(0));
+        dictBrandMapper.insert(brand);
+        return brand.getId();
+    }
+
+    @Override
+    @Transactional
+    public void updateBrand(Long id, BrandRequest request) {
+        DictBrand existing = Optional.ofNullable(dictBrandMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        if (dictBrandMapper.countByName(request.getName(), id) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+        existing.setName(request.getName());
+        existing.setAlias(request.getAlias());
+        existing.setInitial(request.getInitial());
+        existing.setSort(Optional.ofNullable(request.getSort()).orElse(0));
+        dictBrandMapper.update(existing);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBrand(Long id) {
+        DictBrand existing = Optional.ofNullable(dictBrandMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        if (assetMapper.countByBrand(existing.getId()) > 0 || wishlistMapper.countByBrand(existing.getId()) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌已被使用，无法删除");
+        }
+        dictBrandMapper.delete(existing.getId());
+    }
+
     private void sortCategoryNodes(List<CategoryTreeNodeDTO> nodes) {
         nodes.sort(Comparator.comparing(CategoryTreeNodeDTO::getSort).thenComparing(CategoryTreeNodeDTO::getId));
         for (CategoryTreeNodeDTO node : nodes) {
@@ -365,7 +423,6 @@ public class DictServiceImpl implements DictService {
         }
         Set<Long> visited = new HashSet<>();
 
-
         Long current = newParentId;
         while (current != null) {
             if (!visited.add(current)) {
@@ -409,7 +466,6 @@ public class DictServiceImpl implements DictService {
         Collections.reverse(path);
         return path.stream().map(String::valueOf).collect(Collectors.joining("/", "/", ""));
     }
-
 
     private String buildCategoryLikePattern(Long categoryId, boolean includeDescendants) {
         if (categoryId == null) {

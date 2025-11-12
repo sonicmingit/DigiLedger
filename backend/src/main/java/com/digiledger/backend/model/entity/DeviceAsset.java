@@ -11,11 +11,13 @@ public class DeviceAsset {
     private Long id;
     /** 物品名称 */
     private String name;
-    /** 类别 ID（叶子节点） */
+    /** 类别 ID */
     private Long categoryId;
     /** 类别路径（/1/2/3） */
     private String categoryPath;
-    /** 品牌 */
+    /** 品牌 ID */
+    private Long brandId;
+    /** 品牌名称 */
     private String brand;
     /** 型号 */
     private String model;

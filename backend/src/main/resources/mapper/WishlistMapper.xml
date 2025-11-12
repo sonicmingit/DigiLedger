@@ -6,11 +6,10 @@
     <resultMap id="wishlistResultMap" type="com.digiledger.backend.model.entity.WishlistItem">
         <id column="id" property="id" />
         <result column="name" property="name" />
-        <result column="category" property="category" />
-        <result column="brand" property="brand" />
-        <result column="model" property="model" />
-        <result column="expected_price" property="expectedPrice" />
-        <result column="planned_platform" property="plannedPlatform" />
+        <result column="category_id" property="categoryId" />
+        <result column="brand_id" property="brandId" />
+        <result column="image_url" property="imageUrl" />
+        <result column="status" property="status" />
         <result column="link" property="link" />
         <result column="notes" property="notes" />
         <result column="priority" property="priority" />
@@ -29,22 +28,21 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO wishlist (
-            name, category, brand, model, expected_price,
-            planned_platform, link, notes, priority, converted_asset_id
+            name, category_id, brand_id, image_url, status,
+            link, notes, priority, converted_asset_id
         ) VALUES (
-            #{name}, #{category}, #{brand}, #{model}, #{expectedPrice},
-            #{plannedPlatform}, #{link}, #{notes}, #{priority}, #{convertedAssetId}
+            #{name}, #{categoryId}, #{brandId}, #{imageUrl}, #{status},
+            #{link}, #{notes}, #{priority}, #{convertedAssetId}
         )
     </insert>
 
     <update id="update" parameterType="com.digiledger.backend.model.entity.WishlistItem">
         UPDATE wishlist
         SET name = #{name},
-            category = #{category},
-            brand = #{brand},
-            model = #{model},
-            expected_price = #{expectedPrice},
-            planned_platform = #{plannedPlatform},
+            category_id = #{categoryId},
+            brand_id = #{brandId},
+            image_url = #{imageUrl},
+            status = #{status},
             link = #{link},
             notes = #{notes},
             priority = #{priority},
@@ -60,8 +58,15 @@
     <update id="markConverted">
         UPDATE wishlist
         SET converted_asset_id = #{assetId},
+            status = '已购买',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
+
+    <select id="countByBrand" resultType="long">
+        SELECT COUNT(1)
+        FROM wishlist
+        WHERE brand_id = #{brandId}
+    </select>
 
 </mapper>

@@ -1,6 +1,5 @@
 package com.digiledger.backend.model.dto.wishlist;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -9,11 +8,10 @@ import java.time.LocalDateTime;
 public record WishlistDTO(
         Long id,
         String name,
-        String category,
-        String brand,
-        String model,
-        BigDecimal expectedPrice,
-        String plannedPlatform,
+        Long categoryId,
+        Long brandId,
+        String imageUrl,
+        String status,
         String link,
         String notes,
         Integer priority,
