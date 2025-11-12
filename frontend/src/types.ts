@@ -22,6 +22,8 @@ export interface AssetSummary {
   lastNetIncome: number
   enabledDate: string
   purchaseDate?: string
+  primaryPrice?: number
+  primaryPurchaseDate?: string
   tags: TagItem[]
 }
 
@@ -29,6 +31,7 @@ export interface AssetSummary {
 export interface PurchaseRecord {
   id: number
   type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
+  name?: string
   platformId?: number
   platformName?: string
   seller?: string
@@ -76,13 +79,16 @@ export interface WishlistItem {
   id: number
   name: string
   category?: string
+  categoryId?: number
   brand?: string
   model?: string
   expectedPrice?: number
-  plannedPlatform?: string
   link?: string
   notes?: string
   priority?: number
+  status: '未购买' | '已购买'
+  imageUrl?: string
+  tags?: TagItem[]
   convertedAssetId?: number
   createdAt: string
   updatedAt: string

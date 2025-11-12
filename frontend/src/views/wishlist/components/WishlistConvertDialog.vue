@@ -16,7 +16,16 @@
         />
       </el-form-item>
       <el-form-item label="品牌">
-        <el-input v-model="form.brand" placeholder="品牌（可选）" />
+        <el-select
+          v-model="form.brand"
+          filterable
+          allow-create
+          default-first-option
+          placeholder="选择或输入品牌"
+          style="width: 100%"
+        >
+          <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item" />
+        </el-select>
       </el-form-item>
       <el-form-item label="型号">
         <el-input v-model="form.model" placeholder="型号（可选）" />
@@ -73,7 +82,8 @@ const form = reactive({
   model: '',
   enabledDate: today(),
   tagIds: [] as number[],
-  notes: ''
+  notes: '',
+  imageUrl: ''
 })
 
 const rules = {
@@ -83,6 +93,14 @@ const rules = {
 }
 
 const { load: loadDicts, categoryTree, tagTree } = useDictionaries()
+const brandOptions = ref<string[]>([])
+
+const ensureBrandOption = (value: string) => {
+  if (!value) return
+  if (!brandOptions.value.includes(value)) {
+    brandOptions.value.push(value)
+  }
+}
 
 const treeProps = {
   value: 'value',
@@ -113,11 +131,13 @@ const open = (item: WishlistItem) => {
   current.value = item
   form.name = item.name
   form.brand = item.brand || ''
+  ensureBrandOption(form.brand)
   form.model = item.model || ''
   form.notes = item.notes || ''
   form.categoryId = null
   form.tagIds = []
   form.enabledDate = today()
+  form.imageUrl = item.imageUrl || ''
   visible.value = true
 }
 
@@ -130,6 +150,7 @@ const reset = () => {
   form.categoryId = null
   form.tagIds = []
   form.enabledDate = today()
+  form.imageUrl = ''
 }
 
 const submit = () => {
@@ -147,6 +168,7 @@ const submit = () => {
         enabledDate: form.enabledDate,
         notes: form.notes || undefined,
         tagIds: form.tagIds,
+        coverImageUrl: form.imageUrl || undefined,
         purchases: []
       })
       ElMessage.success('已转为物品')
