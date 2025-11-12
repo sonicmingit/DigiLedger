@@ -10,6 +10,7 @@ import java.util.List;
 public record PurchaseDTO(
         Long id,
         String type,
+        String name,
         Long platformId,
         String platformName,
         String seller,

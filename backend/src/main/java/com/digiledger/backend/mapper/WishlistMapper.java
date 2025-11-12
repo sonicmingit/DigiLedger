@@ -22,4 +22,6 @@ public interface WishlistMapper {
 
     int delete(@Param("id") Long id);
     int markConverted(@Param("id") Long id, @Param("assetId") Long assetId);
- }
+
+    long countByBrand(@Param("brandId") Long brandId);
+}

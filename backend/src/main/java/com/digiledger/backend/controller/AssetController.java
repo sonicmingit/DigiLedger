@@ -4,6 +4,7 @@ import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.asset.AssetDetailDTO;
 import com.digiledger.backend.model.dto.asset.AssetSellRequest;
+import com.digiledger.backend.model.dto.asset.AssetStatusUpdateRequest;
 import com.digiledger.backend.model.dto.asset.AssetSummaryDTO;
 import com.digiledger.backend.model.dto.asset.SaleDTO;
 import com.digiledger.backend.service.AssetService;
@@ -36,7 +37,8 @@ public class AssetController {
                                                          @RequestParam(name = "q", required = false) String q,
                                                          @RequestParam(name = "category_id", required = false) Long categoryId,
                                                          @RequestParam(name = "platform_id", required = false) Long platformId,
-                                                         @RequestParam(name = "tag_ids", required = false) List<Long> tagIds) {
+                                                         @RequestParam(name = "tag_ids", required = false) List<Long> tagIds,
+                                                         @RequestParam(name = "view", required = false) String view) {
         String search = keyword != null ? keyword : q;
         return ApiResponse.success(assetService.listAssets(status, search, categoryId, platformId, tagIds));
     }
@@ -83,5 +85,12 @@ public class AssetController {
     public ApiResponse<SaleDTO> sellAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                           @RequestBody @Valid AssetSellRequest request) {
         return ApiResponse.success(assetService.sellAsset(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ApiResponse<Void> updateStatus(@PathVariable(name = "id") @NotNull @Min(1) Long id,
+                                          @RequestBody @Valid AssetStatusUpdateRequest request) {
+        assetService.updateAssetStatus(id, request.getStatus());
+        return ApiResponse.success();
     }
 }

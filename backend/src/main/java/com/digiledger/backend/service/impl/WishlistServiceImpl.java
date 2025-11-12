@@ -2,6 +2,8 @@ package com.digiledger.backend.service.impl;
 
 import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
+import com.digiledger.backend.mapper.DictBrandMapper;
+import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.WishlistMapper;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.wishlist.WishlistDTO;
@@ -24,10 +26,17 @@ import java.util.stream.Collectors;
 public class WishlistServiceImpl implements WishlistService {
 
     private final WishlistMapper wishlistMapper;
+    private final DictCategoryMapper dictCategoryMapper;
+    private final DictBrandMapper dictBrandMapper;
     private final AssetService assetService;
 
-    public WishlistServiceImpl(WishlistMapper wishlistMapper, AssetService assetService) {
+    public WishlistServiceImpl(WishlistMapper wishlistMapper,
+                               DictCategoryMapper dictCategoryMapper,
+                               DictBrandMapper dictBrandMapper,
+                               AssetService assetService) {
         this.wishlistMapper = wishlistMapper;
+        this.dictCategoryMapper = dictCategoryMapper;
+        this.dictBrandMapper = dictBrandMapper;
         this.assetService = assetService;
     }
 
@@ -47,6 +56,7 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     @Transactional
     public Long create(WishlistRequest request) {
+        validateReferences(request);
         WishlistItem item = buildEntity(request);
         wishlistMapper.insert(item);
         return item.getId();
@@ -57,6 +67,7 @@ public class WishlistServiceImpl implements WishlistService {
     public void update(Long id, WishlistRequest request) {
         WishlistItem exist = Optional.ofNullable(wishlistMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
+        validateReferences(request);
         WishlistItem update = buildEntity(request);
         update.setId(id);
         update.setConvertedAssetId(exist.getConvertedAssetId());
@@ -81,14 +92,17 @@ public class WishlistServiceImpl implements WishlistService {
         if (request.getName() == null || request.getName().isBlank()) {
             request.setName(item.getName());
         }
-        if (request.getBrand() == null || request.getBrand().isBlank()) {
-            request.setBrand(item.getBrand());
-        }
-        if (request.getModel() == null || request.getModel().isBlank()) {
-            request.setModel(item.getModel());
-        }
         if (request.getNotes() == null || request.getNotes().isBlank()) {
             request.setNotes(item.getNotes());
+        }
+        if (request.getCategoryId() == null) {
+            request.setCategoryId(item.getCategoryId());
+        }
+        if (request.getBrandId() == null) {
+            request.setBrandId(item.getBrandId());
+        }
+        if (request.getCoverImageUrl() == null) {
+            request.setCoverImageUrl(item.getImageUrl());
         }
         if (request.getStatus() == null || request.getStatus().isBlank()) {
             request.setStatus("使用中");
@@ -104,26 +118,38 @@ public class WishlistServiceImpl implements WishlistService {
     private WishlistItem buildEntity(WishlistRequest request) {
         WishlistItem item = new WishlistItem();
         item.setName(request.getName());
-        item.setCategory(request.getCategory());
-        item.setBrand(request.getBrand());
-        item.setModel(request.getModel());
-        item.setExpectedPrice(request.getExpectedPrice());
-        item.setPlannedPlatform(request.getPlannedPlatform());
+        item.setCategoryId(request.getCategoryId());
+        item.setBrandId(request.getBrandId());
+        item.setImageUrl(request.getImageUrl());
+        item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
         item.setLink(request.getLink());
         item.setNotes(request.getNotes());
-        item.setPriority(request.getPriority());
+        item.setPriority(Optional.ofNullable(request.getPriority()).orElse(3));
         return item;
+    }
+
+    private void validateReferences(WishlistRequest request) {
+        if (request.getCategoryId() != null) {
+            Optional.ofNullable(dictCategoryMapper.findById(request.getCategoryId()))
+                    .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "类别不存在"));
+        }
+        if (request.getBrandId() != null) {
+            Optional.ofNullable(dictBrandMapper.findById(request.getBrandId()))
+                    .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        }
+        if (request.getStatus() == null) {
+            request.setStatus("未购买");
+        }
     }
 
     private WishlistDTO toDto(WishlistItem item) {
         return new WishlistDTO(
                 item.getId(),
                 item.getName(),
-                item.getCategory(),
-                item.getBrand(),
-                item.getModel(),
-                item.getExpectedPrice(),
-                item.getPlannedPlatform(),
+                item.getCategoryId(),
+                item.getBrandId(),
+                item.getImageUrl(),
+                item.getStatus(),
                 item.getLink(),
                 item.getNotes(),
                 item.getPriority(),
