@@ -53,10 +53,15 @@
     <select id="countByNameAndParent" resultType="long">
         SELECT COUNT(1) FROM dict_category
         WHERE name = #{name}
-          AND (parent_id <=> #{parentId})
-          <if test="excludeId != null">
+        <if test="parentId == null">
+            AND parent_id IS NULL
+        </if>
+        <if test="parentId != null">
+            AND parent_id = #{parentId}
+        </if>
+        <if test="excludeId != null">
             AND id <> #{excludeId}
-          </if>
+        </if>
     </select>
 
 </mapper>
