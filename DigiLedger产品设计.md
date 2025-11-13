@@ -1,4 +1,4 @@
-# DigiLedger V0.3.4 产品设计
+# DigiLedger V0.3.5 产品设计
 
 > 约定 & 范围
 >
@@ -7,7 +7,7 @@
 > - 架构：**前后端分离**。后端 `Spring Boot + MyBatis + MySQL`；前端 `Vue3 + Vite + Element Plus`。
 > - 部署：**Docker/Compose 一键启动**（含 MySQL、后端、前端、Nginx 反代）。
 > - 接口返回体：统一为 `{ code, data, msg }`，`code=200` 表示成功。
-> - 版本：V0.2（在 V0.1 基础上细化到可直接开发）。
+> - 版本：V0.3.5（按天均摊方案A，支持相对文件路径与主题切换）。。
 
 ------
 
@@ -54,6 +54,8 @@
 - `已出售/已丢弃` 支持撤销（保留审计日志）。
 
 **心愿单**：独立列表，不参与上述状态流转；心愿条目可一键“转为资产”。
+
+心愿单列表新增“详情”抽屉；**新增/编辑**不再直接修改 `status`，`status` 仅通过“**已购买**”转换产生。
 
 ------
 
@@ -312,6 +314,14 @@ CREATE TABLE dict_platform (
 
 - `POST /api/files/upload` （multipart）→ `{ url, objectKey }`
 
+### 5.2 文件上传（对象存储）
+
+- `POST /api/files/upload` （multipart）→ 返回 `{ url, objectKey }`
+- **URL 为相对路径**（例如：`/oss/digiledger/xxx.png`），前端以网关基址拼接为可访问地址；推荐仅在数据库持久化 `objectKey`，避免后期域名/网关迁移带来的批量改动。
+- `DELETE /api/files/{objectKey}` → 删除对象（可选）
+
+> 说明：后端适配 MinIO / S3 兼容协议；相对 URL 的前缀与桶映射由网关/Nginx 统一转发。
+
 ### 5.3 物品（assets）
 
 - `POST /api/assets`
@@ -329,7 +339,12 @@ CREATE TABLE dict_platform (
 
 ### 5.5 售出记录（sales & sell wizard）
 
-- 同前（平台改为 `platform_id`，后端自动冗余 `platform_name`）
+- 平台改为 `platform_id`，后端自动冗余 `platform_name`。
+- **新增售出范围**：`sale_scope = ASSET | ACCESSORY`
+  - `ASSET`：出售主商品，创建 `sale` 后将资产状态流转为**已出售**。
+  - `ACCESSORY`：出售配件，需传 `purchase_id` 指向对应配件购买记录；**不**改变资产状态，仅记录收益与附件。
+- 便捷接口（向导）：`POST /api/assets/{id}/sell` 支持 `sale_scope` 和 `purchase_id`。
+
 
 ### 5.6 心愿单（wishlist）
 
@@ -519,17 +534,19 @@ public class ApiResp<T> {
 ### 8.1 菜单与导航
 
 - **资产总览**（原“主页”）：KPI 概览、快速筛选、按**顶级类别**TAB 切换展示近期物品卡片；支持“**创建物品**”**弹窗**（H5 端切换到独立页面）。
-- **物品列表**：查询/增删改查，支持状态/分类（多级，**允许选父级**）/平台/标签（多级）过滤；支持**表格/卡片**两种视图切换。
-- **心愿单**：独立列表；条目带“已购买”按钮 → 触发 `convert`（沿用物品新增逻辑）。
+- **物品列表**：查询/增删改查，支持状态/分类（多级，**允许选父级**）/平台/标签（多级）过滤；支持**表格/卡片**两种视图切换；提供**状态快捷 TAB**（使用中/已闲置/待出售/已出售）。
+- **心愿单**：独立列表；条目带“已购买”按钮 → 触发 `convert`（沿用物品新增逻辑）；列表支持“详情”抽屉查看；新增/编辑不再直接修改状态，状态仅能通过“已购买”转换产生。
 - **已售出列表**：
   - 页面聚合**待出售**与**已出售**两类卡片区
   - 每条 **待出售** 支持“一键出售向导”：弹出表单（售价/平台/费用/日期/买家/备注/附件上传） → 成功后移入“已出售”区
+  - 出售支持 **主商品/配件** 两种范围；仅主商品出售会变更资产状态
 - **系统设置**：
-  - **物品类别**（**多级**）：树形维护，支持排序/拖拽/禁用。
+  - **物品类别**（**多级**）：树形维护，支持排序/拖拽/禁用；**下拉新建改为弹窗选择父层级后新建**，避免层级歧义
   - **购买平台**（**单级**）：名称、链接、排序。
   - **标签**（**多级/多选**）：可选颜色、图标；用于列表过滤与可视化。
   - **品牌**（**单级**）：名称、别名（可选）、首字母、排序。
-  - **其他**：自定义字段（key/label/type，用于物品扩展属性）。
+  - **主题**：新增主题色切换（浅色/深色 + 霓虹配色预设）。
+
 
 #### 8.1.1 一键出售向导（前端交互）
 
@@ -1258,7 +1275,7 @@ components:
         status: { type: string, enum: [使用中, 已闲置, 待出售, 已出售, 已丢弃] }
 
     # 购买
-    PurchaseCreateReq:
+    urchaseCreateReq:
       type: object
       required: [asset_id, type, price, purchase_date]
       properties:
@@ -1268,11 +1285,9 @@ components:
         platform_id: { type: integer }
         seller: { type: string }
         price: { type: number, format: double }
-        currency: { type: string, example: CNY }
         quantity: { type: integer, example: 1 }
         shipping_cost: { type: number, format: double, example: 0 }
         purchase_date: { type: string, format: date }
-        invoice_no: { type: string }
         attachments: { type: array, items: { type: string } }
         notes: { type: string }
 
@@ -1281,6 +1296,9 @@ components:
       type: object
       required: [sale_price, sale_date]
       properties:
+        sale_scope: { type: string, enum: [ASSET, ACCESSORY], default: ASSET, description: ASSET=出售主商品并变更资产状态, ACCESSORY=出售配件仅记录不改状态 }
+        asset_id: { type: integer, description: 当 sale_scope=ACCESSORY 也需传所属资产ID }
+        purchase_id: { type: integer, description: 当 sale_scope=ACCESSORY 必填，指向被出售的配件购买记录ID }
         platform_id: { type: integer }
         buyer: { type: string }
         sale_price: { type: number, format: double }
@@ -1290,6 +1308,7 @@ components:
         sale_date: { type: string, format: date }
         attachments: { type: array, items: { type: string } }
         notes: { type: string }
+
 
     # 心愿单
     WishlistCreateReq:
@@ -1303,8 +1322,8 @@ components:
         expected_price: { type: number, format: double }
         image_url: { type: string }
         link: { type: string }
-        status: { type: string, enum: [未购买, 已购买], default: 未购买 }
         notes: { type: string }
+
 
     WishlistUpdateReq:
       allOf: [ { $ref: '#/components/schemas/WishlistCreateReq' } ]
@@ -1423,7 +1442,16 @@ VALUES ('Canon RF 85mm F1.8','镜头','Canon',2999,'京东','https://item.jd.com
 
 ## 更新日志（Changelog）
 
-- **V0.3.4（当前）**
+- **V0.3.5 （当前）**
+  - 文件上传改为**相对路径**（数据库仅存objectKey，前端以基址拼接）。
+  - 类别下拉“新建”改为**弹窗选择父级后新建**，避免层级不明。
+  - 购买记录表单：去掉“币种/发票编号”，`name`字段置顶，“上传凭证”改为“上传附件”。
+  - 出售记录支持**主商品/配件**两种范围，仅主商品出售变更资产状态。
+  - 心愿单：新增“详情”抽屉，新增/编辑不再直接修改状态，状态仅由“已购买”转换产生。
+  - 物品中心：新增**状态快捷TAB**（使用中/已闲置/待出售/已出售）。
+  - 系统设置：新增**主题色切换**（浅色/深色+霓虹预设）。
+
+- **V0.3.4**
   - 前端：资产总览重命名与首页弹窗创建；顶级类别 TAB；卡片视图（图片等比缩放）；列表行内状态修改；多选批量设标签；日期选择支持“今天”。
   - 表单：物品新增改用 `purchase_date`（`enabled_date` 后端默认= `purchase_date`，UI 隐藏）；配件/服务购买新增 `name` 字段；下拉均支持**搜索 + 新建**（类别/平台/标签/品牌）。
   - 数据库：新增 `dict_brand`；`purchase.name`；`device_asset.brand_id`；`wishlist` 调整为 `category_id/brand_id/image_url/status`。
@@ -1439,6 +1467,16 @@ VALUES ('Canon RF 85mm F1.8','镜头','Canon',2999,'京东','https://item.jd.com
 ## 15. 需求变更记录（用户表述 → 规范落地）
 
 > 按日期倒序记录每次用户自然语言修改 → 规格落地内容，便于版本追溯。
+
+### 2025-11-13（V0.3.5）
+
+- **文件上传**：URL改为相对地址，数据库仅存objectKey。
+- **类别下拉新建**：改弹窗选择父层级再创建，明确层级关系。
+- **购买记录**：移除币种、发票编号，name置顶；上传凭证改为上传附件。
+- **出售记录**：支持主商品/配件区分，新增`sale_scope`和`purchase_id`。
+- **心愿单**：新增详情抽屉；新增/编辑不再修改状态，仅通过“已购买”转换。
+- **物品中心**：新增状态快捷TAB。
+- **主题**：新增主题色切换功能。
 
 ### 2025-11-12（V0.3.4）
 
