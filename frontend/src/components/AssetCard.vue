@@ -25,7 +25,7 @@
       <el-checkbox v-if="selectable" :model-value="selected" @change="toggleSelect" />
     </div>
     <div class="cover" @click.stop="emit('preview', asset)">
-      <img :src="asset.coverImageUrl || fallback" alt="缩略图" />
+      <img :src="coverUrl || fallback" alt="缩略图" />
     </div>
     <div class="info">
       <div class="title" :title="asset.name">{{ asset.name }}</div>
@@ -62,6 +62,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { AssetStatus, AssetSummary } from '@/types'
+import { buildOssUrl } from '@/utils/storage'
 
 const props = withDefaults(
   defineProps<{
@@ -103,6 +104,8 @@ const fallback = computed(
       props.asset.name.slice(0, 8)
     )}`
 )
+
+const coverUrl = computed(() => buildOssUrl(props.asset.coverImageUrl))
 
 const formatNumber = (value: number | undefined) => {
   if (!value && value !== 0) return '0.00'

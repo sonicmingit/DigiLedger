@@ -1,5 +1,10 @@
 <template>
   <div class="asset-page">
+    <el-card class="status-card">
+      <el-tabs v-model="statusTab" class="status-tabs" type="card">
+        <el-tab-pane v-for="item in statusTabOptions" :key="item.value" :label="item.label" :name="item.value" />
+      </el-tabs>
+    </el-card>
     <el-card class="filter-card">
       <el-form :model="filters" inline class="filter-form">
         <el-form-item label="关键字">
@@ -192,6 +197,7 @@ import BatchTagDialog from './components/BatchTagDialog.vue'
 import AssetCard from '@/components/AssetCard.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
+import { extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const router = useRouter()
 const route = useRoute()
@@ -211,6 +217,19 @@ const filters = reactive({
 })
 
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
+
+const statusTabOptions = computed(() => [
+  { label: '全部', value: 'all' },
+  ...statuses.map((status) => ({ label: status, value: status }))
+])
+
+const statusTab = computed({
+  get: () => filters.status || 'all',
+  set: (value: string) => {
+    filters.status = (value === 'all' ? '' : (value as AssetStatus))
+    refresh()
+  }
+})
 
 const formRef = ref<InstanceType<typeof AssetForm> | null>(null)
 const sellDialog = ref<InstanceType<typeof SellDialog> | null>(null)
@@ -324,7 +343,7 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
     status,
     purchaseDate: detail.purchaseDate || undefined,
     enabledDate: detail.purchaseDate || detail.enabledDate,
-    coverImageUrl: detail.coverImageUrl || undefined,
+    coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
     notes: detail.notes || undefined,
     tagIds: detail.tags?.map((tag) => tag.id) || [],
     purchases: detail.purchases.map((p) => ({
@@ -333,15 +352,13 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
       seller: p.seller || undefined,
       price: p.price,
       shippingCost: p.shippingCost,
-      currency: p.currency,
       quantity: p.quantity,
       purchaseDate: p.purchaseDate,
-      invoiceNo: p.invoiceNo || undefined,
       warrantyMonths: p.warrantyMonths ?? undefined,
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
       name: p.name,
-      attachments: p.attachments
+      attachments: extractObjectKeys(p.attachments)
     }))
   })
   asset.status = status
@@ -374,7 +391,7 @@ const handleBatchConfirm = async (tags: number[]) => {
           status: detail.status,
           purchaseDate: detail.purchaseDate || undefined,
           enabledDate: detail.purchaseDate || detail.enabledDate,
-          coverImageUrl: detail.coverImageUrl || undefined,
+          coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
           notes: detail.notes || undefined,
           tagIds: tags,
           purchases: detail.purchases.map((p) => ({
@@ -383,15 +400,13 @@ const handleBatchConfirm = async (tags: number[]) => {
             seller: p.seller || undefined,
             price: p.price,
             shippingCost: p.shippingCost,
-            currency: p.currency,
             quantity: p.quantity,
             purchaseDate: p.purchaseDate,
-            invoiceNo: p.invoiceNo || undefined,
             warrantyMonths: p.warrantyMonths ?? undefined,
             warrantyExpireDate: p.warrantyExpireDate || undefined,
             notes: p.notes || undefined,
             name: p.name,
-            attachments: p.attachments
+            attachments: extractObjectKeys(p.attachments)
           }))
         })
       })
@@ -448,6 +463,31 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.status-card {
+  padding-bottom: 0;
+}
+
+.status-tabs :deep(.el-tabs__header) {
+  border-bottom: none;
+}
+
+.status-tabs :deep(.el-tabs__item) {
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.status-tabs :deep(.el-tabs__item.is-active) {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-radius: 8px 8px 0 0;
+}
+
+.status-tabs :deep(.el-tabs__nav) {
+  display: flex;
+  gap: 12px;
 }
 
 .filter-form {

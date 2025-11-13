@@ -27,7 +27,7 @@
               <span v-if="!detail.tags.length">无标签</span>
             </div>
           </div>
-          <img v-if="detail.coverImageUrl" :src="detail.coverImageUrl" class="cover" />
+          <img v-if="resolveOssUrl(detail.coverImageUrl)" :src="resolveOssUrl(detail.coverImageUrl)" class="cover" />
         </div>
         <div class="metrics">
           <div class="metric">
@@ -78,7 +78,7 @@
                 <template #default="{ row }">{{ row.platformName || '-' }}</template>
               </el-table-column>
               <el-table-column label="价格" width="120">
-                <template #default="{ row }">{{ row.currency || 'CNY' }} {{ formatNumber(row.price) }}</template>
+                <template #default="{ row }">¥ {{ formatNumber(row.price) }}</template>
               </el-table-column>
               <el-table-column prop="purchaseDate" label="购买日期" width="120" />
               <el-table-column label="操作" width="150">
@@ -90,10 +90,17 @@
             </el-table>
           </el-card>
         </el-col>
-        <el-col :xs="24" :md="12" v-if="detail.status === '已出售'">
+        <el-col :xs="24" :md="12" v-if="detail.sales.length">
           <el-card>
             <template #header>售出记录</template>
             <el-table :data="detail.sales" size="small" empty-text="暂无数据">
+              <el-table-column label="范围" width="100">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.saleScope === 'ASSET' ? 'warning' : 'info'">
+                    {{ row.saleScope === 'ASSET' ? '主商品' : '配件' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column prop="saleDate" label="日期" width="120" />
               <el-table-column label="平台" width="140">
                 <template #default="{ row }">{{ row.platformName || '-' }}</template>
@@ -141,6 +148,7 @@ import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import PurchaseEditorDialog from './components/PurchaseEditorDialog.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const route = useRoute()
 const router = useRouter()
@@ -198,6 +206,8 @@ const openCreatePurchase = () => {
   purchaseDialog.value?.open()
 }
 
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
+
 const openEditPurchase = (purchase: PurchaseRecord) => {
   purchaseDialog.value?.open(purchase)
 }
@@ -224,7 +234,7 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
     status: detail.value.status as AssetStatus,
     purchaseDate: detail.value.purchaseDate || undefined,
     enabledDate: detail.value.purchaseDate || detail.value.enabledDate,
-    coverImageUrl: detail.value.coverImageUrl || undefined,
+    coverImageUrl: extractObjectKey(detail.value.coverImageUrl) || undefined,
     notes: detail.value.notes || undefined,
     tagIds: detail.value.tags.map((tag) => tag.id),
     purchases: purchases.map((p) => ({
@@ -233,15 +243,13 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
       seller: p.seller || undefined,
       price: p.price!,
       shippingCost: p.shippingCost ?? 0,
-      currency: p.currency || 'CNY',
       quantity: p.quantity || 1,
       purchaseDate: p.purchaseDate!,
-      invoiceNo: p.invoiceNo || undefined,
       warrantyMonths: p.warrantyMonths ?? undefined,
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
       name: p.type === 'PRIMARY' ? undefined : p.name,
-      attachments: p.attachments || []
+      attachments: extractObjectKeys(p.attachments)
     }))
   }
   await updateAsset(detail.value.id, payload)
@@ -269,10 +277,8 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
       seller: payload.seller,
       price: payload.price!,
       shippingCost: payload.shippingCost ?? 0,
-      currency: payload.currency || 'CNY',
       quantity: payload.quantity || 1,
       purchaseDate: payload.purchaseDate!,
-      invoiceNo: payload.invoiceNo,
       warrantyMonths: payload.warrantyMonths,
       warrantyExpireDate: payload.warrantyExpireDate,
       attachments: [],

@@ -1,11 +1,12 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    :title="isEdit ? '编辑物品' : '新建物品'"
-    width="760px"
-    @closed="reset"
-    destroy-on-close
-  >
+  <div>
+    <el-dialog
+      v-model="visible"
+      :title="isEdit ? '编辑物品' : '新建物品'"
+      width="760px"
+      @closed="reset"
+      destroy-on-close
+    >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" status-icon>
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
@@ -127,7 +128,7 @@
             :stroke-width="4"
             status="success"
           />
-          <img v-if="form.coverImageUrl" :src="form.coverImageUrl" class="cover" />
+          <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
         </div>
       </el-form-item>
       <el-form-item label="备注">
@@ -143,14 +144,17 @@
           :title="`记录 ${index + 1} · ${purchase.type}`"
         >
           <el-row :gutter="12">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select v-model="purchase.type" placeholder="类型" @change="handlePurchaseTypeChange(purchase)">
                 <el-option label="主商品" value="PRIMARY" />
                 <el-option label="配件" value="ACCESSORY" />
                 <el-option label="服务" value="SERVICE" />
               </el-select>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="6">
+              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
+            </el-col>
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select
                 v-model="purchase.platformId"
                 placeholder="来源平台"
@@ -170,29 +174,23 @@
                 新建平台
               </el-button>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
             </el-col>
-            <el-col :xs="24" :md="6">
+          </el-row>
+          <el-row :gutter="12" class="mt">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" :step="10" placeholder="运费" />
             </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.currency" placeholder="币种（如 CNY）" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
-            </el-col>
-            <el-col :xs="24" :md="6" v-if="purchase.type !== 'PRIMARY'">
-              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
             </el-col>
           </el-row>
           <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.purchaseDate"
                 type="date"
@@ -202,10 +200,7 @@
                 clearable
               />
             </el-col>
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.invoiceNo" placeholder="发票编号" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number
                 v-model="purchase.warrantyMonths"
                 :min="0"
@@ -214,7 +209,7 @@
                 controls-position="right"
               />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.warrantyExpireDate"
                 type="date"
@@ -237,7 +232,7 @@
               accept="image/*"
               capture="environment"
             >
-              <el-button text>上传凭证</el-button>
+              <el-button text>上传附件</el-button>
             </el-upload>
             <el-tag
               v-for="(url, idx) in purchase.attachments"
@@ -260,7 +255,13 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
     </template>
-  </el-dialog>
+    </el-dialog>
+    <CategoryCreateDialog
+      v-model="categoryDialogVisible"
+      :default-parent-id="form.categoryId"
+      @success="handleCategoryDialogSuccess"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -273,6 +274,7 @@ import type { AssetDetail } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { createCategory, createPlatform, createTag } from '@/api/dict'
+import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 
@@ -311,7 +313,7 @@ const form = reactive({
   status: '使用中',
   purchaseDate: today(),
   enabledDate: today(),
-  coverImageUrl: '',
+  coverImageKey: '',
   tagIds: [] as number[],
   notes: '',
   purchases: [] as Array<{
@@ -320,10 +322,8 @@ const form = reactive({
     seller?: string
     price: number
     shippingCost: number
-    currency: string
     quantity: number
     purchaseDate: string
-    invoiceNo?: string
     warrantyMonths?: number
     warrantyExpireDate?: string
     notes?: string
@@ -331,6 +331,8 @@ const form = reactive({
     attachments: string[]
   }>
 })
+
+const coverImagePreview = computed(() => buildOssUrl(form.coverImageKey))
 
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -349,6 +351,7 @@ const ensureBrandOption = (value: string) => {
 }
 
 const { load: loadDicts, categoryTree, tagTree, platforms } = useDictionaries()
+const categoryDialogVisible = ref(false)
 
 const treeProps = {
   value: 'value',
@@ -389,7 +392,7 @@ const open = (asset?: AssetDetail) => {
     form.status = asset.status
     form.purchaseDate = asset.purchaseDate || today()
     form.enabledDate = form.purchaseDate
-    form.coverImageUrl = asset.coverImageUrl || ''
+    form.coverImageKey = extractObjectKey(asset.coverImageUrl)
     form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = asset.notes || ''
     form.purchases = asset.purchases
@@ -399,15 +402,13 @@ const open = (asset?: AssetDetail) => {
           seller: p.seller || '',
           price: p.price,
           shippingCost: p.shippingCost ?? 0,
-          currency: p.currency || 'CNY',
           quantity: p.quantity || 1,
           purchaseDate: p.purchaseDate || today(),
-          invoiceNo: p.invoiceNo || '',
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
           name: p.type === 'PRIMARY' ? undefined : p.name || '',
-          attachments: [...(p.attachments || [])]
+          attachments: extractObjectKeys(p.attachments || [])
         }))
       : []
   } else {
@@ -427,7 +428,7 @@ const reset = () => {
   form.status = '使用中'
   form.purchaseDate = today()
   form.enabledDate = today()
-  form.coverImageUrl = ''
+  form.coverImageKey = ''
   form.tagIds = []
   form.notes = ''
   form.purchases = []
@@ -445,14 +446,12 @@ const addPurchase = () => {
     seller: '',
     price: 0,
     shippingCost: 0,
-    currency: 'CNY',
     quantity: 1,
     purchaseDate: form.purchaseDate || today(),
-    invoiceNo: '',
     warrantyMonths: undefined,
     warrantyExpireDate: '',
     notes: '',
-    name: undefined,
+    name: form.purchases.length ? '' : undefined,
     attachments: []
   })
 }
@@ -471,11 +470,11 @@ const handlePurchaseTypeChange = (purchase: any) => {
 
 const handleUpload = async (options: UploadRequestOptions) => {
   try {
-    const { url } = await uploadFile(options.file)
-    form.coverImageUrl = url
+    const { objectKey } = await uploadFile(options.file)
+    form.coverImageKey = objectKey
     coverProgress.value = 100
     ElMessage.success('上传成功')
-    options.onSuccess(url)
+    options.onSuccess(objectKey)
   } catch (err: any) {
     coverProgress.value = 0
     ElMessage.error(err.message || '上传失败')
@@ -485,10 +484,10 @@ const handleUpload = async (options: UploadRequestOptions) => {
 
 const uploadAttachment = async (options: UploadRequestOptions, purchase: any) => {
   try {
-    const { url } = await uploadFile(options.file)
-    purchase.attachments.push(url)
+    const { objectKey } = await uploadFile(options.file)
+    purchase.attachments.push(objectKey)
     ElMessage.success('附件上传成功')
-    options.onSuccess(url)
+    options.onSuccess(objectKey)
   } catch (err: any) {
     options.onError(err)
     ElMessage.error('附件上传失败')
@@ -499,23 +498,12 @@ const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
 }
 
-const handleCreateCategory = async () => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入类别名称', '新建类别', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：影像设备'
-    })
-    if (!value) return
-    const parentId = form.categoryId || null
-    const id = await createCategory({ name: value, parentId })
-    await loadDicts()
-    form.categoryId = id
-    ElMessage.success('类别已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建类别失败')
-  }
+const handleCreateCategory = () => {
+  categoryDialogVisible.value = true
+}
+
+const handleCategoryDialogSuccess = (payload: { id: number }) => {
+  form.categoryId = payload.id
 }
 
 const handleCreatePlatform = async () => {
@@ -577,7 +565,7 @@ const submit = () => {
         status: form.status,
         purchaseDate: form.purchaseDate || undefined,
         enabledDate: form.purchaseDate || undefined,
-        coverImageUrl: form.coverImageUrl || undefined,
+        coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
         notes: form.notes || undefined,
         tagIds: form.tagIds,
         purchases: form.purchases.map((p) => ({
@@ -586,15 +574,13 @@ const submit = () => {
           seller: p.seller || undefined,
           price: p.price,
           shippingCost: p.shippingCost,
-          currency: p.currency || 'CNY',
           quantity: p.quantity,
           purchaseDate: p.purchaseDate,
-          invoiceNo: p.invoiceNo || undefined,
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || undefined,
           notes: p.notes || undefined,
           name: p.type === 'PRIMARY' ? undefined : p.name,
-          attachments: p.attachments
+          attachments: extractObjectKeys(p.attachments)
         }))
       }
       if (isEdit.value) {

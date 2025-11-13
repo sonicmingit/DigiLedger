@@ -32,11 +32,11 @@
         <el-table-column label="图片" width="120">
           <template #default="{ row }">
             <el-image
-              v-if="row.imageUrl"
-              :src="row.imageUrl"
+              v-if="resolveOssUrl(row.imageUrl)"
+              :src="resolveOssUrl(row.imageUrl)"
               fit="cover"
               style="width: 92px; height: 68px; border-radius: 12px"
-              :preview-src-list="[row.imageUrl]"
+              :preview-src-list="[resolveOssUrl(row.imageUrl)]"
             />
             <div v-else class="image-placeholder">无图</div>
           </template>
@@ -136,7 +136,7 @@
           <el-upload :http-request="handleUpload" :show-file-list="false" accept="image/*" capture="environment">
             <el-button type="primary">上传图片</el-button>
           </el-upload>
-          <img v-if="form.imageUrl" :src="form.imageUrl" class="preview" />
+          <img v-if="imagePreview" :src="imagePreview" class="preview" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.notes" type="textarea" rows="3" />
@@ -164,6 +164,7 @@ import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
+import { buildOssUrl, extractObjectKey } from '@/utils/storage'
 
 const items = ref<WishlistItem[]>([])
 const filtered = ref<WishlistItem[]>([])
@@ -184,9 +185,12 @@ const form = reactive({
   link: '',
   notes: '',
   priority: 3,
-  imageUrl: '',
+  status: '未购买' as '未购买' | '已购买',
+  imageKey: '',
   tagIds: [] as number[]
 })
+
+const imagePreview = computed(() => buildOssUrl(form.imageKey))
 
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
@@ -225,6 +229,8 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
+
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
 
 const filterItems = () => {
   const keywordValue = keyword.value.trim().toLowerCase()
@@ -266,7 +272,8 @@ const openDialog = (item?: WishlistItem) => {
       link: item.link || '',
       notes: item.notes || '',
       priority: item.priority || 3,
-      imageUrl: item.imageUrl || '',
+      status: item.status,
+      imageKey: extractObjectKey(item.imageUrl),
       tagIds: item.tags ? item.tags.map((tag) => tag.id) : []
     })
     ensureBrandOption(form.brand)
@@ -285,7 +292,8 @@ const reset = () => {
     link: '',
     notes: '',
     priority: 3,
-    imageUrl: '',
+    status: '未购买',
+    imageKey: '',
     tagIds: []
   })
 }
@@ -304,7 +312,8 @@ const submit = () => {
         link: form.link || undefined,
         notes: form.notes || undefined,
         priority: form.priority,
-        imageUrl: form.imageUrl || undefined,
+        status: form.status,
+        imageUrl: form.imageKey || undefined,
         tagIds: form.tagIds
       }
       if (current.value) {
@@ -341,10 +350,10 @@ const convert = (item: WishlistItem) => {
 
 const handleUpload = async (options: any) => {
   try {
-    const { url } = await uploadFile(options.file)
-    form.imageUrl = url
+    const { objectKey } = await uploadFile(options.file)
+    form.imageKey = objectKey
     ElMessage.success('上传成功')
-    options.onSuccess(url)
+    options.onSuccess(objectKey)
   } catch (error: any) {
     ElMessage.error(error.message || '上传失败')
     options.onError(error)

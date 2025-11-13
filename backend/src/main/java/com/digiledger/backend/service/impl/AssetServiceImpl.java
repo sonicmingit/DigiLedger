@@ -20,7 +20,9 @@ import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
 import com.digiledger.backend.model.entity.Sale;
+import com.digiledger.backend.model.enums.SaleScope;
 import com.digiledger.backend.service.AssetService;
+import com.digiledger.backend.util.StoragePathHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -59,6 +61,7 @@ public class AssetServiceImpl implements AssetService {
     private final DictTagMapper dictTagMapper;
     private final AssetTagMapMapper assetTagMapMapper;
     private final ObjectMapper objectMapper;
+    private final StoragePathHelper storagePathHelper;
 
     public AssetServiceImpl(AssetMapper assetMapper,
                             PurchaseMapper purchaseMapper,
@@ -68,7 +71,8 @@ public class AssetServiceImpl implements AssetService {
                             DictPlatformMapper dictPlatformMapper,
                             DictTagMapper dictTagMapper,
                             AssetTagMapMapper assetTagMapMapper,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            StoragePathHelper storagePathHelper) {
         this.assetMapper = assetMapper;
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
@@ -78,6 +82,7 @@ public class AssetServiceImpl implements AssetService {
         this.dictTagMapper = dictTagMapper;
         this.assetTagMapMapper = assetTagMapMapper;
         this.objectMapper = objectMapper;
+        this.storagePathHelper = storagePathHelper;
     }
 
     @Override
@@ -127,7 +132,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getPurchaseDate(),
                 asset.getEnabledDate(),
                 asset.getRetiredDate(),
-                asset.getCoverImageUrl(),
+                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
                 asset.getNotes(),
                 tags,
                 metrics.totalInvest,
@@ -196,18 +201,36 @@ public class AssetServiceImpl implements AssetService {
     public SaleDTO sellAsset(Long id, AssetSellRequest request) {
         DeviceAsset asset = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        SaleScope saleScope = Optional.ofNullable(request.getSaleScope()).orElse(SaleScope.ASSET);
         LocalDate enabledDate = Optional.ofNullable(asset.getEnabledDate())
                 .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate()));
         if (request.getSaleDate().isBefore(enabledDate)) {
             throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于启用日期");
         }
-        if (!List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
+        if (saleScope == SaleScope.ASSET
+                && !List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
             throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "资产状态不允许售出");
         }
         Map<Long, DictPlatform> platformCache = new HashMap<>();
         DictPlatform salePlatform = resolvePlatform(request.getPlatformId(), platformCache);
         Sale sale = new Sale();
         sale.setAssetId(id);
+        sale.setSaleScope(saleScope.name());
+        if (saleScope == SaleScope.ACCESSORY) {
+            Long purchaseId = request.getPurchaseId();
+            if (purchaseId == null) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "配件出售需要选择购买记录");
+            }
+            Purchase purchase = Optional.ofNullable(purchaseMapper.findById(purchaseId))
+                    .orElseThrow(() -> new BizException(ErrorCode.PURCHASE_NOT_FOUND));
+            if (!Objects.equals(purchase.getAssetId(), id)) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "购买记录不属于该资产");
+            }
+            if (!"ACCESSORY".equalsIgnoreCase(purchase.getType())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持出售配件类型的购买记录");
+            }
+            sale.setPurchaseId(purchase.getId());
+        }
         if (salePlatform != null) {
             sale.setPlatformId(salePlatform.getId());
             sale.setPlatformName(salePlatform.getName());
@@ -225,9 +248,11 @@ public class AssetServiceImpl implements AssetService {
         sale.setAttachments(toJson(request.getAttachments()));
         sale.setNotes(request.getNotes());
         saleMapper.insert(sale);
-        asset.setStatus("已出售");
-        asset.setRetiredDate(request.getSaleDate());
-        assetMapper.update(asset);
+        if (saleScope == SaleScope.ASSET) {
+            asset.setStatus("已出售");
+            asset.setRetiredDate(request.getSaleDate());
+            assetMapper.update(asset);
+        }
         return toSaleDTO(saleMapper.findLatestByAsset(id));
     }
 
@@ -286,7 +311,7 @@ public class AssetServiceImpl implements AssetService {
         asset.setPurchaseDate(request.getPurchaseDate());
         asset.setEnabledDate(request.getEnabledDate());
         asset.setRetiredDate(request.getRetiredDate());
-        asset.setCoverImageUrl(request.getCoverImageUrl());
+        asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
         asset.setNotes(request.getNotes());
         return asset;
     }
@@ -309,11 +334,11 @@ public class AssetServiceImpl implements AssetService {
             }
             purchase.setSeller(request.getSeller());
             purchase.setPrice(request.getPrice());
-            purchase.setCurrency(Optional.ofNullable(request.getCurrency()).filter(s -> !s.isBlank()).orElse("CNY"));
+            purchase.setCurrency("CNY");
             purchase.setQuantity(Optional.ofNullable(request.getQuantity()).orElse(1));
             purchase.setShippingCost(defaultZero(request.getShippingCost()));
             purchase.setPurchaseDate(request.getPurchaseDate());
-            purchase.setInvoiceNo(request.getInvoiceNo());
+            purchase.setInvoiceNo("");
             purchase.setWarrantyMonths(request.getWarrantyMonths());
             purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
             purchase.setAttachments(toJson(request.getAttachments()));
@@ -343,7 +368,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
                 asset.getStatus(),
-                asset.getCoverImageUrl(),
+                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
                 metrics.totalInvest,
                 metrics.avgCostPerDay,
                 metrics.useDays,
@@ -394,7 +419,9 @@ public class AssetServiceImpl implements AssetService {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(jsonArray, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            List<String> values = objectMapper.readValue(jsonArray,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return storagePathHelper.toObjectKeys(values);
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
@@ -404,8 +431,12 @@ public class AssetServiceImpl implements AssetService {
         if (values == null || values.isEmpty()) {
             return null;
         }
+        List<String> objectKeys = storagePathHelper.toObjectKeys(values);
+        if (objectKeys.isEmpty()) {
+            return null;
+        }
         try {
-            return objectMapper.writeValueAsString(values);
+            return objectMapper.writeValueAsString(objectKeys);
         } catch (JsonProcessingException e) {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
         }
@@ -421,13 +452,11 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getSeller(),
                 purchase.getPrice(),
                 purchase.getShippingCost(),
-                purchase.getCurrency(),
                 purchase.getQuantity(),
                 purchase.getPurchaseDate(),
-                purchase.getInvoiceNo(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
-                parseStringList(purchase.getAttachments()),
+                storagePathHelper.toRelativeUrls(parseStringList(purchase.getAttachments())),
                 purchase.getNotes()
         );
     }
@@ -436,8 +465,19 @@ public class AssetServiceImpl implements AssetService {
         if (sale == null) {
             return null;
         }
+        SaleScope saleScope = Optional.ofNullable(sale.getSaleScope())
+                .map(scope -> {
+                    try {
+                        return SaleScope.valueOf(scope);
+                    } catch (IllegalArgumentException ex) {
+                        return SaleScope.ASSET;
+                    }
+                })
+                .orElse(SaleScope.ASSET);
         return new SaleDTO(
                 sale.getId(),
+                saleScope,
+                sale.getPurchaseId(),
                 sale.getPlatformId(),
                 sale.getPlatformName(),
                 sale.getBuyer(),
@@ -447,7 +487,7 @@ public class AssetServiceImpl implements AssetService {
                 sale.getOtherCost(),
                 sale.getNetIncome(),
                 sale.getSaleDate(),
-                parseStringList(sale.getAttachments()),
+                storagePathHelper.toRelativeUrls(parseStringList(sale.getAttachments())),
                 sale.getNotes()
         );
     }
