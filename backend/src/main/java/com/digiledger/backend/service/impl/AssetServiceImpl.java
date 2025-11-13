@@ -21,6 +21,7 @@ import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
 import com.digiledger.backend.model.entity.Sale;
 import com.digiledger.backend.service.AssetService;
+import com.digiledger.backend.util.StoragePathHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,7 @@ public class AssetServiceImpl implements AssetService {
     private final DictTagMapper dictTagMapper;
     private final AssetTagMapMapper assetTagMapMapper;
     private final ObjectMapper objectMapper;
+    private final StoragePathHelper storagePathHelper;
 
     public AssetServiceImpl(AssetMapper assetMapper,
                             PurchaseMapper purchaseMapper,
@@ -68,7 +70,8 @@ public class AssetServiceImpl implements AssetService {
                             DictPlatformMapper dictPlatformMapper,
                             DictTagMapper dictTagMapper,
                             AssetTagMapMapper assetTagMapMapper,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            StoragePathHelper storagePathHelper) {
         this.assetMapper = assetMapper;
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
@@ -78,6 +81,7 @@ public class AssetServiceImpl implements AssetService {
         this.dictTagMapper = dictTagMapper;
         this.assetTagMapMapper = assetTagMapMapper;
         this.objectMapper = objectMapper;
+        this.storagePathHelper = storagePathHelper;
     }
 
     @Override
@@ -127,7 +131,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getPurchaseDate(),
                 asset.getEnabledDate(),
                 asset.getRetiredDate(),
-                asset.getCoverImageUrl(),
+                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
                 asset.getNotes(),
                 tags,
                 metrics.totalInvest,
@@ -286,7 +290,7 @@ public class AssetServiceImpl implements AssetService {
         asset.setPurchaseDate(request.getPurchaseDate());
         asset.setEnabledDate(request.getEnabledDate());
         asset.setRetiredDate(request.getRetiredDate());
-        asset.setCoverImageUrl(request.getCoverImageUrl());
+        asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
         asset.setNotes(request.getNotes());
         return asset;
     }
@@ -343,7 +347,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
                 asset.getStatus(),
-                asset.getCoverImageUrl(),
+                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
                 metrics.totalInvest,
                 metrics.avgCostPerDay,
                 metrics.useDays,
@@ -394,7 +398,9 @@ public class AssetServiceImpl implements AssetService {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(jsonArray, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            List<String> values = objectMapper.readValue(jsonArray,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return storagePathHelper.toObjectKeys(values);
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
@@ -404,8 +410,12 @@ public class AssetServiceImpl implements AssetService {
         if (values == null || values.isEmpty()) {
             return null;
         }
+        List<String> objectKeys = storagePathHelper.toObjectKeys(values);
+        if (objectKeys.isEmpty()) {
+            return null;
+        }
         try {
-            return objectMapper.writeValueAsString(values);
+            return objectMapper.writeValueAsString(objectKeys);
         } catch (JsonProcessingException e) {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
         }
@@ -427,7 +437,7 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getInvoiceNo(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
-                parseStringList(purchase.getAttachments()),
+                storagePathHelper.toRelativeUrls(parseStringList(purchase.getAttachments())),
                 purchase.getNotes()
         );
     }
@@ -447,7 +457,7 @@ public class AssetServiceImpl implements AssetService {
                 sale.getOtherCost(),
                 sale.getNetIncome(),
                 sale.getSaleDate(),
-                parseStringList(sale.getAttachments()),
+                storagePathHelper.toRelativeUrls(parseStringList(sale.getAttachments())),
                 sale.getNotes()
         );
     }
