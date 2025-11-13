@@ -3,7 +3,7 @@
         "_postman_id": "f2e47fda-6c20-4d3d-94f7-6a0ef1a33c4c",
         "name": "DigiLedger API",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "description": "Postman collection for DigiLedger V0.3.3 with dictionary and item management APIs."
+        "description": "Postman collection for DigiLedger V0.3.4 with dictionary, brand, wishlist, and smoke runner coverage."
     },
     "item": [
         {

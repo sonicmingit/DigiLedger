@@ -2,6 +2,7 @@ package com.digiledger.backend.model.dto.wishlist;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ public class WishlistRequest {
     private String link;
 
     @NotBlank(message = "状态不能为空")
+    @Pattern(regexp = "未购买|已购买", message = "状态非法")
     private String status;
 
     private String notes;

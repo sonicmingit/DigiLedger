@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class WishlistServiceImpl implements WishlistService {
+
+    private static final Set<String> ALLOWED_STATUSES = Set.of("未购买", "已购买");
 
     private final WishlistMapper wishlistMapper;
     private final AssetService assetService;
@@ -105,7 +108,6 @@ public class WishlistServiceImpl implements WishlistService {
     }
 
     private WishlistItem buildEntity(WishlistRequest request) {
-        validateStatus(request.getStatus());
         WishlistItem item = new WishlistItem();
         item.setName(request.getName());
         item.setCategoryId(request.getCategoryId());
@@ -114,7 +116,12 @@ public class WishlistServiceImpl implements WishlistService {
         item.setExpectedPrice(request.getExpectedPrice());
         item.setImageUrl(request.getImageUrl());
         item.setLink(request.getLink());
-        item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
+        String status = Optional.ofNullable(request.getStatus())
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse("未购买");
+        validateStatus(status);
+        item.setStatus(status);
         item.setNotes(request.getNotes());
         return item;
     }
@@ -138,10 +145,7 @@ public class WishlistServiceImpl implements WishlistService {
     }
 
     private void validateStatus(String status) {
-        if (status == null) {
-            return;
-        }
-        if (!List.of("未购买", "已购买").contains(status)) {
+        if (!ALLOWED_STATUSES.contains(status)) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "心愿状态非法");
         }
     }
