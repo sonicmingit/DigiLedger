@@ -2,6 +2,7 @@ package com.digiledger.backend.controller;
 
 import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.service.FileService;
+import com.digiledger.backend.util.StoragePathHelper;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,14 +19,20 @@ import java.util.Map;
 public class FileController {
 
     private final FileService fileService;
+    private final StoragePathHelper storagePathHelper;
 
-    public FileController(FileService fileService) {
+    public FileController(FileService fileService, StoragePathHelper storagePathHelper) {
         this.fileService = fileService;
+        this.storagePathHelper = storagePathHelper;
     }
 
     @PostMapping("/upload")
     public ApiResponse<Map<String, String>> upload(@RequestParam(name = "file") MultipartFile file) {
-        String url = fileService.upload(file);
-        return ApiResponse.success(Map.of("url", url));
+        String objectKey = fileService.upload(file);
+        String relativeUrl = storagePathHelper.toRelativeUrl(objectKey);
+        return ApiResponse.success(Map.of(
+                "objectKey", objectKey,
+                "url", relativeUrl != null ? relativeUrl : ""
+        ));
     }
 }

@@ -27,7 +27,7 @@
               <span v-if="!detail.tags.length">无标签</span>
             </div>
           </div>
-          <img v-if="detail.coverImageUrl" :src="detail.coverImageUrl" class="cover" />
+          <img v-if="resolveOssUrl(detail.coverImageUrl)" :src="resolveOssUrl(detail.coverImageUrl)" class="cover" />
         </div>
         <div class="metrics">
           <div class="metric">
@@ -141,6 +141,7 @@ import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import PurchaseEditorDialog from './components/PurchaseEditorDialog.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const route = useRoute()
 const router = useRouter()
@@ -198,6 +199,8 @@ const openCreatePurchase = () => {
   purchaseDialog.value?.open()
 }
 
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
+
 const openEditPurchase = (purchase: PurchaseRecord) => {
   purchaseDialog.value?.open(purchase)
 }
@@ -224,7 +227,7 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
     status: detail.value.status as AssetStatus,
     purchaseDate: detail.value.purchaseDate || undefined,
     enabledDate: detail.value.purchaseDate || detail.value.enabledDate,
-    coverImageUrl: detail.value.coverImageUrl || undefined,
+    coverImageUrl: extractObjectKey(detail.value.coverImageUrl) || undefined,
     notes: detail.value.notes || undefined,
     tagIds: detail.value.tags.map((tag) => tag.id),
     purchases: purchases.map((p) => ({
@@ -241,7 +244,7 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
       name: p.type === 'PRIMARY' ? undefined : p.name,
-      attachments: p.attachments || []
+      attachments: extractObjectKeys(p.attachments)
     }))
   }
   await updateAsset(detail.value.id, payload)
