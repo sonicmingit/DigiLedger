@@ -20,6 +20,7 @@ import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
 import com.digiledger.backend.model.entity.Sale;
+import com.digiledger.backend.model.enums.SaleScope;
 import com.digiledger.backend.service.AssetService;
 import com.digiledger.backend.util.StoragePathHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -200,18 +201,36 @@ public class AssetServiceImpl implements AssetService {
     public SaleDTO sellAsset(Long id, AssetSellRequest request) {
         DeviceAsset asset = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        SaleScope saleScope = Optional.ofNullable(request.getSaleScope()).orElse(SaleScope.ASSET);
         LocalDate enabledDate = Optional.ofNullable(asset.getEnabledDate())
                 .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate()));
         if (request.getSaleDate().isBefore(enabledDate)) {
             throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于启用日期");
         }
-        if (!List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
+        if (saleScope == SaleScope.ASSET
+                && !List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
             throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "资产状态不允许售出");
         }
         Map<Long, DictPlatform> platformCache = new HashMap<>();
         DictPlatform salePlatform = resolvePlatform(request.getPlatformId(), platformCache);
         Sale sale = new Sale();
         sale.setAssetId(id);
+        sale.setSaleScope(saleScope.name());
+        if (saleScope == SaleScope.ACCESSORY) {
+            Long purchaseId = request.getPurchaseId();
+            if (purchaseId == null) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "配件出售需要选择购买记录");
+            }
+            Purchase purchase = Optional.ofNullable(purchaseMapper.findById(purchaseId))
+                    .orElseThrow(() -> new BizException(ErrorCode.PURCHASE_NOT_FOUND));
+            if (!Objects.equals(purchase.getAssetId(), id)) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "购买记录不属于该资产");
+            }
+            if (!"ACCESSORY".equalsIgnoreCase(purchase.getType())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持出售配件类型的购买记录");
+            }
+            sale.setPurchaseId(purchase.getId());
+        }
         if (salePlatform != null) {
             sale.setPlatformId(salePlatform.getId());
             sale.setPlatformName(salePlatform.getName());
@@ -229,9 +248,11 @@ public class AssetServiceImpl implements AssetService {
         sale.setAttachments(toJson(request.getAttachments()));
         sale.setNotes(request.getNotes());
         saleMapper.insert(sale);
-        asset.setStatus("已出售");
-        asset.setRetiredDate(request.getSaleDate());
-        assetMapper.update(asset);
+        if (saleScope == SaleScope.ASSET) {
+            asset.setStatus("已出售");
+            asset.setRetiredDate(request.getSaleDate());
+            assetMapper.update(asset);
+        }
         return toSaleDTO(saleMapper.findLatestByAsset(id));
     }
 
@@ -444,8 +465,19 @@ public class AssetServiceImpl implements AssetService {
         if (sale == null) {
             return null;
         }
+        SaleScope saleScope = Optional.ofNullable(sale.getSaleScope())
+                .map(scope -> {
+                    try {
+                        return SaleScope.valueOf(scope);
+                    } catch (IllegalArgumentException ex) {
+                        return SaleScope.ASSET;
+                    }
+                })
+                .orElse(SaleScope.ASSET);
         return new SaleDTO(
                 sale.getId(),
+                saleScope,
+                sale.getPurchaseId(),
                 sale.getPlatformId(),
                 sale.getPlatformName(),
                 sale.getBuyer(),
