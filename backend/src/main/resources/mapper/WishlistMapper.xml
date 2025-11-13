@@ -11,6 +11,7 @@
         <result column="model" property="model" />
         <result column="expected_price" property="expectedPrice" />
         <result column="image_url" property="imageUrl" />
+        <result column="status" property="status" />
         <result column="link" property="link" />
         <result column="status" property="status" />
         <result column="notes" property="notes" />
@@ -46,6 +47,7 @@
             model = #{model},
             expected_price = #{expectedPrice},
             image_url = #{imageUrl},
+            status = #{status},
             link = #{link},
             status = #{status},
             priority = #{priority},
@@ -66,5 +68,11 @@
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
+
+    <select id="countByBrand" resultType="long">
+        SELECT COUNT(1)
+        FROM wishlist
+        WHERE brand_id = #{brandId}
+    </select>
 
 </mapper>

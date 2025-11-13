@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
   title: DigiLedger API
-  version: 0.3.0
+  version: 0.3.4
   description: |
     DigiLedger 后端接口，统一返回体为 `{code,data,msg}`。
 servers:
   - url: http://localhost/api
 paths:
-  /files/upload:
+  /api/files/upload:
     post:
       summary: 上传文件（MinIO）
       requestBody:
@@ -27,7 +27,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseFile'
-  /assets:
+  /api/dict/brands:
+    get:
+      summary: 获取品牌字典列表
+      responses:
+        '200':
+          description: 品牌列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBrandList'
+    post:
+      summary: 新增品牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandCreateReq'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLong'
+  /api/dict/brands/{id}:
+    put:
+      summary: 更新品牌
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandUpdateReq'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+    delete:
+      summary: 删除品牌
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+  /api/assets:
     get:
       summary: 资产列表
       parameters:
@@ -35,10 +89,54 @@ paths:
           name: status
           schema:
             type: string
+          description: 资产状态过滤（如 USING/IDLE/TO_SELL/SOLD 等）。
         - in: query
           name: keyword
           schema:
             type: string
+          description: 关键字搜索，等价于 `q`。
+        - in: query
+          name: view
+          schema:
+            type: string
+            enum: [table, card]
+          description: 列表视图模式，`card` 将返回卡片视图使用的扩展字段。
+        - in: query
+          name: category_id
+          schema:
+            type: integer
+          description: 支持父级 + 子孙类别过滤；传父级 ID 时将自动包含所有后代类别。
+        - in: query
+          name: platform_id
+          schema:
+            type: integer
+          description: 按购买平台过滤，匹配任一关联购买记录。
+        - in: query
+          name: brand_id
+          schema:
+            type: integer
+          description: 按品牌过滤。
+        - in: query
+          name: tag_ids
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: false
+          description: 多个标签 ID，使用逗号分隔，需同时命中全部标签。
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: 页码，从 1 开始。
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+          description: 每页数量。
       responses:
         '200':
           description: 列表返回
@@ -53,7 +151,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssetPayload'
+              $ref: '#/components/schemas/AssetCreateReq'
       responses:
         '200':
           description: 创建成功
@@ -61,7 +159,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseLong'
-  /assets/{id}:
+  /api/assets/{id}:
     get:
       summary: 资产详情
       parameters:
@@ -82,7 +180,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssetPayload'
+              $ref: '#/components/schemas/AssetUpdateReq'
       responses:
         '200':
           description: 更新成功
@@ -101,7 +199,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseVoid'
-  /assets/{id}/sell:
+  /api/assets/{id}/status:
+    patch:
+      summary: 修改资产状态（卡片/列表行内）
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetStatusReq'
+      responses:
+        '200':
+          description: 状态更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+  /api/assets/{id}/sell:
     post:
       summary: 出售向导
       parameters:
@@ -111,7 +227,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SellPayload'
+              $ref: '#/components/schemas/SellReq'
       responses:
         '200':
           description: 售出成功
@@ -119,7 +235,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseSale'
-  /wishlist:
+  /api/purchases:
+    post:
+      summary: 新增购买记录（含附属品/服务）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseCreateReq'
+      responses:
+        '200':
+          description: 新建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePurchase'
+  /api/purchases/{id}:
+    put:
+      summary: 更新购买记录
+      parameters:
+        - $ref: '#/components/parameters/PurchaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseUpdateReq'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePurchase'
+    delete:
+      summary: 删除购买记录
+      parameters:
+        - $ref: '#/components/parameters/PurchaseId'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+  /api/wishlist:
     get:
       summary: 心愿单列表
       responses:
@@ -136,7 +297,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WishlistPayload'
+              $ref: '#/components/schemas/WishlistReq'
       responses:
         '200':
           description: 新建成功
@@ -144,7 +305,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseLong'
-  /wishlist/{id}:
+  /api/wishlist/{id}:
     get:
       summary: 心愿详情
       parameters:
@@ -165,7 +326,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WishlistPayload'
+              $ref: '#/components/schemas/WishlistReq'
       responses:
         '200':
           description: 更新成功
@@ -184,11 +345,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseVoid'
-  /wishlist/{id}/convert:
+  /api/wishlist/{id}/convert:
     post:
       summary: 心愿转资产
       parameters:
         - $ref: '#/components/parameters/WishlistId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetCreateReq'
       responses:
         '200':
           description: 转换成功
@@ -204,12 +371,28 @@ components:
       required: true
       schema:
         type: integer
+      description: 资产 ID。
     WishlistId:
       name: id
       in: path
       required: true
       schema:
         type: integer
+      description: 心愿 ID。
+    BrandId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: 品牌 ID。
+    PurchaseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: 购买记录 ID。
   schemas:
     ApiResponseVoid:
       type: object
@@ -235,6 +418,14 @@ components:
           properties:
             url:
               type: string
+    ApiResponseBrandList:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Brand'
     ApiResponseAssetSummaries:
       allOf:
         - $ref: '#/components/schemas/ApiResponseVoid'
@@ -255,6 +446,12 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Sale'
+    ApiResponsePurchase:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          $ref: '#/components/schemas/Purchase'
     ApiResponseWishlistList:
       allOf:
         - $ref: '#/components/schemas/ApiResponseVoid'
@@ -269,6 +466,46 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Wishlist'
+    Brand:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        alias:
+          type: string
+          nullable: true
+        initial:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BrandCreateReq:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: 品牌名称。
+        alias:
+          type: string
+          nullable: true
+        initial:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+          nullable: true
+    BrandUpdateReq:
+      allOf:
+        - $ref: '#/components/schemas/BrandCreateReq'
     AssetSummary:
       type: object
       properties:
@@ -276,29 +513,43 @@ components:
           type: integer
         name:
           type: string
-        category:
+        category_id:
+          type: integer
+        category_path:
+          type: array
+          items:
+            type: string
+        brand_id:
+          type: integer
+          nullable: true
+        brand_name:
           type: string
+          nullable: true
         status:
           type: string
-        coverImageUrl:
+        cover_image_url:
           type: string
           nullable: true
-        totalInvest:
+        total_invest:
           type: number
-        avgCostPerDay:
+          format: double
+        avg_cost_per_day:
           type: number
-        useDays:
+          format: double
+        use_days:
           type: integer
-        lastNetIncome:
-          type: number
-        enabledDate:
+        enabled_date:
           type: string
           format: date
-        purchaseDate:
+        purchase_date:
           type: string
           format: date
           nullable: true
-        tags:
+        tag_ids:
+          type: array
+          items:
+            type: integer
+        tag_names:
           type: array
           items:
             type: string
@@ -306,16 +557,13 @@ components:
       allOf:
         - $ref: '#/components/schemas/AssetSummary'
       properties:
-        brand:
-          type: string
-          nullable: true
         model:
           type: string
           nullable: true
-        serialNo:
+        serial_no:
           type: string
           nullable: true
-        retiredDate:
+        retired_date:
           type: string
           format: date
           nullable: true
@@ -330,27 +578,199 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Sale'
+    AssetCreateReq:
+      type: object
+      required: [name, category_id, status]
+      properties:
+        name:
+          type: string
+        category_id:
+          type: integer
+        brand_id:
+          type: integer
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        serial_no:
+          type: string
+          nullable: true
+        status:
+          type: string
+        purchase_date:
+          type: string
+          format: date
+          description: 购买日期，将用于计算启用日期默认值。
+        enabled_date:
+          type: string
+          format: date
+          nullable: true
+          description: 后端默认与 `purchase_date` 一致，无需传入时可省略。
+        retired_date:
+          type: string
+          format: date
+          nullable: true
+        cover_image_url:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+        purchases:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseInlineReq'
+    AssetUpdateReq:
+      allOf:
+        - $ref: '#/components/schemas/AssetCreateReq'
+    AssetStatusReq:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: 新的资产状态（USING/IDLE/TO_SELL/SOLD/DISCARDED 等）。
     Purchase:
       type: object
       properties:
         id:
           type: integer
+        asset_id:
+          type: integer
+        name:
+          type: string
+          nullable: true
         type:
           type: string
-        platform:
+        platform_id:
+          type: integer
+          nullable: true
+        platform_name:
+          type: string
+          nullable: true
+        seller:
           type: string
           nullable: true
         price:
           type: number
-        shippingCost:
+          format: double
+        currency:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+          nullable: true
+        shipping_cost:
           type: number
-        purchaseDate:
+          format: double
+        purchase_date:
+          type: string
+          format: date
+        invoice_no:
+          type: string
+          nullable: true
+        attachments:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+          nullable: true
+    PurchaseBaseReq:
+      type: object
+      required: [type, price, purchase_date]
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: 配件或服务类型时必填。
+        type:
+          type: string
+          description: PRIMARY/ACCESSORY/SERVICE 等。
+        platform_id:
+          type: integer
+          nullable: true
+        seller:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+          nullable: true
+        shipping_cost:
+          type: number
+          format: double
+          nullable: true
+        purchase_date:
+          type: string
+          format: date
+        invoice_no:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        attachments:
+          type: array
+          items:
+            type: string
+    PurchaseInlineReq:
+      allOf:
+        - $ref: '#/components/schemas/PurchaseBaseReq'
+    PurchaseCreateReq:
+      allOf:
+        - $ref: '#/components/schemas/PurchaseBaseReq'
+        - type: object
+          required: [asset_id]
+          properties:
+            asset_id:
+              type: integer
+    PurchaseUpdateReq:
+      $ref: '#/components/schemas/PurchaseBaseReq'
+    SellReq:
+      type: object
+      required: [sale_price, sale_date]
+      properties:
+        platform:
+          type: string
+          nullable: true
+        buyer:
+          type: string
+          nullable: true
+        sale_price:
+          type: number
+          format: double
+        fee:
+          type: number
+          format: double
+          nullable: true
+        shipping_cost:
+          type: number
+          format: double
+          nullable: true
+        other_cost:
+          type: number
+          format: double
+          nullable: true
+        sale_date:
           type: string
           format: date
         attachments:
           type: array
           items:
             type: string
+        notes:
+          type: string
+          nullable: true
     Sale:
       type: object
       properties:
@@ -362,17 +782,22 @@ components:
         buyer:
           type: string
           nullable: true
-        salePrice:
+        sale_price:
           type: number
+          format: double
         fee:
           type: number
-        shippingCost:
+          format: double
+        shipping_cost:
           type: number
-        otherCost:
+          format: double
+        other_cost:
           type: number
-        netIncome:
+          format: double
+        net_income:
           type: number
-        saleDate:
+          format: double
+        sale_date:
           type: string
           format: date
         attachments:
@@ -382,85 +807,6 @@ components:
         notes:
           type: string
           nullable: true
-    AssetPayload:
-      type: object
-      required: [name, category, status, enabledDate]
-      properties:
-        name:
-          type: string
-        category:
-          type: string
-        brand:
-          type: string
-        model:
-          type: string
-        serialNo:
-          type: string
-        status:
-          type: string
-        purchaseDate:
-          type: string
-          format: date
-        enabledDate:
-          type: string
-          format: date
-        retiredDate:
-          type: string
-          format: date
-        coverImageUrl:
-          type: string
-        notes:
-          type: string
-        tags:
-          type: array
-          items:
-            type: string
-        purchases:
-          type: array
-          items:
-            type: object
-            required: [type, price, purchaseDate]
-            properties:
-              type:
-                type: string
-              platform:
-                type: string
-              price:
-                type: number
-              shippingCost:
-                type: number
-              purchaseDate:
-                type: string
-                format: date
-              attachments:
-                type: array
-                items:
-                  type: string
-    SellPayload:
-      type: object
-      required: [salePrice, saleDate]
-      properties:
-        platform:
-          type: string
-        buyer:
-          type: string
-        salePrice:
-          type: number
-        fee:
-          type: number
-        shippingCost:
-          type: number
-        otherCost:
-          type: number
-        saleDate:
-          type: string
-          format: date
-        attachments:
-          type: array
-          items:
-            type: string
-        notes:
-          type: string
     Wishlist:
       type: object
       properties:
@@ -468,57 +814,62 @@ components:
           type: integer
         name:
           type: string
-        category:
-          type: string
+        category_id:
+          type: integer
           nullable: true
-        brand:
-          type: string
+        brand_id:
+          type: integer
           nullable: true
-        model:
-          type: string
-          nullable: true
-        expectedPrice:
+        expected_price:
           type: number
+          format: double
           nullable: true
-        plannedPlatform:
+        image_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          description: UNPURCHASED 或 PURCHASED。
+        notes:
           type: string
           nullable: true
         link:
           type: string
           nullable: true
-        notes:
-          type: string
-          nullable: true
-        priority:
-          type: integer
-        convertedAssetId:
+        converted_asset_id:
           type: integer
           nullable: true
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
-    WishlistPayload:
+    WishlistReq:
       type: object
       required: [name]
       properties:
         name:
           type: string
-        category:
-          type: string
-        brand:
-          type: string
-        model:
-          type: string
-        expectedPrice:
+        category_id:
+          type: integer
+          nullable: true
+        brand_id:
+          type: integer
+          nullable: true
+        expected_price:
           type: number
-        plannedPlatform:
+          format: double
+          nullable: true
+        image_url:
           type: string
-        link:
+          nullable: true
+        status:
           type: string
+          description: UNPURCHASED/PURCHASED。
         notes:
           type: string
-        priority:
-          type: integer
+          nullable: true
+        link:
+          type: string
+          nullable: true

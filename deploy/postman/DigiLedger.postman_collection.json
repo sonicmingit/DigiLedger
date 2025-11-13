@@ -274,6 +274,94 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "List Brands",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/brands",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "brands"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Brand",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Sony\",\n  \"alias\": \"索尼\",\n  \"initial\": \"S\",\n  \"sort\": 10\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/brands",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "brands"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Brand",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Canon\",\n  \"alias\": \"佳能\",\n  \"initial\": \"C\",\n  \"sort\": 20\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/brands/2",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "brands",
+                                "2"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Brand",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/dict/brands/5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dict",
+                                "brands",
+                                "5"
+                            ]
+                        }
+                    }
                 }
             ]
         },
@@ -335,6 +423,148 @@
                                     "key": "tag_ids",
                                     "value": "1,3"
                                 }
+                            }
+                        },
+                        {
+                            "name": "Update Accessory Purchase",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"屏幕保护膜\",\n  \"type\": \"ACCESSORY\",\n  \"platform_id\": 3,\n  \"seller\": \"配件专营店\",\n  \"price\": 79.0,\n  \"currency\": \"CNY\",\n  \"quantity\": 1,\n  \"shipping_cost\": 0,\n  \"purchase_date\": \"2025-01-08\",\n  \"notes\": \"改为免邮\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/purchases/12",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "purchases",
+                                        "12"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Delete Accessory Purchase",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/purchases/12",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "purchases",
+                                        "12"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Wishlist",
+            "item": [
+                {
+                    "name": "List Wishlist",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Wishlist Item",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1999,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"status\": \"UNPURCHASED\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"notes\": \"直播拾音方案\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Mark Wishlist Purchased",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1899,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"status\": \"PURCHASED\",\n  \"notes\": \"双11入手\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist/3",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist",
+                                "3"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Convert Wishlist To Asset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"status\": \"USING\",\n  \"purchase_date\": \"2025-02-01\",\n  \"tag_ids\": [\n    5\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"platform_id\": 1,\n      \"price\": 1899,\n      \"purchase_date\": \"2025-02-01\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist/3/convert",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist",
+                                "3",
+                                "convert"
                             ]
                         }
                     }

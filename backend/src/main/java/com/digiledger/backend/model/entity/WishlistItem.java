@@ -2,7 +2,6 @@ package com.digiledger.backend.model.entity;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**

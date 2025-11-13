@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import jakarta.validation.constraints.*;
 
 /**
  * 心愿单创建/更新请求。
@@ -22,14 +23,11 @@ public class WishlistRequest {
 
     private Long brandId;
 
-    @Size(max = 200, message = "型号过长")
-    private String model;
-
-    @DecimalMin(value = "0", message = "期望价格需大于等于 0")
-    private BigDecimal expectedPrice;
-
     @Size(max = 500, message = "图片链接过长")
     private String imageUrl;
+
+    @Pattern(regexp = "未购买|已购买", message = "状态取值非法")
+    private String status = "未购买";
 
     @Size(max = 500, message = "链接过长")
     private String link;
@@ -67,20 +65,12 @@ public class WishlistRequest {
         this.brandId = brandId;
     }
 
-    public String getModel() {
-        return model;
+    public Long getBrandId() {
+        return brandId;
     }
 
-    public void setModel(String model) {
-        this.model = model;
-    }
-
-    public BigDecimal getExpectedPrice() {
-        return expectedPrice;
-    }
-
-    public void setExpectedPrice(BigDecimal expectedPrice) {
-        this.expectedPrice = expectedPrice;
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
     }
 
     public String getImageUrl() {
@@ -89,6 +79,20 @@ public class WishlistRequest {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getLink() {

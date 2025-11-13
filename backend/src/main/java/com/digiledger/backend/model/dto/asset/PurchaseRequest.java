@@ -14,7 +14,7 @@ public class PurchaseRequest {
     @NotBlank(message = "购买类型不能为空")
     private String type;
 
-    @Size(max = 200, message = "名称过长")
+    @Size(max = 200, message = "名称长度需在 200 字以内")
     private String name;
 
     private Long platformId;

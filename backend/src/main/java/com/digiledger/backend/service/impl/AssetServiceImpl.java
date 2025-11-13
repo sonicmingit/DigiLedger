@@ -16,6 +16,7 @@ import com.digiledger.backend.model.entity.AssetTagMap;
 import com.digiledger.backend.model.entity.DeviceAsset;
 import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictCategory;
+import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
@@ -144,8 +145,9 @@ public class AssetServiceImpl implements AssetService {
     public Long createAsset(AssetCreateRequest request) {
         validateDates(request);
         Map<Long, DictCategory> categoryMap = loadCategoryMap();
-        DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
+        DictCategory category = resolveCategory(request.getCategoryId(), categoryMap);
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
+        DictBrand brand = resolveBrand(request.getBrandId());
         List<Long> tagIds = validateTagIds(request.getTagIds());
         DictBrand brand = resolveBrand(request.getBrandId());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
@@ -163,8 +165,9 @@ public class AssetServiceImpl implements AssetService {
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
         validateDates(request);
         Map<Long, DictCategory> categoryMap = loadCategoryMap();
-        DictCategory category = resolveLeafCategory(request.getCategoryId(), categoryMap);
+        DictCategory category = resolveCategory(request.getCategoryId(), categoryMap);
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
+        DictBrand brand = resolveBrand(request.getBrandId());
         List<Long> tagIds = validateTagIds(request.getTagIds());
         DictBrand brand = resolveBrand(request.getBrandId());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
@@ -231,19 +234,37 @@ public class AssetServiceImpl implements AssetService {
         return toSaleDTO(saleMapper.findLatestByAsset(id));
     }
 
+    @Override
+    @Transactional
+    public void updateAssetStatus(Long id, String status) {
+        if (!VALID_STATUSES.contains(status)) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
+        }
+        Optional.ofNullable(assetMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        assetMapper.updateStatus(id, status);
+    }
+
     private void validateDates(AssetCreateRequest request) {
-        if (request.getPurchaseDate() != null && request.getEnabledDate() != null
-                && request.getEnabledDate().isBefore(request.getPurchaseDate())) {
+        LocalDate purchaseDate = request.getPurchaseDate();
+        LocalDate enabledDate = request.getEnabledDate();
+        if (enabledDate == null) {
+            enabledDate = purchaseDate;
+            request.setEnabledDate(enabledDate);
+        }
+        if (enabledDate == null) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "启用日期不能为空");
+        }
+        if (purchaseDate != null && enabledDate.isBefore(purchaseDate)) {
             throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期不能早于购买日期");
         }
-        if (request.getRetiredDate() != null && request.getEnabledDate() != null
-                && request.getRetiredDate().isBefore(request.getEnabledDate())) {
+        if (request.getRetiredDate() != null && request.getRetiredDate().isBefore(enabledDate)) {
             throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "报废日期不能早于启用日期");
         }
         if (request.getPurchases() != null) {
             request.getPurchases().forEach(purchase -> {
-                if (request.getEnabledDate() != null && purchase.getPurchaseDate() != null
-                        && request.getEnabledDate().isBefore(purchase.getPurchaseDate())) {
+                if (enabledDate != null && purchase.getPurchaseDate() != null
+                        && enabledDate.isBefore(purchase.getPurchaseDate())) {
                     throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期需晚于购买日期");
                 }
             });
@@ -251,6 +272,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brandDict) {
+    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brand) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
         }
@@ -265,6 +287,8 @@ public class AssetServiceImpl implements AssetService {
             asset.setBrandId(request.getBrandId());
             asset.setBrand(request.getBrand());
         }
+        asset.setBrandId(brand != null ? brand.getId() : null);
+        asset.setBrand(determineBrandName(request.getBrand(), brand));
         asset.setModel(request.getModel());
         asset.setSerialNo(request.getSerialNo());
         asset.setStatus(request.getStatus());
@@ -282,6 +306,7 @@ public class AssetServiceImpl implements AssetService {
         }
         for (PurchaseRequest request : purchaseRequests) {
             validatePurchaseName(request);
+            validatePurchase(request);
             Purchase purchase = new Purchase();
             purchase.setAssetId(assetId);
             purchase.setType(request.getType());
@@ -336,6 +361,16 @@ public class AssetServiceImpl implements AssetService {
                 asset.getPurchaseDate(),
                 tags
         );
+    }
+
+    private BrandDTO toBrandDTO(DictBrand brand, String fallbackName) {
+        if (brand == null) {
+            if (fallbackName == null || fallbackName.isBlank()) {
+                return null;
+            }
+            return new BrandDTO(null, fallbackName, null, null, null);
+        }
+        return new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort());
     }
 
     private AssetMetrics calculateMetrics(DeviceAsset asset, List<Purchase> purchases, List<Sale> sales) {
@@ -431,7 +466,7 @@ public class AssetServiceImpl implements AssetService {
                 .collect(Collectors.toMap(DictCategory::getId, category -> category));
     }
 
-    private DictCategory resolveLeafCategory(Long categoryId, Map<Long, DictCategory> categoryMap) {
+    private DictCategory resolveCategory(Long categoryId, Map<Long, DictCategory> categoryMap) {
         if (categoryId == null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "类别不能为空");
         }
@@ -439,10 +474,22 @@ public class AssetServiceImpl implements AssetService {
         if (category == null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "类别不存在");
         }
-        if (dictCategoryMapper.countChildren(categoryId) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "类别需选择叶子节点");
-        }
         return category;
+    }
+
+    private DictBrand resolveBrand(Long brandId) {
+        if (brandId == null) {
+            return null;
+        }
+        return Optional.ofNullable(dictBrandMapper.findById(brandId))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+    }
+
+    private String determineBrandName(String customName, DictBrand brand) {
+        if (customName != null && !customName.isBlank()) {
+            return customName;
+        }
+        return brand != null ? brand.getName() : null;
     }
 
     private String buildCategoryPath(Long categoryId, Map<Long, DictCategory> categoryMap) {
@@ -501,6 +548,20 @@ public class AssetServiceImpl implements AssetService {
                 })
                 .toList();
         assetTagMapMapper.batchInsert(mappings);
+    }
+
+    private void validatePurchase(PurchaseRequest request) {
+        if (request == null) {
+            return;
+        }
+        String type = request.getType();
+        if (type == null) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "购买类型不能为空");
+        }
+        if (List.of("ACCESSORY", "SERVICE").contains(type)
+                && (request.getName() == null || request.getName().isBlank())) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "配件/服务名称不能为空");
+        }
     }
 
     private DictPlatform resolvePlatform(Long platformId, Map<Long, DictPlatform> platformCache) {

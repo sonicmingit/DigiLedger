@@ -45,7 +45,8 @@
         FROM dict_brand
         WHERE name = #{name}
         <if test="excludeId != null">
-            AND id &lt;&gt; #{excludeId}
+            AND id != #{excludeId}
         </if>
     </select>
+
 </mapper>

@@ -4,7 +4,7 @@
       <el-aside width="220px" class="sidebar">
         <div class="logo">DigiLedger</div>
         <el-menu :default-active="active" router>
-          <el-menu-item index="/">仪表盘</el-menu-item>
+          <el-menu-item index="/">资产总览</el-menu-item>
           <el-menu-item index="/assets">物品中心</el-menu-item>
           <el-menu-item index="/wishlist">心愿单</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
@@ -85,5 +85,28 @@ const active = computed(() => {
 
 .sidebar :deep(.el-menu-item) {
   color: #cbd5f5;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sidebar :deep(.el-menu) {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .main {
+    padding: 16px;
+  }
 }
 </style>
