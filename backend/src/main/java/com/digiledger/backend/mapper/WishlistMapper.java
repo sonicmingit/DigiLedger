@@ -12,7 +12,7 @@ import java.util.List;
 @Mapper
 public interface WishlistMapper {
 
-    List<WishlistItem> findAll();
+    List<WishlistItem> findAll(@Param("status") String status);
 
     WishlistItem findById(@Param("id") Long id);
 
