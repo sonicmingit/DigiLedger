@@ -1,5 +1,13 @@
 package com.digiledger.backend.model.dto.wishlist;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
 import jakarta.validation.constraints.*;
 
 /**
@@ -23,6 +31,9 @@ public class WishlistRequest {
 
     @Size(max = 500, message = "链接过长")
     private String link;
+
+    @Pattern(regexp = "未购买|已购买", message = "状态非法")
+    private String status = "未购买";
 
     private String notes;
 
@@ -54,6 +65,14 @@ public class WishlistRequest {
         this.brandId = brandId;
     }
 
+    public Long getBrandId() {
+        return brandId;
+    }
+
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
+    }
+
     public String getImageUrl() {
         return imageUrl;
     }
@@ -62,6 +81,12 @@ public class WishlistRequest {
         this.imageUrl = imageUrl;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     public String getStatus() {
         return status;
     }
@@ -76,6 +101,14 @@ public class WishlistRequest {
 
     public void setLink(String link) {
         this.link = link;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getNotes() {

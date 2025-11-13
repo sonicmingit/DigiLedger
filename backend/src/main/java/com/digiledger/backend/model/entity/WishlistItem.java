@@ -13,19 +13,23 @@ public class WishlistItem {
     private Long id;
     /** 名称 */
     private String name;
-    /** 目标类别 ID */
+    /** 类别 ID */
     private Long categoryId;
-    /** 目标品牌 ID */
+    /** 品牌 ID */
     private Long brandId;
-    /** 商品图片 */
+    /** 型号 */
+    private String model;
+    /** 期望价格 */
+    private BigDecimal expectedPrice;
+    /** 心愿图片 */
     private String imageUrl;
-    /** 状态 */
-    private String status;
     /** 商品链接 */
     private String link;
+    /** 心愿状态 */
+    private String status;
     /** 备注 */
     private String notes;
-    /** 优先级 1-5 */
+    /** 优先级（1-5） */
     private Integer priority;
     /** 转化后的资产 ID */
     private Long convertedAssetId;

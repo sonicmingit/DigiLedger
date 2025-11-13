@@ -8,9 +8,12 @@
         <result column="name" property="name" />
         <result column="category_id" property="categoryId" />
         <result column="brand_id" property="brandId" />
+        <result column="model" property="model" />
+        <result column="expected_price" property="expectedPrice" />
         <result column="image_url" property="imageUrl" />
         <result column="status" property="status" />
         <result column="link" property="link" />
+        <result column="status" property="status" />
         <result column="notes" property="notes" />
         <result column="priority" property="priority" />
         <result column="converted_asset_id" property="convertedAssetId" />
@@ -19,7 +22,7 @@
     </resultMap>
 
     <select id="findAll" resultMap="wishlistResultMap">
-        SELECT * FROM wishlist ORDER BY priority ASC, updated_at DESC
+        SELECT * FROM wishlist ORDER BY updated_at DESC
     </select>
 
     <select id="findById" resultMap="wishlistResultMap">
@@ -28,11 +31,11 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO wishlist (
-            name, category_id, brand_id, image_url, status,
-            link, notes, priority, converted_asset_id
+            name, category_id, brand_id, model, expected_price,
+            image_url, link, status, notes, priority, converted_asset_id
         ) VALUES (
-            #{name}, #{categoryId}, #{brandId}, #{imageUrl}, #{status},
-            #{link}, #{notes}, #{priority}, #{convertedAssetId}
+            #{name}, #{categoryId}, #{brandId}, #{model}, #{expectedPrice},
+            #{imageUrl}, #{link}, #{status}, #{notes}, #{priority}, #{convertedAssetId}
         )
     </insert>
 
@@ -41,11 +44,14 @@
         SET name = #{name},
             category_id = #{categoryId},
             brand_id = #{brandId},
+            model = #{model},
+            expected_price = #{expectedPrice},
             image_url = #{imageUrl},
             status = #{status},
             link = #{link},
-            notes = #{notes},
+            status = #{status},
             priority = #{priority},
+            notes = #{notes},
             converted_asset_id = #{convertedAssetId},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
