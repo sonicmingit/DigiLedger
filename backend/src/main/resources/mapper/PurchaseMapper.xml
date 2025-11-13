@@ -29,6 +29,10 @@
         SELECT * FROM purchase WHERE asset_id = #{assetId} ORDER BY purchase_date DESC, id DESC
     </select>
 
+    <select id="findById" resultMap="purchaseResultMap">
+        SELECT * FROM purchase WHERE id = #{id}
+    </select>
+
     <select id="sumInvestByAsset" parameterType="long" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(price + COALESCE(shipping_cost,0)), 0)
         FROM purchase
@@ -46,6 +50,31 @@
             #{warrantyExpireDate}, #{attachments}, #{notes}
         )
     </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.Purchase">
+        UPDATE purchase
+        SET type = #{type},
+            name = #{name},
+            platform_id = #{platformId},
+            platform_name = #{platformName},
+            seller = #{seller},
+            price = #{price},
+            currency = #{currency},
+            quantity = #{quantity},
+            shipping_cost = #{shippingCost},
+            purchase_date = #{purchaseDate},
+            invoice_no = #{invoiceNo},
+            warranty_months = #{warrantyMonths},
+            warranty_expire_date = #{warrantyExpireDate},
+            attachments = #{attachments},
+            notes = #{notes},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM purchase WHERE id = #{id}
+    </delete>
 
     <delete id="deleteByAsset" parameterType="long">
         DELETE FROM purchase WHERE asset_id = #{assetId}

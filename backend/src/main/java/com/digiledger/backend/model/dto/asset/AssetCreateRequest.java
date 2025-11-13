@@ -34,7 +34,6 @@ public class AssetCreateRequest {
 
     private LocalDate purchaseDate;
 
-    @NotNull(message = "启用日期不能为空")
     private LocalDate enabledDate;
 
     private LocalDate retiredDate;

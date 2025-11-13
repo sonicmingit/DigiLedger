@@ -44,4 +44,12 @@ public interface DictService {
     void updateTag(Long id, TagRequest request);
 
     void deleteTag(Long id);
+
+    List<BrandDTO> listBrands();
+
+    Long createBrand(BrandRequest request);
+
+    void updateBrand(Long id, BrandRequest request);
+
+    void deleteBrand(Long id);
 }

@@ -146,8 +146,10 @@
         WHERE category_id = #{categoryId}
     </update>
 
-    <select id="countByBrandId" resultType="long">
-        SELECT COUNT(1) FROM device_asset WHERE brand_id = #{brandId}
+    <select id="countByBrand" resultType="long">
+        SELECT COUNT(1)
+        FROM device_asset
+        WHERE brand_id = #{brandId}
     </select>
 
 </mapper>
