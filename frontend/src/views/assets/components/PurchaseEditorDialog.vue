@@ -36,9 +36,6 @@
       <el-form-item label="卖家">
         <el-input v-model="form.seller" />
       </el-form-item>
-      <el-form-item label="发票编号">
-        <el-input v-model="form.invoiceNo" />
-      </el-form-item>
       <el-form-item label="质保（月）">
         <el-input-number v-model="form.warrantyMonths" :min="0" :step="1" />
       </el-form-item>
@@ -87,7 +84,6 @@ const form = reactive({
   quantity: 1,
   purchaseDate: new Date().toISOString().slice(0, 10),
   seller: '',
-  invoiceNo: '',
   warrantyMonths: undefined as number | undefined,
   warrantyExpireDate: '',
   notes: ''
@@ -136,7 +132,6 @@ const open = async (purchase?: PurchaseRecord) => {
     form.quantity = purchase.quantity
     form.purchaseDate = purchase.purchaseDate
     form.seller = purchase.seller || ''
-    form.invoiceNo = purchase.invoiceNo || ''
     form.warrantyMonths = purchase.warrantyMonths || undefined
     form.warrantyExpireDate = purchase.warrantyExpireDate || ''
     form.notes = purchase.notes || ''
@@ -156,7 +151,6 @@ const reset = () => {
   form.quantity = 1
   form.purchaseDate = new Date().toISOString().slice(0, 10)
   form.seller = ''
-  form.invoiceNo = ''
   form.warrantyMonths = undefined
   form.warrantyExpireDate = ''
   form.notes = ''
