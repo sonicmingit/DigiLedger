@@ -265,11 +265,6 @@
       <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
     </template>
     </el-dialog>
-    <CategoryCreateDialog
-      v-model="categoryDialogVisible"
-      :default-parent-id="form.categoryId"
-      @success="handleCategoryDialogSuccess"
-    />
   </div>
 </template>
 
@@ -381,8 +376,6 @@ const handleBrandSelect = (id: number | null) => {
     form.brandName = (brand.alias?.trim() || brand.name || '').trim()
   }
 }
-const categoryDialogVisible = ref(false)
-
 const treeProps = {
   value: 'value',
   label: 'label',
@@ -533,12 +526,62 @@ const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
 }
 
-const handleCreateCategory = () => {
-  categoryDialogVisible.value = true
+const findCategoryNode = (id: number | null, nodes: CategoryNode[] = categoryTree.value): CategoryNode | null => {
+  if (id == null) return null
+  const stack = [...nodes]
+  while (stack.length) {
+    const node = stack.pop()!
+    if (node.id === id) {
+      return node
+    }
+    if (node.children?.length) {
+      stack.push(...node.children)
+    }
+  }
+  return null
 }
 
-const handleCategoryDialogSuccess = (payload: { id: number }) => {
-  form.categoryId = payload.id
+const getCategorySiblings = (parentId: number | null): CategoryNode[] => {
+  if (parentId == null) {
+    return categoryTree.value
+  }
+  const stack = [...categoryTree.value]
+  while (stack.length) {
+    const node = stack.pop()!
+    if (node.id === parentId) {
+      return node.children || []
+    }
+    if (node.children?.length) {
+      stack.push(...node.children)
+    }
+  }
+  return []
+}
+
+const nextCategorySort = (siblings: CategoryNode[]) =>
+  siblings.reduce((max, item) => Math.max(max, item.sort ?? 0), 0) + 10
+
+const handleCreateCategory = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入类别名称', '新建类别', {
+      confirmButtonText: '创建',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：笔记本电脑'
+    })
+    const trimmed = value?.trim()
+    if (!trimmed) return
+
+    const currentNode = findCategoryNode(form.categoryId)
+    const parentId = currentNode?.parentId ?? null
+    const siblings = getCategorySiblings(parentId)
+    const id = await createCategory({ name: trimmed, parentId, sort: nextCategorySort(siblings) })
+    await refreshDicts()
+    form.categoryId = id
+    ElMessage.success('类别已创建')
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    ElMessage.error('创建类别失败')
+  }
 }
 
 const handleCreatePlatform = async (purchase: any) => {
