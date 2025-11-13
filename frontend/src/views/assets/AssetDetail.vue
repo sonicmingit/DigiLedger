@@ -90,10 +90,17 @@
             </el-table>
           </el-card>
         </el-col>
-        <el-col :xs="24" :md="12" v-if="detail.status === '已出售'">
+        <el-col :xs="24" :md="12" v-if="detail.sales.length">
           <el-card>
             <template #header>售出记录</template>
             <el-table :data="detail.sales" size="small" empty-text="暂无数据">
+              <el-table-column label="范围" width="100">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.saleScope === 'ASSET' ? 'warning' : 'info'">
+                    {{ row.saleScope === 'ASSET' ? '主商品' : '配件' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column prop="saleDate" label="日期" width="120" />
               <el-table-column label="平台" width="140">
                 <template #default="{ row }">{{ row.platformName || '-' }}</template>
