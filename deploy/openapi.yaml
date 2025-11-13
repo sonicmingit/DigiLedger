@@ -283,6 +283,14 @@ paths:
   /api/wishlist:
     get:
       summary: 心愿单列表
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['未购买', '已购买']
+          description: 按状态筛选心愿单。
       responses:
         '200':
           description: 列表返回
@@ -664,9 +672,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -676,9 +681,6 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         attachments:
           type: array
           items:
@@ -707,9 +709,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -720,9 +719,6 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         notes:
           type: string
           nullable: true
@@ -840,7 +836,7 @@ components:
           description: 相对路径，形如 /oss/digiledger/{objectKey}
         status:
           type: string
-          description: UNPURCHASED 或 PURCHASED。
+          description: 未购买 或 已购买。
         notes:
           type: string
           nullable: true

@@ -115,6 +115,8 @@ CREATE TABLE IF NOT EXISTS purchase (
 CREATE TABLE IF NOT EXISTS sale (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   asset_id BIGINT NOT NULL COMMENT '关联资产ID',
+  sale_scope VARCHAR(20) NOT NULL DEFAULT 'ASSET' COMMENT '出售范围',
+  purchase_id BIGINT COMMENT '关联购买记录ID',
   platform_id BIGINT COMMENT '出售平台ID',
   platform_name VARCHAR(100) COMMENT '出售平台名称',
   buyer VARCHAR(200) COMMENT '买家',
@@ -129,7 +131,9 @@ CREATE TABLE IF NOT EXISTS sale (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_sale_asset (asset_id),
+  INDEX idx_sale_purchase (purchase_id),
   CONSTRAINT fk_sale_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id),
+  CONSTRAINT fk_sale_purchase FOREIGN KEY (purchase_id) REFERENCES purchase(id),
   CONSTRAINT fk_sale_platform FOREIGN KEY (platform_id) REFERENCES dict_platform(id)
 ) COMMENT='出售记录表';
 

@@ -1,5 +1,7 @@
 package com.digiledger.backend.model.dto.asset;
 
+import com.digiledger.backend.model.enums.SaleScope;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -16,6 +18,11 @@ import java.util.List;
 public class AssetSellRequest {
 
     private Long platformId;
+
+    @NotNull(message = "出售范围不能为空")
+    private SaleScope saleScope = SaleScope.ASSET;
+
+    private Long purchaseId;
 
     @Size(max = 200, message = "买家信息过长")
     private String buyer;
@@ -39,4 +46,15 @@ public class AssetSellRequest {
     private List<@Size(max = 500, message = "附件 URL 过长") String> attachments;
 
     private String notes;
+
+    @AssertTrue(message = "配件出售需要选择购买记录")
+    public boolean isPurchaseSelectedWhenAccessory() {
+        if (saleScope == null) {
+            return false;
+        }
+        if (saleScope == SaleScope.ACCESSORY) {
+            return purchaseId != null;
+        }
+        return true;
+    }
 }

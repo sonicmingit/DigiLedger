@@ -1,11 +1,12 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    :title="isEdit ? '编辑物品' : '新建物品'"
-    width="760px"
-    @closed="reset"
-    destroy-on-close
-  >
+  <div>
+    <el-dialog
+      v-model="visible"
+      :title="isEdit ? '编辑物品' : '新建物品'"
+      width="760px"
+      @closed="reset"
+      destroy-on-close
+    >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" status-icon>
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
@@ -143,14 +144,17 @@
           :title="`记录 ${index + 1} · ${purchase.type}`"
         >
           <el-row :gutter="12">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select v-model="purchase.type" placeholder="类型" @change="handlePurchaseTypeChange(purchase)">
                 <el-option label="主商品" value="PRIMARY" />
                 <el-option label="配件" value="ACCESSORY" />
                 <el-option label="服务" value="SERVICE" />
               </el-select>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="6">
+              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
+            </el-col>
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select
                 v-model="purchase.platformId"
                 placeholder="来源平台"
@@ -170,29 +174,23 @@
                 新建平台
               </el-button>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
             </el-col>
-            <el-col :xs="24" :md="6">
+          </el-row>
+          <el-row :gutter="12" class="mt">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" :step="10" placeholder="运费" />
             </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.currency" placeholder="币种（如 CNY）" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
-            </el-col>
-            <el-col :xs="24" :md="6" v-if="purchase.type !== 'PRIMARY'">
-              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
             </el-col>
           </el-row>
           <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.purchaseDate"
                 type="date"
@@ -202,10 +200,7 @@
                 clearable
               />
             </el-col>
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.invoiceNo" placeholder="发票编号" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number
                 v-model="purchase.warrantyMonths"
                 :min="0"
@@ -214,7 +209,7 @@
                 controls-position="right"
               />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.warrantyExpireDate"
                 type="date"
@@ -237,7 +232,7 @@
               accept="image/*"
               capture="environment"
             >
-              <el-button text>上传凭证</el-button>
+              <el-button text>上传附件</el-button>
             </el-upload>
             <el-tag
               v-for="(url, idx) in purchase.attachments"
@@ -260,7 +255,13 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
     </template>
-  </el-dialog>
+    </el-dialog>
+    <CategoryCreateDialog
+      v-model="categoryDialogVisible"
+      :default-parent-id="form.categoryId"
+      @success="handleCategoryDialogSuccess"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -321,10 +322,8 @@ const form = reactive({
     seller?: string
     price: number
     shippingCost: number
-    currency: string
     quantity: number
     purchaseDate: string
-    invoiceNo?: string
     warrantyMonths?: number
     warrantyExpireDate?: string
     notes?: string
@@ -352,6 +351,7 @@ const ensureBrandOption = (value: string) => {
 }
 
 const { load: loadDicts, categoryTree, tagTree, platforms } = useDictionaries()
+const categoryDialogVisible = ref(false)
 
 const treeProps = {
   value: 'value',
@@ -402,10 +402,8 @@ const open = (asset?: AssetDetail) => {
           seller: p.seller || '',
           price: p.price,
           shippingCost: p.shippingCost ?? 0,
-          currency: p.currency || 'CNY',
           quantity: p.quantity || 1,
           purchaseDate: p.purchaseDate || today(),
-          invoiceNo: p.invoiceNo || '',
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
@@ -448,14 +446,12 @@ const addPurchase = () => {
     seller: '',
     price: 0,
     shippingCost: 0,
-    currency: 'CNY',
     quantity: 1,
     purchaseDate: form.purchaseDate || today(),
-    invoiceNo: '',
     warrantyMonths: undefined,
     warrantyExpireDate: '',
     notes: '',
-    name: undefined,
+    name: form.purchases.length ? '' : undefined,
     attachments: []
   })
 }
@@ -502,23 +498,12 @@ const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
 }
 
-const handleCreateCategory = async () => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入类别名称', '新建类别', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：影像设备'
-    })
-    if (!value) return
-    const parentId = form.categoryId || null
-    const id = await createCategory({ name: value, parentId })
-    await loadDicts()
-    form.categoryId = id
-    ElMessage.success('类别已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建类别失败')
-  }
+const handleCreateCategory = () => {
+  categoryDialogVisible.value = true
+}
+
+const handleCategoryDialogSuccess = (payload: { id: number }) => {
+  form.categoryId = payload.id
 }
 
 const handleCreatePlatform = async () => {
@@ -589,10 +574,8 @@ const submit = () => {
           seller: p.seller || undefined,
           price: p.price,
           shippingCost: p.shippingCost,
-          currency: p.currency || 'CNY',
           quantity: p.quantity,
           purchaseDate: p.purchaseDate,
-          invoiceNo: p.invoiceNo || undefined,
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || undefined,
           notes: p.notes || undefined,

@@ -1,5 +1,15 @@
 :root {
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --color-bg: #0f172a;
+  --color-bg-alt: #0f172a;
+  --color-header-bg: #1e293b;
+  --color-sidebar-bg: #111827;
+  --color-sidebar-text: #94a3b8;
+  --color-text: #e2e8f0;
+  --color-muted: #cbd5f5;
+  --color-accent: #38bdf8;
+  --color-accent-soft: rgba(56, 189, 248, 0.2);
+  --color-card: #1e293b;
 }
 
 body, html, #app {

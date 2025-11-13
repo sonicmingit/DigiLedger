@@ -1,5 +1,7 @@
 package com.digiledger.backend.model.dto.asset;
 
+import com.digiledger.backend.model.enums.SaleScope;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.List;
  */
 public record SaleDTO(
         Long id,
+        SaleScope saleScope,
+        Long purchaseId,
         Long platformId,
         String platformName,
         String buyer,

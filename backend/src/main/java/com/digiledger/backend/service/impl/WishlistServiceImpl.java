@@ -48,8 +48,9 @@ public class WishlistServiceImpl implements WishlistService {
     }
 
     @Override
-    public List<WishlistDTO> listAll() {
-        return wishlistMapper.findAll().stream()
+    public List<WishlistDTO> listAll(String status) {
+        String normalizedStatus = normalizeStatus(status);
+        return wishlistMapper.findAll(normalizedStatus).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -64,7 +65,7 @@ public class WishlistServiceImpl implements WishlistService {
     @Transactional
     public Long create(WishlistRequest request) {
         validateReferences(request);
-        WishlistItem item = buildEntity(request);
+        WishlistItem item = buildEntity(request, "未购买");
         wishlistMapper.insert(item);
         return item.getId();
     }
@@ -75,7 +76,9 @@ public class WishlistServiceImpl implements WishlistService {
         WishlistItem exist = Optional.ofNullable(wishlistMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
         validateReferences(request);
-        WishlistItem update = buildEntity(request);
+        String status = Optional.ofNullable(exist.getStatus()).orElse("未购买");
+        validateStatus(status);
+        WishlistItem update = buildEntity(request, status);
         update.setId(id);
         update.setConvertedAssetId(exist.getConvertedAssetId());
         wishlistMapper.update(update);
@@ -131,7 +134,7 @@ public class WishlistServiceImpl implements WishlistService {
         return assetId;
     }
 
-    private WishlistItem buildEntity(WishlistRequest request) {
+    private WishlistItem buildEntity(WishlistRequest request, String status) {
         WishlistItem item = new WishlistItem();
         item.setName(request.getName());
         item.setCategoryId(request.getCategoryId());
@@ -141,11 +144,6 @@ public class WishlistServiceImpl implements WishlistService {
         item.setImageUrl(storagePathHelper.toObjectKey(request.getImageUrl()));
         item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
         item.setLink(request.getLink());
-        String status = Optional.ofNullable(request.getStatus())
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .orElse("未购买");
-        validateStatus(status);
         item.setStatus(status);
         item.setNotes(request.getNotes());
         item.setPriority(Optional.ofNullable(request.getPriority()).orElse(3));
@@ -161,9 +159,6 @@ public class WishlistServiceImpl implements WishlistService {
             Optional.ofNullable(dictBrandMapper.findById(request.getBrandId()))
                     .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
         }
-        if (request.getStatus() == null) {
-            request.setStatus("未购买");
-        }
     }
 
     private WishlistDTO toDto(WishlistItem item) {
@@ -177,6 +172,7 @@ public class WishlistServiceImpl implements WishlistService {
                 storagePathHelper.toRelativeUrl(item.getImageUrl()),
                 item.getLink(),
                 item.getStatus(),
+                item.getLink(),
                 item.getNotes(),
                 item.getPriority(),
                 item.getConvertedAssetId(),
@@ -189,5 +185,14 @@ public class WishlistServiceImpl implements WishlistService {
         if (!ALLOWED_STATUSES.contains(status)) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "心愿状态非法");
         }
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        String trimmed = status.trim();
+        validateStatus(trimmed);
+        return trimmed;
     }
 }
