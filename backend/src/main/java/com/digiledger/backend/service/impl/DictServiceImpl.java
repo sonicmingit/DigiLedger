@@ -275,8 +275,8 @@ public class DictServiceImpl implements DictService {
     public void deleteBrand(Long id) {
         DictBrand brand = Optional.ofNullable(dictBrandMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
-        if (assetMapper.countByBrandId(brand.getId()) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "存在关联物品，无法删除");
+        if (assetMapper.countByBrand(brand.getId()) > 0 || wishlistMapper.countByBrand(brand.getId()) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌已被使用，无法删除");
         }
         dictBrandMapper.delete(id);
     }
@@ -365,54 +365,6 @@ public class DictServiceImpl implements DictService {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "标签已关联物品，无法删除");
         }
         dictTagMapper.delete(tag.getId());
-    }
-
-    @Override
-    public List<BrandDTO> listBrands() {
-        return dictBrandMapper.findAll().stream()
-                .map(brand -> new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort()))
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public Long createBrand(BrandRequest request) {
-        if (dictBrandMapper.countByName(request.getName(), null) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
-        }
-        DictBrand brand = new DictBrand();
-        brand.setName(request.getName());
-        brand.setAlias(request.getAlias());
-        brand.setInitial(request.getInitial());
-        brand.setSort(Optional.ofNullable(request.getSort()).orElse(0));
-        dictBrandMapper.insert(brand);
-        return brand.getId();
-    }
-
-    @Override
-    @Transactional
-    public void updateBrand(Long id, BrandRequest request) {
-        DictBrand existing = Optional.ofNullable(dictBrandMapper.findById(id))
-                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
-        if (dictBrandMapper.countByName(request.getName(), id) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
-        }
-        existing.setName(request.getName());
-        existing.setAlias(request.getAlias());
-        existing.setInitial(request.getInitial());
-        existing.setSort(Optional.ofNullable(request.getSort()).orElse(0));
-        dictBrandMapper.update(existing);
-    }
-
-    @Override
-    @Transactional
-    public void deleteBrand(Long id) {
-        DictBrand existing = Optional.ofNullable(dictBrandMapper.findById(id))
-                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
-        if (assetMapper.countByBrand(existing.getId()) > 0 || wishlistMapper.countByBrand(existing.getId()) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌已被使用，无法删除");
-        }
-        dictBrandMapper.delete(existing.getId());
     }
 
     private void sortCategoryNodes(List<CategoryTreeNodeDTO> nodes) {
