@@ -34,6 +34,8 @@ export type AssetPayload = {
 // 售出请求载荷，用于出售向导
 export type SellPayload = {
   platformId?: number
+  saleScope: 'ASSET' | 'ACCESSORY'
+  purchaseId?: number
   buyer?: string
   salePrice: number
   fee?: number
