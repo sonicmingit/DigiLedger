@@ -16,16 +16,23 @@
         />
       </el-form-item>
       <el-form-item label="品牌">
-        <el-select
-          v-model="form.brand"
-          filterable
-          allow-create
-          default-first-option
-          placeholder="选择或输入品牌"
-          style="width: 100%"
-        >
-          <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item" />
-        </el-select>
+        <div class="brand-field">
+          <el-select
+            v-model="form.brandId"
+            filterable
+            clearable
+            placeholder="选择品牌"
+            @change="handleBrandSelect"
+          >
+            <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
+          </el-select>
+          <el-input
+            v-model="form.brandName"
+            placeholder="自定义品牌/别名"
+            clearable
+            @blur="normalizeBrandName"
+          />
+        </div>
       </el-form-item>
       <el-form-item label="型号">
         <el-input v-model="form.model" placeholder="型号（可选）" />
@@ -79,7 +86,8 @@ const today = () => new Date().toISOString().slice(0, 10)
 const form = reactive({
   name: '',
   categoryId: null as number | null,
-  brand: '',
+  brandId: null as number | null,
+  brandName: '',
   model: '',
   enabledDate: today(),
   tagIds: [] as number[],
@@ -93,13 +101,49 @@ const rules = {
   enabledDate: [{ required: true, message: '请选择启用日期', trigger: 'change' }]
 }
 
-const { load: loadDicts, categoryTree, tagTree } = useDictionaries()
-const brandOptions = ref<string[]>([])
+const { load: loadDicts, categoryTree, tagTree, brands, brandMap } = useDictionaries()
 
-const ensureBrandOption = (value: string) => {
-  if (!value) return
-  if (!brandOptions.value.includes(value)) {
-    brandOptions.value.push(value)
+const brandOptions = computed(() =>
+  brands.value.map((item) => ({
+    id: item.id,
+    label: ((item.alias && item.alias.trim()) || item.name || '').trim()
+  }))
+)
+
+const resolveBrandNameFromItem = (item: WishlistItem) => {
+  if (item.brandName && item.brandName.trim().length) {
+    return item.brandName.trim()
+  }
+  if (item.brandId) {
+    const brand = brandMap.value.get(item.brandId)
+    if (brand) {
+      const alias = brand.alias?.trim()
+      if (alias) return alias
+      if (brand.name) return brand.name
+    }
+  }
+  return ''
+}
+
+const normalizeBrandName = () => {
+  form.brandName = form.brandName.trim()
+  if (form.brandId && !form.brandName) {
+    const brand = brandMap.value.get(form.brandId)
+    if (brand) {
+      form.brandName = (brand.alias?.trim() || brand.name || '').trim()
+    }
+  }
+}
+
+const handleBrandSelect = (id: number | null) => {
+  if (!id) {
+    form.brandId = null
+    normalizeBrandName()
+    return
+  }
+  const brand = brandMap.value.get(id)
+  if (brand) {
+    form.brandName = (brand.alias?.trim() || brand.name || '').trim()
   }
 }
 
@@ -131,8 +175,9 @@ const tagOptions = computed(() => buildTagOptions(tagTree.value))
 const open = (item: WishlistItem) => {
   current.value = item
   form.name = item.name
-  form.brand = item.brand || ''
-  ensureBrandOption(form.brand)
+  form.brandId = item.brandId ?? null
+  form.brandName = resolveBrandNameFromItem(item)
+  normalizeBrandName()
   form.model = item.model || ''
   form.notes = item.notes || ''
   form.categoryId = item.categoryId ?? null
@@ -145,7 +190,8 @@ const open = (item: WishlistItem) => {
 const reset = () => {
   current.value = null
   form.name = ''
-  form.brand = ''
+  form.brandId = null
+  form.brandName = ''
   form.model = ''
   form.notes = ''
   form.categoryId = null
@@ -160,10 +206,13 @@ const submit = () => {
     if (!valid) return
     loading.value = true
     try {
+      normalizeBrandName()
+      const brandText = form.brandName.trim()
       await convertWishlist(current.value!.id, {
         name: form.name,
         categoryId: form.categoryId!,
-        brand: form.brand || undefined,
+        brandId: form.brandId || undefined,
+        brand: brandText || undefined,
         model: form.model || undefined,
         status: '使用中',
         enabledDate: form.enabledDate,
@@ -189,4 +238,29 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.brand-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.brand-field :deep(.el-select) {
+  width: 180px;
+}
+
+.brand-field :deep(.el-input) {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .brand-field {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .brand-field :deep(.el-select) {
+    width: 100%;
+  }
+}
 </style>

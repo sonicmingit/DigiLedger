@@ -3,14 +3,17 @@ import {
   fetchCategoryTree,
   fetchPlatforms,
   fetchTagTree,
+  fetchBrands,
   type CategoryNode,
   type PlatformItem,
-  type TagNode
+  type TagNode,
+  type BrandItem
 } from '@/api/dict'
 
 const categoryTree = ref<CategoryNode[]>([])
 const tagTree = ref<TagNode[]>([])
 const platforms = ref<PlatformItem[]>([])
+const brands = ref<BrandItem[]>([])
 const loaded = ref(false)
 const loading = ref(false)
 let pending: Promise<void> | null = null
@@ -44,6 +47,14 @@ const tagMap = computed(() => {
   return map
 })
 
+const brandMap = computed(() => {
+  const map = new Map<number, BrandItem>()
+  brands.value.forEach((item) => {
+    map.set(item.id, item)
+  })
+  return map
+})
+
 const fetchAll = async () => {
   if (pending) {
     await pending
@@ -52,14 +63,16 @@ const fetchAll = async () => {
   pending = (async () => {
     loading.value = true
     try {
-      const [categories, tagResult, platformList] = await Promise.all([
+      const [categories, tagResult, platformList, brandList] = await Promise.all([
         fetchCategoryTree(),
         fetchTagTree(),
-        fetchPlatforms()
+        fetchPlatforms(),
+        fetchBrands()
       ])
       categoryTree.value = categories
       tagTree.value = tagResult
       platforms.value = platformList
+      brands.value = brandList
       loaded.value = true
     } finally {
       loading.value = false
@@ -85,7 +98,9 @@ export const useDictionaries = () => {
     categoryTree,
     tagTree,
     platforms,
+    brands,
     categoryPathMap,
-    tagMap
+    tagMap,
+    brandMap
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <div
     class="asset-card"
-    :class="{ selected, clickable: !!$attrs.onClick }"
+    :class="{ selected, clickable: true, 'is-compact': compact }"
     @click="handleCardClick"
   >
     <div class="card-header">
@@ -24,7 +24,7 @@
       </div>
       <el-checkbox v-if="selectable" :model-value="selected" @change="toggleSelect" />
     </div>
-    <div class="cover" @click.stop="emit('preview', asset)">
+    <div class="cover" @click.stop="handleCoverClick">
       <img :src="coverUrl || fallback" alt="缩略图" />
     </div>
     <div class="info">
@@ -71,12 +71,14 @@ const props = withDefaults(
     statusReadonly?: boolean
     selectable?: boolean
     selected?: boolean
+    compact?: boolean
   }>(),
   {
     statusOptions: () => ['使用中', '已闲置', '待出售', '已出售', '已丢弃'],
     statusReadonly: false,
     selectable: false,
-    selected: false
+    selected: false,
+    compact: false
   }
 )
 
@@ -84,7 +86,6 @@ const emit = defineEmits<{
   (e: 'status-change', status: AssetStatus): void
   (e: 'view', id: number): void
   (e: 'edit', id: number): void
-  (e: 'preview', asset: AssetSummary): void
   (e: 'toggle-select', value: boolean): void
   (e: 'card-click', id: number): void
 }>()
@@ -126,6 +127,10 @@ const toggleSelect = (value: boolean) => {
 const handleCardClick = () => {
   emit('card-click', props.asset.id)
 }
+
+const handleCoverClick = () => {
+  emit('view', props.asset.id)
+}
 </script>
 
 <style scoped>
@@ -145,6 +150,27 @@ const handleCardClick = () => {
 
 .asset-card.clickable {
   cursor: pointer;
+}
+
+.asset-card.is-compact {
+  padding: 12px;
+  gap: 8px;
+}
+
+.asset-card.is-compact .title {
+  font-size: 16px;
+}
+
+.asset-card.is-compact .info {
+  gap: 4px;
+}
+
+.asset-card.is-compact .meta {
+  font-size: 12px;
+}
+
+.asset-card.is-compact .price {
+  font-size: 16px;
 }
 
 .asset-card:hover {
@@ -180,6 +206,7 @@ const handleCardClick = () => {
   overflow: hidden;
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(148, 163, 184, 0.2);
+  cursor: pointer;
 }
 
 .cover img {
