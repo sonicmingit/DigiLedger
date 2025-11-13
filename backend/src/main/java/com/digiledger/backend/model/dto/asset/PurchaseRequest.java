@@ -31,16 +31,11 @@ public class PurchaseRequest {
     @DecimalMin(value = "0", message = "运费需大于等于 0")
     private BigDecimal shippingCost;
 
-    private String currency = "CNY";
-
     @Min(value = 1, message = "数量至少为 1")
     private Integer quantity = 1;
 
     @NotNull(message = "购买日期不能为空")
     private LocalDate purchaseDate;
-
-    @Size(max = 100, message = "发票号过长")
-    private String invoiceNo;
 
     @Min(value = 0, message = "质保月数需大于等于 0")
     private Integer warrantyMonths;

@@ -22,7 +22,14 @@
     </resultMap>
 
     <select id="findAll" resultMap="wishlistResultMap">
-        SELECT * FROM wishlist ORDER BY updated_at DESC
+        SELECT *
+        FROM wishlist
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY updated_at DESC
     </select>
 
     <select id="findById" resultMap="wishlistResultMap">

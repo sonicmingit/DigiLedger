@@ -4,12 +4,10 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.constraints.*;
 import lombok.Data;
 
 /**
@@ -31,9 +29,6 @@ public class WishlistRequest {
 
     @Size(max = 500, message = "链接过长")
     private String link;
-
-    @Pattern(regexp = "未购买|已购买", message = "状态非法")
-    private String status = "未购买";
 
     private String notes;
 

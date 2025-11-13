@@ -135,8 +135,8 @@ const open = (item: WishlistItem) => {
   ensureBrandOption(form.brand)
   form.model = item.model || ''
   form.notes = item.notes || ''
-  form.categoryId = null
-  form.tagIds = []
+  form.categoryId = item.categoryId ?? null
+  form.tagIds = item.tags ? item.tags.map((tag) => tag.id) : []
   form.enabledDate = today()
   form.imageKey = extractObjectKey(item.imageUrl)
   visible.value = true
