@@ -481,12 +481,18 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{baseUrl}}/wishlist",
+                            "raw": "{{baseUrl}}/wishlist?status=未购买",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "wishlist"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "未购买"
+                                }
                             ]
                         }
                     }
@@ -503,7 +509,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1999,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"status\": \"UNPURCHASED\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"notes\": \"直播拾音方案\"\n}"
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1999,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"notes\": \"直播拾音方案\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/wishlist",
@@ -528,7 +534,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1899,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"status\": \"PURCHASED\",\n  \"notes\": \"双11入手\"\n}"
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"category_id\": 4,\n  \"brand_id\": 6,\n  \"expected_price\": 1899,\n  \"image_url\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"notes\": \"双11入手\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/wishlist/3",
@@ -602,7 +608,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1999,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"status\": \"未购买\",\n  \"notes\": \"直播拾音方案\"\n}"
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1999,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"notes\": \"直播拾音方案\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/wishlist",
@@ -627,7 +633,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1899,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"status\": \"已购买\",\n  \"notes\": \"双11入手\"\n}"
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1899,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"notes\": \"双11入手\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/wishlist/3",

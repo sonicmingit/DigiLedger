@@ -283,6 +283,14 @@ paths:
   /api/wishlist:
     get:
       summary: 心愿单列表
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['未购买', '已购买']
+          description: 按状态筛选心愿单。
       responses:
         '200':
           description: 列表返回
@@ -828,7 +836,7 @@ components:
           description: 相对路径，形如 /oss/digiledger/{objectKey}
         status:
           type: string
-          description: UNPURCHASED 或 PURCHASED。
+          description: 未购买 或 已购买。
         notes:
           type: string
           nullable: true

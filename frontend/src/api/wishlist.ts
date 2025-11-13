@@ -3,7 +3,8 @@ import type { AssetPayload } from './asset'
 import type { WishlistItem } from '../types'
 
 // 获取心愿单列表
-export const fetchWishlist = () => http.get<WishlistItem[]>('/wishlist')
+export const fetchWishlist = (params?: { status?: '未购买' | '已购买' }) =>
+  http.get<WishlistItem[]>('/wishlist', { params })
 
 // 新增心愿条目
 export const createWishlist = (payload: {
@@ -15,7 +16,6 @@ export const createWishlist = (payload: {
   link?: string
   notes?: string
   priority?: number
-  status?: '未购买' | '已购买'
   imageUrl?: string
   tagIds?: number[]
 }) => http.post<number>('/wishlist', payload)
@@ -32,7 +32,6 @@ export const updateWishlist = (
     link?: string
     notes?: string
     priority?: number
-    status?: '未购买' | '已购买'
     imageUrl?: string
     tagIds?: number[]
   }

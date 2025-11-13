@@ -26,8 +26,8 @@ public class WishlistController {
     }
 
     @GetMapping
-    public ApiResponse<List<WishlistDTO>> list() {
-        return ApiResponse.success(wishlistService.listAll());
+    public ApiResponse<List<WishlistDTO>> list(@RequestParam(name = "status", required = false) String status) {
+        return ApiResponse.success(wishlistService.listAll(status));
     }
 
     @GetMapping("/{id}")
