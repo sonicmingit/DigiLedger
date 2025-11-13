@@ -1,11 +1,12 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    :title="isEdit ? '编辑物品' : '新建物品'"
-    width="760px"
-    @closed="reset"
-    destroy-on-close
-  >
+  <div>
+    <el-dialog
+      v-model="visible"
+      :title="isEdit ? '编辑物品' : '新建物品'"
+      width="760px"
+      @closed="reset"
+      destroy-on-close
+    >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" status-icon>
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
@@ -260,7 +261,13 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
     </template>
-  </el-dialog>
+    </el-dialog>
+    <CategoryCreateDialog
+      v-model="categoryDialogVisible"
+      :default-parent-id="form.categoryId"
+      @success="handleCategoryDialogSuccess"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -272,7 +279,8 @@ import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
-import { createCategory, createPlatform, createTag } from '@/api/dict'
+import { createPlatform, createTag } from '@/api/dict'
+import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 
@@ -349,6 +357,7 @@ const ensureBrandOption = (value: string) => {
 }
 
 const { load: loadDicts, categoryTree, tagTree, platforms } = useDictionaries()
+const categoryDialogVisible = ref(false)
 
 const treeProps = {
   value: 'value',
@@ -499,23 +508,12 @@ const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
 }
 
-const handleCreateCategory = async () => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入类别名称', '新建类别', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：影像设备'
-    })
-    if (!value) return
-    const parentId = form.categoryId || null
-    const id = await createCategory({ name: value, parentId })
-    await loadDicts()
-    form.categoryId = id
-    ElMessage.success('类别已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建类别失败')
-  }
+const handleCreateCategory = () => {
+  categoryDialogVisible.value = true
+}
+
+const handleCategoryDialogSuccess = (payload: { id: number }) => {
+  form.categoryId = payload.id
 }
 
 const handleCreatePlatform = async () => {
