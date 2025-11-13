@@ -27,6 +27,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -509,10 +510,16 @@ public class AssetServiceImpl implements AssetService {
     }
 
     private String determineBrandName(String customName, DictBrand brand) {
-        if (customName != null && !customName.isBlank()) {
-            return customName;
+        if (StringUtils.hasText(customName)) {
+            return customName.trim();
         }
-        return brand != null ? brand.getName() : null;
+        if (brand == null) {
+            return null;
+        }
+        if (StringUtils.hasText(brand.getAlias())) {
+            return brand.getAlias().trim();
+        }
+        return brand.getName();
     }
 
     private String buildCategoryPath(Long categoryId, Map<Long, DictCategory> categoryMap) {

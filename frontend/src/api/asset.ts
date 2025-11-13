@@ -5,6 +5,7 @@ import type { AssetDetail, AssetSummary, SaleRecord } from '../types'
 export type AssetPayload = {
   name: string
   categoryId: number
+  brandId?: number
   brand?: string
   model?: string
   serialNo?: string
