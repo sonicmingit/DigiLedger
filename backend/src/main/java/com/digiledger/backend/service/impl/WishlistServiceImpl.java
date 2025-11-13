@@ -123,6 +123,7 @@ public class WishlistServiceImpl implements WishlistService {
         validateStatus(status);
         item.setStatus(status);
         item.setNotes(request.getNotes());
+        item.setPriority(Optional.ofNullable(request.getPriority()).orElse(3));
         return item;
     }
 
@@ -138,6 +139,7 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getLink(),
                 item.getStatus(),
                 item.getNotes(),
+                item.getPriority(),
                 item.getConvertedAssetId(),
                 item.getCreatedAt(),
                 item.getUpdatedAt()

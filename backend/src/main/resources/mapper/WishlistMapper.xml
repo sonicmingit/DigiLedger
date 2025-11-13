@@ -14,6 +14,7 @@
         <result column="link" property="link" />
         <result column="status" property="status" />
         <result column="notes" property="notes" />
+        <result column="priority" property="priority" />
         <result column="converted_asset_id" property="convertedAssetId" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
@@ -30,10 +31,10 @@
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO wishlist (
             name, category_id, brand_id, model, expected_price,
-            image_url, link, status, notes, converted_asset_id
+            image_url, link, status, notes, priority, converted_asset_id
         ) VALUES (
             #{name}, #{categoryId}, #{brandId}, #{model}, #{expectedPrice},
-            #{imageUrl}, #{link}, #{status}, #{notes}, #{convertedAssetId}
+            #{imageUrl}, #{link}, #{status}, #{notes}, #{priority}, #{convertedAssetId}
         )
     </insert>
 
@@ -47,6 +48,7 @@
             image_url = #{imageUrl},
             link = #{link},
             status = #{status},
+            priority = #{priority},
             notes = #{notes},
             converted_asset_id = #{convertedAssetId},
             updated_at = CURRENT_TIMESTAMP

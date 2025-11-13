@@ -17,6 +17,7 @@ public record WishlistDTO(
         String link,
         String status,
         String notes,
+        Integer priority,
         Long convertedAssetId,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

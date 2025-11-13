@@ -30,6 +30,8 @@ public class WishlistItem {
     private String status;
     /** 备注 */
     private String notes;
+    /** 优先级（1-5） */
+    private Integer priority;
     /** 转化后的资产 ID */
     private Long convertedAssetId;
     /** 创建时间 */

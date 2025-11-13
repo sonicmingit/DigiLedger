@@ -45,8 +45,8 @@ VALUES (2, 3, '闲鱼', '张三', 12000.00, 200.00, 50.00, 0.00, 11750.00, '2024
 
 INSERT INTO asset_tag_map (asset_id, tag_id) VALUES (2, 3);
 
-INSERT INTO wishlist (name, category_id, brand_id, model, expected_price, image_url, link, status, notes)
-VALUES ('ThinkVision 4K 显示器', NULL, NULL, 'P27h-30', 2999.00, 'https://example.com/p27h.jpg', 'https://www.jd.com/p27h30', '未购买', '计划暑期采购');
+INSERT INTO wishlist (name, category_id, brand_id, model, expected_price, image_url, link, status, notes, priority)
+VALUES ('ThinkVision 4K 显示器', NULL, NULL, 'P27h-30', 2999.00, 'https://example.com/p27h.jpg', 'https://www.jd.com/p27h30', '未购买', '计划暑期采购', 2);
 
-INSERT INTO wishlist (name, category_id, brand_id, model, expected_price, image_url, link, status, notes)
-VALUES ('DJI Action 4 套装', 4, 3, 'Adventure Combo', 2799.00, 'https://example.com/action4.jpg', 'https://store.dji.com/action4', '已购买', '已于 618 入手');
+INSERT INTO wishlist (name, category_id, brand_id, model, expected_price, image_url, link, status, notes, priority)
+VALUES ('DJI Action 4 套装', 4, 3, 'Adventure Combo', 2799.00, 'https://example.com/action4.jpg', 'https://store.dji.com/action4', '已购买', '已于 618 入手', 4);

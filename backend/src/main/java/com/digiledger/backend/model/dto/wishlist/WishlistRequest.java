@@ -1,6 +1,8 @@
 package com.digiledger.backend.model.dto.wishlist;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -36,6 +38,10 @@ public class WishlistRequest {
     private String status = "未购买";
 
     private String notes;
+
+    @Min(value = 1, message = "优先级需在 1-5 之间")
+    @Max(value = 5, message = "优先级需在 1-5 之间")
+    private Integer priority = 3;
 
     public String getName() {
         return name;
@@ -107,5 +113,13 @@ public class WishlistRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Integer getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Integer priority) {
+        this.priority = priority;
     }
 }
