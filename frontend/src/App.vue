@@ -1,28 +1,39 @@
 <template>
-  <el-config-provider namespace="el">
-    <el-container class="layout">
-      <el-aside width="220px" class="sidebar">
-        <div class="logo">DigiLedger</div>
-        <el-menu :default-active="active" router>
-          <el-menu-item index="/">资产总览</el-menu-item>
-          <el-menu-item index="/assets">物品中心</el-menu-item>
-          <el-menu-item index="/wishlist">心愿单</el-menu-item>
-          <el-menu-item index="/settings">系统设置</el-menu-item>
-        </el-menu>
-      </el-aside>
-      <el-container>
-        <el-header class="header">数码物品全生命周期管理</el-header>
-        <el-main class="main">
-          <RouterView />
-        </el-main>
+  <ThemeProvider>
+    <el-config-provider namespace="el">
+      <el-container class="layout">
+        <el-aside width="220px" class="sidebar">
+          <div class="logo">DigiLedger</div>
+          <el-menu :default-active="active" router>
+            <el-menu-item index="/">资产总览</el-menu-item>
+            <el-menu-item index="/assets">物品中心</el-menu-item>
+            <el-menu-item index="/wishlist">心愿单</el-menu-item>
+            <el-menu-item index="/settings">系统设置</el-menu-item>
+          </el-menu>
+        </el-aside>
+        <el-container>
+          <el-header class="header">
+            <span class="header-title">数码物品全生命周期管理</span>
+            <div class="header-actions">
+              <el-select v-model="currentTheme" size="small" class="theme-select">
+                <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </div>
+          </el-header>
+          <el-main class="main">
+            <RouterView />
+          </el-main>
+        </el-container>
       </el-container>
-    </el-container>
-  </el-config-provider>
+    </el-config-provider>
+  </ThemeProvider>
 </template>
 
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
 import { computed } from 'vue'
+import ThemeProvider from '@/components/ThemeProvider.vue'
+import { useTheme } from '@/composables/theme'
 
 const route = useRoute()
 const active = computed(() => {
@@ -31,13 +42,22 @@ const active = computed(() => {
   if (route.path.startsWith('/settings')) return '/settings'
   return '/'
 })
+
+const { theme, setTheme, options } = useTheme()
+
+const themeOptions = options
+
+const currentTheme = computed({
+  get: () => theme.value,
+  set: (value) => setTheme(value)
+})
 </script>
 
 <style scoped>
 :global(body) {
   margin: 0;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
 }
 
@@ -46,13 +66,13 @@ const active = computed(() => {
 }
 
 .sidebar {
-  background: #111827;
-  color: #94a3b8;
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
   padding: 16px 0;
 }
 
 .logo {
-  color: #38bdf8;
+  color: var(--color-accent);
   font-size: 20px;
   font-weight: bold;
   text-align: center;
@@ -60,17 +80,28 @@ const active = computed(() => {
 }
 
 .header {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--color-header-bg);
+  color: var(--color-text);
   font-size: 18px;
   display: flex;
   align-items: center;
-  padding-left: 24px;
+  justify-content: space-between;
+  padding: 0 24px;
 }
 
 .main {
-  background: #0f172a;
+  background: var(--color-bg-alt);
   padding: 24px;
+}
+
+.main :deep(.el-card) {
+  background: var(--color-card);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+.main :deep(.el-card__header) {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
 }
 
 .sidebar :deep(.el-menu) {
@@ -79,12 +110,26 @@ const active = computed(() => {
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .sidebar :deep(.el-menu-item) {
-  color: #cbd5f5;
+  color: var(--color-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-select {
+  min-width: 120px;
+}
+
+.header-title {
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {
