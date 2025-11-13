@@ -110,7 +110,6 @@
               multiple
               show-checkbox
               filterable
-              collapse-tags
               placeholder="选择标签"
               style="width: 80%"
             />
