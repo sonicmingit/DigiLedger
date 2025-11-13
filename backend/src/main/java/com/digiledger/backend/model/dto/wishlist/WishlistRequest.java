@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
+
 
 import java.math.BigDecimal;
 
@@ -41,4 +43,7 @@ public class WishlistRequest {
 
     @DecimalMin(value = "0", message = "期望价格需大于等于 0")
     private BigDecimal expectedPrice;
+
+    @Pattern(regexp = "未购买|已购买", message = "状态非法")
+    private String status = "未购买";
 }
