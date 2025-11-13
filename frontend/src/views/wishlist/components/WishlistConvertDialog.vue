@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="转为物品" width="560px" @closed="reset">
+  <el-dialog v-model="visible" title="购买记录" width="560px" @closed="reset">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" status-icon>
       <el-form-item label="物品名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入物品名称" />
@@ -26,12 +26,15 @@
           >
             <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
           </el-select>
-          <el-input
-            v-model="form.brandName"
-            placeholder="自定义品牌/别名"
-            clearable
-            @blur="normalizeBrandName"
-          />
+          <el-button
+            class="inline-action"
+            text
+            size="small"
+            type="primary"
+            @click="handleCreateBrand"
+          >
+            新建
+          </el-button>
         </div>
       </el-form-item>
       <el-form-item label="型号">
@@ -47,9 +50,9 @@
           :props="treeProps"
           multiple
           show-checkbox
-          collapse-tags
           filterable
           placeholder="选择标签"
+          class="tag-tree-select"
           style="width: 100%"
         />
       </el-form-item>
@@ -67,12 +70,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
 import type { FormInstance } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { convertWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { extractObjectKey } from '@/utils/storage'
+import { createBrand } from '@/api/dict'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
 
@@ -144,6 +148,27 @@ const handleBrandSelect = (id: number | null) => {
   const brand = brandMap.value.get(id)
   if (brand) {
     form.brandName = (brand.alias?.trim() || brand.name || '').trim()
+  }
+}
+
+const handleCreateBrand = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入品牌名称', '新建品牌', {
+      confirmButtonText: '创建',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：Apple'
+    })
+    const name = (value || '').trim()
+    if (!name) return
+    const id = await createBrand({ name })
+    // 重新加载字典数据以包含新品牌
+    await loadDicts()
+    form.brandId = id
+    form.brandName = name
+    ElMessage.success('品牌已创建并回选')
+  } catch (err) {
+    if (err === 'cancel' || err === 'close') return
+    ElMessage.error('创建品牌失败')
   }
 }
 
@@ -251,6 +276,42 @@ onMounted(async () => {
 .brand-field :deep(.el-input) {
   flex: 1;
   min-width: 0;
+}
+
+.tag-tree-select {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* 显示所有已选标签并允许换行 */
+.tag-tree-select :deep(.el-select__tags),
+.tag-tree-select :deep(.el-input__inner) {
+  flex-wrap: wrap !important;
+  white-space: normal !important;
+}
+.tag-tree-select :deep(.el-tag) {
+  display: inline-block !important;
+  margin: 4px 6px !important;
+  white-space: normal !important;
+}
+
+/* 新增：把对话框关闭 X 固定在标题右上角（防止被内容挤到下方） */
+:deep(.el-dialog__header) {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 标题居中 */
+  position: relative;
+  padding-right: 56px; /* 给关闭按钮留出空间 */
+}
+:deep(.el-dialog__title) {
+  flex: 1;
+  text-align: center;
+}
+:deep(.el-dialog__close-btn) {
+  position: absolute !important;
+  right: 12px !important;
+  top: 8px !important;
+  z-index: 20 !important;
 }
 
 @media (max-width: 768px) {
