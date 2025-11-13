@@ -143,14 +143,17 @@
           :title="`记录 ${index + 1} · ${purchase.type}`"
         >
           <el-row :gutter="12">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select v-model="purchase.type" placeholder="类型" @change="handlePurchaseTypeChange(purchase)">
                 <el-option label="主商品" value="PRIMARY" />
                 <el-option label="配件" value="ACCESSORY" />
                 <el-option label="服务" value="SERVICE" />
               </el-select>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="6">
+              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
+            </el-col>
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select
                 v-model="purchase.platformId"
                 placeholder="来源平台"
@@ -170,29 +173,23 @@
                 新建平台
               </el-button>
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
             </el-col>
-            <el-col :xs="24" :md="6">
+          </el-row>
+          <el-row :gutter="12" class="mt">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" :step="10" placeholder="运费" />
             </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.currency" placeholder="币种（如 CNY）" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
-            </el-col>
-            <el-col :xs="24" :md="6" v-if="purchase.type !== 'PRIMARY'">
-              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
             </el-col>
           </el-row>
           <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.purchaseDate"
                 type="date"
@@ -202,10 +199,7 @@
                 clearable
               />
             </el-col>
-            <el-col :xs="24" :md="6">
-              <el-input v-model="purchase.invoiceNo" placeholder="发票编号" />
-            </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-input-number
                 v-model="purchase.warrantyMonths"
                 :min="0"
@@ -214,7 +208,7 @@
                 controls-position="right"
               />
             </el-col>
-            <el-col :xs="24" :md="6">
+            <el-col :xs="24" :md="8">
               <el-date-picker
                 v-model="purchase.warrantyExpireDate"
                 type="date"
@@ -237,7 +231,7 @@
               accept="image/*"
               capture="environment"
             >
-              <el-button text>上传凭证</el-button>
+              <el-button text>上传附件</el-button>
             </el-upload>
             <el-tag
               v-for="(url, idx) in purchase.attachments"
@@ -320,10 +314,8 @@ const form = reactive({
     seller?: string
     price: number
     shippingCost: number
-    currency: string
     quantity: number
     purchaseDate: string
-    invoiceNo?: string
     warrantyMonths?: number
     warrantyExpireDate?: string
     notes?: string
@@ -399,10 +391,8 @@ const open = (asset?: AssetDetail) => {
           seller: p.seller || '',
           price: p.price,
           shippingCost: p.shippingCost ?? 0,
-          currency: p.currency || 'CNY',
           quantity: p.quantity || 1,
           purchaseDate: p.purchaseDate || today(),
-          invoiceNo: p.invoiceNo || '',
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
@@ -445,14 +435,12 @@ const addPurchase = () => {
     seller: '',
     price: 0,
     shippingCost: 0,
-    currency: 'CNY',
     quantity: 1,
     purchaseDate: form.purchaseDate || today(),
-    invoiceNo: '',
     warrantyMonths: undefined,
     warrantyExpireDate: '',
     notes: '',
-    name: undefined,
+    name: form.purchases.length ? '' : undefined,
     attachments: []
   })
 }
@@ -586,10 +574,8 @@ const submit = () => {
           seller: p.seller || undefined,
           price: p.price,
           shippingCost: p.shippingCost,
-          currency: p.currency || 'CNY',
           quantity: p.quantity,
           purchaseDate: p.purchaseDate,
-          invoiceNo: p.invoiceNo || undefined,
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || undefined,
           notes: p.notes || undefined,

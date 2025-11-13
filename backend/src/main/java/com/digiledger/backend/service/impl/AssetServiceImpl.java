@@ -309,11 +309,11 @@ public class AssetServiceImpl implements AssetService {
             }
             purchase.setSeller(request.getSeller());
             purchase.setPrice(request.getPrice());
-            purchase.setCurrency(Optional.ofNullable(request.getCurrency()).filter(s -> !s.isBlank()).orElse("CNY"));
+            purchase.setCurrency("CNY");
             purchase.setQuantity(Optional.ofNullable(request.getQuantity()).orElse(1));
             purchase.setShippingCost(defaultZero(request.getShippingCost()));
             purchase.setPurchaseDate(request.getPurchaseDate());
-            purchase.setInvoiceNo(request.getInvoiceNo());
+            purchase.setInvoiceNo("");
             purchase.setWarrantyMonths(request.getWarrantyMonths());
             purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
             purchase.setAttachments(toJson(request.getAttachments()));
@@ -421,10 +421,8 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getSeller(),
                 purchase.getPrice(),
                 purchase.getShippingCost(),
-                purchase.getCurrency(),
                 purchase.getQuantity(),
                 purchase.getPurchaseDate(),
-                purchase.getInvoiceNo(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
                 parseStringList(purchase.getAttachments()),
