@@ -8,7 +8,6 @@
           :props="treeProps"
           multiple
           show-checkbox
-          collapse-tags
           filterable
           style="width: 100%"
           placeholder="选择应用到的标签"
