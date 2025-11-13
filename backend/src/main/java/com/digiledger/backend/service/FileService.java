@@ -8,10 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 public interface FileService {
 
     /**
-     * 上传文件并返回可访问 URL。
+     * 上传文件并返回对象存储中的 objectKey。
      *
      * @param file 上传的文件
-     * @return 可访问的公网地址
+     * @return 对象在存储中的 objectKey
      */
     String upload(MultipartFile file);
 }

@@ -6,6 +6,8 @@
     <resultMap id="saleResultMap" type="com.digiledger.backend.model.entity.Sale">
         <id column="id" property="id" />
         <result column="asset_id" property="assetId" />
+        <result column="sale_scope" property="saleScope" />
+        <result column="purchase_id" property="purchaseId" />
         <result column="platform_id" property="platformId" />
         <result column="platform_name" property="platformName" />
         <result column="buyer" property="buyer" />
@@ -35,10 +37,10 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.Sale" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sale (
-            asset_id, platform_id, platform_name, buyer, sale_price, fee, shipping_cost,
+            asset_id, sale_scope, purchase_id, platform_id, platform_name, buyer, sale_price, fee, shipping_cost,
             other_cost, net_income, sale_date, attachments, notes
         ) VALUES (
-            #{assetId}, #{platformId}, #{platformName}, #{buyer}, #{salePrice}, #{fee}, #{shippingCost},
+            #{assetId}, #{saleScope}, #{purchaseId}, #{platformId}, #{platformName}, #{buyer}, #{salePrice}, #{fee}, #{shippingCost},
             #{otherCost}, #{netIncome}, #{saleDate}, #{attachments}, #{notes}
         )
     </insert>

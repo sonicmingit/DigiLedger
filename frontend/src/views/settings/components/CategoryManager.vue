@@ -23,18 +23,26 @@
         </span>
       </template>
     </el-tree>
+    <CategoryCreateDialog
+      v-model="createDialogVisible"
+      :default-parent-id="createDialogParentId"
+      @success="handleCreateSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createCategory, updateCategory, deleteCategory, type CategoryNode } from '@/api/dict'
+import { updateCategory, deleteCategory, type CategoryNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
+import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const { categoryTree, refresh: refreshDicts, load: loadDicts } = useDictionaries()
 const loading = ref(false)
 const treeRef = ref()
+const createDialogVisible = ref(false)
+const createDialogParentId = ref<number | null>(null)
 
 const promptName = async (title: string, defaultValue = ''): Promise<string | null> => {
   try {
@@ -50,36 +58,17 @@ const promptName = async (title: string, defaultValue = ''): Promise<string | nu
   }
 }
 
-const nextSort = (nodes: CategoryNode[] = []) => nodes.reduce((max, item) => Math.max(max, item.sort ?? 0), 0) + 10
-
-const addRoot = async () => {
-  const name = await promptName('新增根类别')
-  if (!name) return
-  loading.value = true
-  try {
-    await createCategory({ name, parentId: null, sort: nextSort(categoryTree.value) })
-    ElMessage.success('已创建类别')
-    await refreshDicts()
-  } catch (err: any) {
-    ElMessage.error(err.message || '创建失败')
-  } finally {
-    loading.value = false
-  }
+const openCreateDialog = (parentId: number | null) => {
+  createDialogParentId.value = parentId
+  createDialogVisible.value = true
 }
 
-const addChild = async (node: CategoryNode) => {
-  const name = await promptName('新增子类别')
-  if (!name) return
-  loading.value = true
-  try {
-    await createCategory({ name, parentId: node.id, sort: nextSort(node.children || []) })
-    ElMessage.success('已创建子类别')
-    await refreshDicts()
-  } catch (err: any) {
-    ElMessage.error(err.message || '创建失败')
-  } finally {
-    loading.value = false
-  }
+const addRoot = () => {
+  openCreateDialog(null)
+}
+
+const addChild = (node: CategoryNode) => {
+  openCreateDialog(node.id)
 }
 
 const editNode = async (node: CategoryNode) => {
@@ -143,6 +132,20 @@ const handleDrop = async (_dragging: any, dropNode: any, dropType: string) => {
   } finally {
     loading.value = false
   }
+}
+
+const handleCreateSuccess = (payload: { id: number }) => {
+  nextTick(() => {
+    const tree = treeRef.value as any
+    if (!tree) return
+    tree.setCurrentKey(payload.id)
+    const current = tree.getNode?.(payload.id)
+    let parent = current?.parent
+    while (parent && parent !== tree.root) {
+      parent.expanded = true
+      parent = parent.parent
+    }
+  })
 }
 
 loadDicts()

@@ -424,8 +424,12 @@ components:
         data:
           type: object
           properties:
+            objectKey:
+              type: string
+              description: 上传对象在存储中的 objectKey
             url:
               type: string
+              description: 以 /oss/{bucket}/ 开头的相对访问路径
     ApiResponseBrandList:
       allOf:
         - $ref: '#/components/schemas/ApiResponseVoid'
@@ -538,6 +542,7 @@ components:
         cover_image_url:
           type: string
           nullable: true
+          description: 相对路径，形如 /oss/digiledger/{objectKey}
         total_invest:
           type: number
           format: double
@@ -621,6 +626,7 @@ components:
         cover_image_url:
           type: string
           nullable: true
+          description: 填写对象存储的 objectKey，示例：uploads/2024-01-01/uuid.png
         notes:
           type: string
           nullable: true
@@ -666,9 +672,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -678,13 +681,11 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         attachments:
           type: array
           items:
             type: string
+          description: 相对路径列表，形如 /oss/digiledger/{objectKey}
         notes:
           type: string
           nullable: true
@@ -708,9 +709,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -721,9 +719,6 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         notes:
           type: string
           nullable: true
@@ -731,6 +726,7 @@ components:
           type: array
           items:
             type: string
+          description: 传递对象存储 objectKey 列表
     PurchaseInlineReq:
       allOf:
         - $ref: '#/components/schemas/PurchaseBaseReq'
@@ -776,6 +772,7 @@ components:
           type: array
           items:
             type: string
+          description: 传递对象存储 objectKey 列表
         notes:
           type: string
           nullable: true
@@ -812,6 +809,7 @@ components:
           type: array
           items:
             type: string
+          description: 相对路径列表，形如 /oss/digiledger/{objectKey}
         notes:
           type: string
           nullable: true
@@ -835,6 +833,7 @@ components:
         image_url:
           type: string
           nullable: true
+          description: 相对路径，形如 /oss/digiledger/{objectKey}
         status:
           type: string
           description: 未购买 或 已购买。
@@ -872,6 +871,10 @@ components:
         image_url:
           type: string
           nullable: true
+          description: 填写对象存储的 objectKey
+        status:
+          type: string
+          description: UNPURCHASED/PURCHASED。
         notes:
           type: string
           nullable: true
