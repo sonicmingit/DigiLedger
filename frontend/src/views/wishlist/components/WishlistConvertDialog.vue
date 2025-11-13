@@ -65,6 +65,7 @@ import { convertWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { extractObjectKey } from '@/utils/storage'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
 
@@ -83,7 +84,7 @@ const form = reactive({
   enabledDate: today(),
   tagIds: [] as number[],
   notes: '',
-  imageUrl: ''
+  imageKey: ''
 })
 
 const rules = {
@@ -137,7 +138,7 @@ const open = (item: WishlistItem) => {
   form.categoryId = null
   form.tagIds = []
   form.enabledDate = today()
-  form.imageUrl = item.imageUrl || ''
+  form.imageKey = extractObjectKey(item.imageUrl)
   visible.value = true
 }
 
@@ -150,7 +151,7 @@ const reset = () => {
   form.categoryId = null
   form.tagIds = []
   form.enabledDate = today()
-  form.imageUrl = ''
+  form.imageKey = ''
 }
 
 const submit = () => {
@@ -168,7 +169,7 @@ const submit = () => {
         enabledDate: form.enabledDate,
         notes: form.notes || undefined,
         tagIds: form.tagIds,
-        coverImageUrl: form.imageUrl || undefined,
+        coverImageUrl: form.imageKey || undefined,
         purchases: []
       })
       ElMessage.success('已转为物品')

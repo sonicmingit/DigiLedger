@@ -11,6 +11,7 @@ import com.digiledger.backend.model.dto.wishlist.WishlistRequest;
 import com.digiledger.backend.model.entity.WishlistItem;
 import com.digiledger.backend.service.AssetService;
 import com.digiledger.backend.service.WishlistService;
+import com.digiledger.backend.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +33,18 @@ public class WishlistServiceImpl implements WishlistService {
     private final DictCategoryMapper dictCategoryMapper;
     private final DictBrandMapper dictBrandMapper;
     private final AssetService assetService;
+    private final StoragePathHelper storagePathHelper;
 
     public WishlistServiceImpl(WishlistMapper wishlistMapper,
                                DictCategoryMapper dictCategoryMapper,
                                DictBrandMapper dictBrandMapper,
-                               AssetService assetService) {
+                               AssetService assetService,
+                               StoragePathHelper storagePathHelper) {
         this.wishlistMapper = wishlistMapper;
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictBrandMapper = dictBrandMapper;
         this.assetService = assetService;
+        this.storagePathHelper = storagePathHelper;
     }
 
     @Override
@@ -114,7 +118,7 @@ public class WishlistServiceImpl implements WishlistService {
             request.setBrandId(item.getBrandId());
         }
         if (request.getCoverImageUrl() == null) {
-            request.setCoverImageUrl(item.getImageUrl());
+            request.setCoverImageUrl(storagePathHelper.toObjectKey(item.getImageUrl()));
         }
         if (request.getStatus() == null || request.getStatus().isBlank()) {
             request.setStatus("使用中");
@@ -134,7 +138,7 @@ public class WishlistServiceImpl implements WishlistService {
         item.setBrandId(request.getBrandId());
         item.setModel(request.getModel());
         item.setExpectedPrice(request.getExpectedPrice());
-        item.setImageUrl(request.getImageUrl());
+        item.setImageUrl(storagePathHelper.toObjectKey(request.getImageUrl()));
         item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
         item.setLink(request.getLink());
         String status = Optional.ofNullable(request.getStatus())
@@ -170,7 +174,7 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getBrandId(),
                 item.getModel(),
                 item.getExpectedPrice(),
-                item.getImageUrl(),
+                storagePathHelper.toRelativeUrl(item.getImageUrl()),
                 item.getLink(),
                 item.getStatus(),
                 item.getNotes(),
