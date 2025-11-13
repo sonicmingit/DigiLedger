@@ -78,7 +78,7 @@
                 <template #default="{ row }">{{ row.platformName || '-' }}</template>
               </el-table-column>
               <el-table-column label="价格" width="120">
-                <template #default="{ row }">{{ row.currency || 'CNY' }} {{ formatNumber(row.price) }}</template>
+                <template #default="{ row }">¥ {{ formatNumber(row.price) }}</template>
               </el-table-column>
               <el-table-column prop="purchaseDate" label="购买日期" width="120" />
               <el-table-column label="操作" width="150">
@@ -236,10 +236,8 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
       seller: p.seller || undefined,
       price: p.price!,
       shippingCost: p.shippingCost ?? 0,
-      currency: p.currency || 'CNY',
       quantity: p.quantity || 1,
       purchaseDate: p.purchaseDate!,
-      invoiceNo: p.invoiceNo || undefined,
       warrantyMonths: p.warrantyMonths ?? undefined,
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
@@ -272,10 +270,8 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
       seller: payload.seller,
       price: payload.price!,
       shippingCost: payload.shippingCost ?? 0,
-      currency: payload.currency || 'CNY',
       quantity: payload.quantity || 1,
       purchaseDate: payload.purchaseDate!,
-      invoiceNo: payload.invoiceNo,
       warrantyMonths: payload.warrantyMonths,
       warrantyExpireDate: payload.warrantyExpireDate,
       attachments: [],

@@ -664,9 +664,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -676,9 +673,6 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         attachments:
           type: array
           items:
@@ -707,9 +701,6 @@ components:
         price:
           type: number
           format: double
-        currency:
-          type: string
-          nullable: true
         quantity:
           type: integer
           nullable: true
@@ -720,9 +711,6 @@ components:
         purchase_date:
           type: string
           format: date
-        invoice_no:
-          type: string
-          nullable: true
         notes:
           type: string
           nullable: true
