@@ -2,7 +2,7 @@
   <div class="wishlist-page">
     <el-card class="mb">
       <div class="actions">
-        <el-radio-group v-model="activeStatus" size="large" @change="filterItems">
+        <el-radio-group v-model="activeStatus" size="large" @change="handleStatusChange">
           <el-radio-button label="全部" />
           <el-radio-button label="未购买" />
           <el-radio-button label="已购买" />
@@ -53,8 +53,9 @@
             <el-tag :type="row.status === '已购买' ? 'success' : 'info'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240">
+        <el-table-column label="操作" width="300">
           <template #default="{ row }">
+            <el-button link type="info" @click="showDetail(row)">详情</el-button>
             <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
             <el-button
               link
@@ -126,12 +127,6 @@
             class="w-full"
           />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-radio-group v-model="form.status">
-            <el-radio-button label="未购买" />
-            <el-radio-button label="已购买" />
-          </el-radio-group>
-        </el-form-item>
         <el-form-item label="优先级">
           <el-select v-model="form.priority" placeholder="选择优先级">
             <el-option v-for="n in 5" :key="n" :label="n" :value="n" />
@@ -152,6 +147,7 @@
         <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
       </template>
     </el-dialog>
+    <wishlist-detail-drawer ref="detailDrawer" />
     <wishlist-convert-dialog ref="convertDialog" @success="refresh" />
   </div>
 </template>
@@ -164,6 +160,7 @@ import { Plus, Search } from '@element-plus/icons-vue'
 import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
 import WishlistConvertDialog from './components/WishlistConvertDialog.vue'
+import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
@@ -187,7 +184,6 @@ const form = reactive({
   link: '',
   notes: '',
   priority: 3,
-  status: '未购买' as '未购买' | '已购买',
   imageUrl: '',
   tagIds: [] as number[]
 })
@@ -231,23 +227,30 @@ const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
 
 const filterItems = () => {
+  const keywordValue = keyword.value.trim().toLowerCase()
   filtered.value = items.value.filter((item) => {
-    const matchStatus = activeStatus.value === '全部' || item.status === activeStatus.value
-    const matchKeyword = keyword.value
-      ? `${item.name} ${item.brand || ''}`.toLowerCase().includes(keyword.value.toLowerCase())
-      : true
-    return matchStatus && matchKeyword
+    if (!keywordValue) return true
+    return `${item.name} ${item.brand || ''}`.toLowerCase().includes(keywordValue)
   })
 }
 
 const refresh = async () => {
   loading.value = true
   try {
-    items.value = await fetchWishlist()
+    const statusParam = activeStatus.value === '全部' ? undefined : activeStatus.value
+    items.value = await fetchWishlist(statusParam ? { status: statusParam } : undefined)
+    const brands = items.value
+      .map((item) => item.brand)
+      .filter((name): name is string => Boolean(name && name.trim().length))
+    brandOptions.value = Array.from(new Set(brands))
     filterItems()
   } finally {
     loading.value = false
   }
+}
+
+const handleStatusChange = () => {
+  refresh()
 }
 
 const openDialog = (item?: WishlistItem) => {
@@ -263,7 +266,6 @@ const openDialog = (item?: WishlistItem) => {
       link: item.link || '',
       notes: item.notes || '',
       priority: item.priority || 3,
-      status: item.status,
       imageUrl: item.imageUrl || '',
       tagIds: item.tags ? item.tags.map((tag) => tag.id) : []
     })
@@ -283,7 +285,6 @@ const reset = () => {
     link: '',
     notes: '',
     priority: 3,
-    status: '未购买',
     imageUrl: '',
     tagIds: []
   })
@@ -303,7 +304,6 @@ const submit = () => {
         link: form.link || undefined,
         notes: form.notes || undefined,
         priority: form.priority,
-        status: form.status,
         imageUrl: form.imageUrl || undefined,
         tagIds: form.tagIds
       }
@@ -328,7 +328,12 @@ const remove = async (id: number) => {
   refresh()
 }
 
+const detailDrawer = ref<InstanceType<typeof WishlistDetailDrawer> | null>(null)
 const convertDialog = ref<InstanceType<typeof WishlistConvertDialog> | null>(null)
+
+const showDetail = (item: WishlistItem) => {
+  detailDrawer.value?.open(item)
+}
 
 const convert = (item: WishlistItem) => {
   convertDialog.value?.open(item)

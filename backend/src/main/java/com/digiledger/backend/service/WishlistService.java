@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface WishlistService {
 
-    List<WishlistDTO> listAll();
+    List<WishlistDTO> listAll(String status);
 
     WishlistDTO getById(Long id);
 
