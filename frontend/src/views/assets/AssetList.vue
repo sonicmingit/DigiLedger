@@ -22,7 +22,7 @@
           </el-input>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh">
+          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh" style="width: 120px;">
             <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
