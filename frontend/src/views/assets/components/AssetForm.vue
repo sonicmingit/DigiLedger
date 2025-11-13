@@ -128,7 +128,7 @@
             :stroke-width="4"
             status="success"
           />
-          <img v-if="form.coverImageUrl" :src="form.coverImageUrl" class="cover" />
+          <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
         </div>
       </el-form-item>
       <el-form-item label="备注">
@@ -279,8 +279,8 @@ import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
-import { createPlatform, createTag } from '@/api/dict'
-import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
+import { createCategory, createPlatform, createTag } from '@/api/dict'
+import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 
@@ -319,7 +319,7 @@ const form = reactive({
   status: '使用中',
   purchaseDate: today(),
   enabledDate: today(),
-  coverImageUrl: '',
+  coverImageKey: '',
   tagIds: [] as number[],
   notes: '',
   purchases: [] as Array<{
@@ -339,6 +339,8 @@ const form = reactive({
     attachments: string[]
   }>
 })
+
+const coverImagePreview = computed(() => buildOssUrl(form.coverImageKey))
 
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -398,7 +400,7 @@ const open = (asset?: AssetDetail) => {
     form.status = asset.status
     form.purchaseDate = asset.purchaseDate || today()
     form.enabledDate = form.purchaseDate
-    form.coverImageUrl = asset.coverImageUrl || ''
+    form.coverImageKey = extractObjectKey(asset.coverImageUrl)
     form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = asset.notes || ''
     form.purchases = asset.purchases
@@ -416,7 +418,7 @@ const open = (asset?: AssetDetail) => {
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
           name: p.type === 'PRIMARY' ? undefined : p.name || '',
-          attachments: [...(p.attachments || [])]
+          attachments: extractObjectKeys(p.attachments || [])
         }))
       : []
   } else {
@@ -436,7 +438,7 @@ const reset = () => {
   form.status = '使用中'
   form.purchaseDate = today()
   form.enabledDate = today()
-  form.coverImageUrl = ''
+  form.coverImageKey = ''
   form.tagIds = []
   form.notes = ''
   form.purchases = []
@@ -480,11 +482,11 @@ const handlePurchaseTypeChange = (purchase: any) => {
 
 const handleUpload = async (options: UploadRequestOptions) => {
   try {
-    const { url } = await uploadFile(options.file)
-    form.coverImageUrl = url
+    const { objectKey } = await uploadFile(options.file)
+    form.coverImageKey = objectKey
     coverProgress.value = 100
     ElMessage.success('上传成功')
-    options.onSuccess(url)
+    options.onSuccess(objectKey)
   } catch (err: any) {
     coverProgress.value = 0
     ElMessage.error(err.message || '上传失败')
@@ -494,10 +496,10 @@ const handleUpload = async (options: UploadRequestOptions) => {
 
 const uploadAttachment = async (options: UploadRequestOptions, purchase: any) => {
   try {
-    const { url } = await uploadFile(options.file)
-    purchase.attachments.push(url)
+    const { objectKey } = await uploadFile(options.file)
+    purchase.attachments.push(objectKey)
     ElMessage.success('附件上传成功')
-    options.onSuccess(url)
+    options.onSuccess(objectKey)
   } catch (err: any) {
     options.onError(err)
     ElMessage.error('附件上传失败')
@@ -575,7 +577,7 @@ const submit = () => {
         status: form.status,
         purchaseDate: form.purchaseDate || undefined,
         enabledDate: form.purchaseDate || undefined,
-        coverImageUrl: form.coverImageUrl || undefined,
+        coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
         notes: form.notes || undefined,
         tagIds: form.tagIds,
         purchases: form.purchases.map((p) => ({
@@ -592,7 +594,7 @@ const submit = () => {
           warrantyExpireDate: p.warrantyExpireDate || undefined,
           notes: p.notes || undefined,
           name: p.type === 'PRIMARY' ? undefined : p.name,
-          attachments: p.attachments
+          attachments: extractObjectKeys(p.attachments)
         }))
       }
       if (isEdit.value) {

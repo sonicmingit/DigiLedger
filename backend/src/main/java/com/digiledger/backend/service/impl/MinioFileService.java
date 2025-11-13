@@ -30,8 +30,8 @@ public class MinioFileService implements FileService {
                              StorageProperties storageProperties,
                              UploadProperties uploadProperties) {
         this.minioClient = minioClient;
-        this.storageProperties = storageProperties;
         this.uploadProperties = uploadProperties;
+        this.storageProperties = storageProperties;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class MinioFileService implements FileService {
         } catch (Exception e) {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "上传失败: " + e.getMessage());
         }
-        return buildFileUrl(objectName);
+        return objectName;
     }
 
     private void validateFile(MultipartFile file) {
@@ -89,14 +89,4 @@ public class MinioFileService implements FileService {
         return "uploads/" + LocalDate.now() + "/" + UUID.randomUUID() + suffix;
     }
 
-    private String buildFileUrl(String objectName) {
-        String baseUrl = storageProperties.getBaseUrl();
-        if (baseUrl == null || baseUrl.isBlank()) {
-            baseUrl = storageProperties.getEndpoint();
-        }
-        if (!baseUrl.endsWith("/")) {
-            baseUrl = baseUrl + "/";
-        }
-        return baseUrl + storageProperties.getBucket() + "/" + objectName;
-    }
 }

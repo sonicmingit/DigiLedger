@@ -192,6 +192,7 @@ import BatchTagDialog from './components/BatchTagDialog.vue'
 import AssetCard from '@/components/AssetCard.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
+import { extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const router = useRouter()
 const route = useRoute()
@@ -324,7 +325,7 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
     status,
     purchaseDate: detail.purchaseDate || undefined,
     enabledDate: detail.purchaseDate || detail.enabledDate,
-    coverImageUrl: detail.coverImageUrl || undefined,
+    coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
     notes: detail.notes || undefined,
     tagIds: detail.tags?.map((tag) => tag.id) || [],
     purchases: detail.purchases.map((p) => ({
@@ -341,7 +342,7 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
       name: p.name,
-      attachments: p.attachments
+      attachments: extractObjectKeys(p.attachments)
     }))
   })
   asset.status = status
@@ -374,7 +375,7 @@ const handleBatchConfirm = async (tags: number[]) => {
           status: detail.status,
           purchaseDate: detail.purchaseDate || undefined,
           enabledDate: detail.purchaseDate || detail.enabledDate,
-          coverImageUrl: detail.coverImageUrl || undefined,
+          coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
           notes: detail.notes || undefined,
           tagIds: tags,
           purchases: detail.purchases.map((p) => ({
@@ -391,7 +392,7 @@ const handleBatchConfirm = async (tags: number[]) => {
             warrantyExpireDate: p.warrantyExpireDate || undefined,
             notes: p.notes || undefined,
             name: p.name,
-            attachments: p.attachments
+            attachments: extractObjectKeys(p.attachments)
           }))
         })
       })
