@@ -22,10 +22,8 @@ export type AssetPayload = {
     seller?: string
     price: number
     shippingCost?: number
-    currency?: string
     quantity?: number
     purchaseDate: string
-    invoiceNo?: string
     warrantyMonths?: number
     warrantyExpireDate?: string
     attachments?: string[]
