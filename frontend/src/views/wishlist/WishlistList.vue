@@ -122,7 +122,6 @@
             :props="treeProps"
             multiple
             show-checkbox
-            collapse-tags
             filterable
             clearable
             placeholder="选择标签"
