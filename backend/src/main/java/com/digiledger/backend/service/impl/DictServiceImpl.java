@@ -24,6 +24,7 @@ import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.service.DictService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -222,6 +223,62 @@ public class DictServiceImpl implements DictService {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "平台已被使用，无法删除");
         }
         dictPlatformMapper.delete(existing.getId());
+    }
+
+    @Override
+    public List<BrandDTO> listBrands() {
+        return dictBrandMapper.findAll().stream()
+                .map(brand -> new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public Long createBrand(BrandRequest request) {
+        if (dictBrandMapper.countByName(request.getName(), null) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+        DictBrand brand = new DictBrand();
+        brand.setName(request.getName());
+        brand.setAlias(request.getAlias());
+        brand.setInitial(request.getInitial());
+        brand.setSort(Optional.ofNullable(request.getSort()).orElse(0));
+        try {
+            dictBrandMapper.insert(brand);
+        } catch (DuplicateKeyException ex) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+        return brand.getId();
+    }
+
+    @Override
+    @Transactional
+    public void updateBrand(Long id, BrandRequest request) {
+        DictBrand existing = Optional.ofNullable(dictBrandMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        if (dictBrandMapper.countByName(request.getName(), id) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+        existing.setName(request.getName());
+        existing.setAlias(request.getAlias());
+        existing.setInitial(request.getInitial());
+        existing.setSort(Optional.ofNullable(request.getSort()).orElse(0));
+        try {
+            dictBrandMapper.update(existing);
+        } catch (DuplicateKeyException ex) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "品牌名称已存在");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteBrand(Long id) {
+        DictBrand brand = Optional.ofNullable(dictBrandMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        if (assetMapper.countByBrandId(brand.getId()) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "存在关联物品，无法删除");
+        }
+        dictBrandMapper.delete(id);
     }
 
     @Override

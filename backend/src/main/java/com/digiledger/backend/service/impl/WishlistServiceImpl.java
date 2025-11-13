@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +25,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class WishlistServiceImpl implements WishlistService {
+
+    private static final Set<String> ALLOWED_STATUSES = Set.of("未购买", "已购买");
 
     private final WishlistMapper wishlistMapper;
     private final DictCategoryMapper dictCategoryMapper;
@@ -92,6 +95,15 @@ public class WishlistServiceImpl implements WishlistService {
         if (request.getName() == null || request.getName().isBlank()) {
             request.setName(item.getName());
         }
+        if (request.getCategoryId() == null) {
+            request.setCategoryId(item.getCategoryId());
+        }
+        if (request.getBrandId() == null) {
+            request.setBrandId(item.getBrandId());
+        }
+        if (request.getModel() == null || request.getModel().isBlank()) {
+            request.setModel(item.getModel());
+        }
         if (request.getNotes() == null || request.getNotes().isBlank()) {
             request.setNotes(item.getNotes());
         }
@@ -120,9 +132,17 @@ public class WishlistServiceImpl implements WishlistService {
         item.setName(request.getName());
         item.setCategoryId(request.getCategoryId());
         item.setBrandId(request.getBrandId());
+        item.setModel(request.getModel());
+        item.setExpectedPrice(request.getExpectedPrice());
         item.setImageUrl(request.getImageUrl());
         item.setStatus(Optional.ofNullable(request.getStatus()).orElse("未购买"));
         item.setLink(request.getLink());
+        String status = Optional.ofNullable(request.getStatus())
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse("未购买");
+        validateStatus(status);
+        item.setStatus(status);
         item.setNotes(request.getNotes());
         item.setPriority(Optional.ofNullable(request.getPriority()).orElse(3));
         return item;
@@ -148,14 +168,23 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getName(),
                 item.getCategoryId(),
                 item.getBrandId(),
+                item.getModel(),
+                item.getExpectedPrice(),
                 item.getImageUrl(),
                 item.getStatus(),
                 item.getLink(),
+                item.getStatus(),
                 item.getNotes(),
                 item.getPriority(),
                 item.getConvertedAssetId(),
                 item.getCreatedAt(),
                 item.getUpdatedAt()
         );
+    }
+
+    private void validateStatus(String status) {
+        if (!ALLOWED_STATUSES.contains(status)) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "心愿状态非法");
+        }
     }
 }

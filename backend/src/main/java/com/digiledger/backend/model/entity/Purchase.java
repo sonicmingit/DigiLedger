@@ -14,7 +14,7 @@ public class Purchase {
     private Long assetId;
     /** 购买类型 */
     private String type;
-    /** 配件/服务名称 */
+    /** 购买条目名称（配件/服务） */
     private String name;
     /** 购买平台 ID */
     private Long platformId;

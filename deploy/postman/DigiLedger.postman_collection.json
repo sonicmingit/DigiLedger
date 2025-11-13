@@ -3,7 +3,7 @@
         "_postman_id": "f2e47fda-6c20-4d3d-94f7-6a0ef1a33c4c",
         "name": "DigiLedger API",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "description": "Postman collection for DigiLedger V0.3.4 covering dictionary, asset, purchase, and wishlist flows."
+        "description": "Postman collection for DigiLedger V0.3.4 with dictionary, brand, wishlist, and smoke runner coverage."
     },
     "item": [
         {
@@ -380,7 +380,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Sony A7C II\",\n  \"category_id\": 2,\n  \"brand_id\": 1,\n  \"model\": \"ILCE-7CM2\",\n  \"status\": \"USING\",\n  \"purchase_date\": \"2025-01-05\",\n  \"cover_image_url\": \"https://cdn.example.com/items/a7c2.png\",\n  \"tag_ids\": [\n    5,\n    6\n  ],\n  \"notes\": \"随身备机\",\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"platform_id\": 1,\n      \"seller\": \"索尼直营店\",\n      \"price\": 12345.0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"shipping_cost\": 0,\n      \"purchase_date\": \"2025-01-05\",\n      \"invoice_no\": \"SN20250105\",\n      \"attachments\": [],\n      \"notes\": \"年货节活动\"\n    },\n    {\n      \"name\": \"原厂电池\",\n      \"type\": \"ACCESSORY\",\n      \"platform_id\": 2,\n      \"seller\": \"电池店\",\n      \"price\": 399.0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"shipping_cost\": 0,\n      \"purchase_date\": \"2025-01-06\",\n      \"attachments\": [],\n      \"notes\": \"备用电池\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"Sony A7C II\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-7CM2\",\n  \"enabledDate\": \"2025-01-10\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"coverImageUrl\": \"https://cdn.example.com/items/a7c2.png\",\n  \"notes\": \"随身备机\",\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Sony A7C II 机身\",\n      \"platformId\": 1,\n      \"seller\": \"索尼直营店\",\n      \"price\": 12345.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-01-05\",\n      \"invoiceNo\": \"SN20250105\",\n      \"attachments\": [],\n      \"notes\": \"年货节活动\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/assets",
@@ -399,7 +399,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{baseUrl}}/assets?view=card&category_id=2&brand_id=1&platform_id=1&tag_ids=5,6&page=1&size=12",
+                            "raw": "{{baseUrl}}/assets?status=使用中&category_id=5&platform_id=2&tag_ids=1,3",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -408,116 +408,20 @@
                             ],
                             "query": [
                                 {
-                                    "key": "view",
-                                    "value": "card"
+                                    "key": "status",
+                                    "value": "使用中"
                                 },
                                 {
                                     "key": "category_id",
-                                    "value": "2"
-                                },
-                                {
-                                    "key": "brand_id",
-                                    "value": "1"
+                                    "value": "5"
                                 },
                                 {
                                     "key": "platform_id",
-                                    "value": "1"
+                                    "value": "2"
                                 },
                                 {
                                     "key": "tag_ids",
-                                    "value": "5,6"
-                                },
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "size",
-                                    "value": "12"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Patch Item Status (Card View)",
-                    "request": {
-                        "method": "PATCH",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"status\": \"IDLE\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/assets/1/status",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "assets",
-                                "1",
-                                "status"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Patch Item Status (Inline Table)",
-                    "request": {
-                        "method": "PATCH",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"status\": \"USING\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/assets/1/status",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "assets",
-                                "1",
-                                "status"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Purchases",
-                    "item": [
-                        {
-                            "name": "Create Accessory Purchase",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n  \"asset_id\": 1,\n  \"name\": \"屏幕保护膜\",\n  \"type\": \"ACCESSORY\",\n  \"platform_id\": 3,\n  \"seller\": \"配件专营店\",\n  \"price\": 89.0,\n  \"currency\": \"CNY\",\n  \"quantity\": 1,\n  \"shipping_cost\": 10.0,\n  \"purchase_date\": \"2025-01-08\",\n  \"notes\": \"套餐加购\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/purchases",
-                                    "host": [
-                                        "{{baseUrl}}"
-                                    ],
-                                    "path": [
-                                        "purchases"
-                                    ]
+                                    "value": "1,3"
                                 }
                             }
                         },
@@ -664,6 +568,373 @@
                             ]
                         }
                     }
+                }
+            ]
+        },
+        {
+            "name": "Wishlist",
+            "item": [
+                {
+                    "name": "List Wishlist",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Wishlist Item",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1999,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"status\": \"未购买\",\n  \"notes\": \"直播拾音方案\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Mark Wishlist Purchased",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"model\": \"DMW-MIC2\",\n  \"expectedPrice\": 1899,\n  \"imageUrl\": \"https://cdn.example.com/wishlist/djimi2.png\",\n  \"link\": \"https://item.example.com/djimi2\",\n  \"status\": \"已购买\",\n  \"notes\": \"双11入手\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist/3",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist",
+                                "3"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Convert Wishlist To Asset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2025-02-02\",\n  \"tagIds\": [\n    5\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"DJI Mic 2 套装\",\n      \"platformId\": 1,\n      \"price\": 1899,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-02-01\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist/3/convert",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist",
+                                "3",
+                                "convert"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Smoke Runner",
+            "item": [
+                {
+                    "name": "01 - Assets Overview",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/assets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02 - Create Asset (Modal)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});",
+                                    "var json = pm.response.json();",
+                                    "if (json && json.data) {",
+                                    "  pm.environment.set('smoke_asset_id', json.data);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03 - List Assets (Card View)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/assets?view=card",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "view",
+                                    "value": "card"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04 - Bulk Update Tags",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/{{smoke_asset_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                "{{smoke_asset_id}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05 - Add Accessory",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    },\n    {\n      \"type\": \"ACCESSORY\",\n      \"name\": \"烟雾快门线\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 199.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-20\",\n      \"notes\": \"附属品示例\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/{{smoke_asset_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                "{{smoke_asset_id}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "06 - Sell Asset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"platformId\": 3,\n  \"salePrice\": 9200.0,\n  \"fee\": 200.0,\n  \"shippingCost\": 30.0,\n  \"otherCost\": 0,\n  \"saleDate\": \"2025-02-01\",\n  \"buyer\": \"烟雾买家\",\n  \"notes\": \"出售向导示例\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/{{smoke_asset_id}}/sell",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                "{{smoke_asset_id}}",
+                                "sell"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "07 - Wishlist Mark Purchased",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"ThinkVision 4K 显示器\",\n  \"categoryId\": null,\n  \"brandId\": null,\n  \"model\": \"P27h-30\",\n  \"expectedPrice\": 2999.0,\n  \"imageUrl\": \"https://example.com/p27h.jpg\",\n  \"link\": \"https://www.jd.com/p27h30\",\n  \"status\": \"已购买\",\n  \"notes\": \"计划暑期采购\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/wishlist/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "wishlist",
+                                "1"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200', function () {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
                 }
             ]
         }

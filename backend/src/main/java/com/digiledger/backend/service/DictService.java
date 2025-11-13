@@ -29,6 +29,14 @@ public interface DictService {
 
     void deletePlatform(Long id);
 
+    List<BrandDTO> listBrands();
+
+    Long createBrand(BrandRequest request);
+
+    void updateBrand(Long id, BrandRequest request);
+
+    void deleteBrand(Long id);
+
     List<TagTreeNodeDTO> getTagTree();
 
     Long createTag(TagRequest request);
