@@ -32,9 +32,8 @@ public class WishlistRequest {
     @Size(max = 500, message = "链接过长")
     private String link;
 
-    @NotBlank(message = "状态不能为空")
     @Pattern(regexp = "未购买|已购买", message = "状态非法")
-    private String status;
+    private String status = "未购买";
 
     private String notes;
 

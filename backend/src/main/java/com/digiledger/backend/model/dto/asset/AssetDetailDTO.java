@@ -1,7 +1,6 @@
 package com.digiledger.backend.model.dto.asset;
 
-import com.digiledger.backend.model.dto.asset.PurchaseDTO;
-import com.digiledger.backend.model.dto.asset.SaleDTO;
+import com.digiledger.backend.model.dto.dict.BrandDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,8 +14,7 @@ public record AssetDetailDTO(
         String name,
         Long categoryId,
         String categoryPath,
-        Long brandId,
-        String brand,
+        BrandDTO brand,
         String model,
         String serialNo,
         String status,
