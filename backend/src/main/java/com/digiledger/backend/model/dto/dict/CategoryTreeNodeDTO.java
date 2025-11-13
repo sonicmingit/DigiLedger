@@ -1,11 +1,14 @@
 package com.digiledger.backend.model.dto.dict;
 
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 类别树节点。
  */
+@Data
 public class CategoryTreeNodeDTO {
     private Long id;
     private String name;
@@ -25,51 +28,4 @@ public class CategoryTreeNodeDTO {
         this.sort = sort;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Long getParentId() {
-        return parentId;
-    }
-
-    public void setParentId(Long parentId) {
-        this.parentId = parentId;
-    }
-
-    public Integer getLevel() {
-        return level;
-    }
-
-    public void setLevel(Integer level) {
-        this.level = level;
-    }
-
-    public Integer getSort() {
-        return sort;
-    }
-
-    public void setSort(Integer sort) {
-        this.sort = sort;
-    }
-
-    public List<CategoryTreeNodeDTO> getChildren() {
-        return children;
-    }
-
-    public void setChildren(List<CategoryTreeNodeDTO> children) {
-        this.children = children;
-    }
 }

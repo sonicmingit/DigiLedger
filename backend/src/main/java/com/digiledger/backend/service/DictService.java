@@ -45,11 +45,4 @@ public interface DictService {
 
     void deleteTag(Long id);
 
-    List<BrandDTO> listBrands();
-
-    Long createBrand(BrandRequest request);
-
-    void updateBrand(Long id, BrandRequest request);
-
-    void deleteBrand(Long id);
 }
