@@ -154,8 +154,13 @@ CREATE TABLE IF NOT EXISTS wishlist (
   link VARCHAR(500) COMMENT '参考链接',
   status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '状态',
   notes TEXT COMMENT '备注',
+  priority TINYINT NOT NULL DEFAULT 3 COMMENT '优先级（1-5）',
   converted_asset_id BIGINT COMMENT '已转化资产ID',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX idx_wishlist_status (status)
+  INDEX idx_wishlist_priority (priority),
+  INDEX idx_wishlist_status (status),
+  CONSTRAINT fk_wishlist_category FOREIGN KEY (category_id) REFERENCES dict_category(id),
+  CONSTRAINT fk_wishlist_brand FOREIGN KEY (brand_id) REFERENCES dict_brand(id),
+  CONSTRAINT fk_wishlist_asset FOREIGN KEY (converted_asset_id) REFERENCES device_asset(id)
 ) COMMENT='心愿单记录表';
