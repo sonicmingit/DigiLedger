@@ -2,10 +2,12 @@ package com.digiledger.backend.model.dto.dict;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 /**
  * 平台创建/更新请求。
  */
+@Data
 public class PlatformRequest {
 
     @NotBlank(message = "平台名称不能为空")
@@ -16,28 +18,4 @@ public class PlatformRequest {
     private String link;
 
     private Integer sort = 0;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLink() {
-        return link;
-    }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
-    public Integer getSort() {
-        return sort;
-    }
-
-    public void setSort(Integer sort) {
-        this.sort = sort;
-    }
 }

@@ -244,10 +244,12 @@ public class AssetServiceImpl implements AssetService {
 
     private void validateDates(AssetCreateRequest request) {
         LocalDate purchaseDate = request.getPurchaseDate();
-        LocalDate enabledDate = request.getEnabledDate();
-        if (enabledDate == null) {
+        final LocalDate enabledDate;  // 声明为final
+        if (request.getEnabledDate() == null) {
             enabledDate = purchaseDate;
             request.setEnabledDate(enabledDate);
+        } else {
+            enabledDate = request.getEnabledDate();
         }
         if (enabledDate == null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "启用日期不能为空");
@@ -259,14 +261,14 @@ public class AssetServiceImpl implements AssetService {
             throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "报废日期不能早于启用日期");
         }
         if (request.getPurchases() != null) {
-            request.getPurchases().forEach(purchase -> {
-                if (enabledDate != null && purchase.getPurchaseDate() != null
-                        && enabledDate.isBefore(purchase.getPurchaseDate())) {
+            request.getPurchases().forEach(purchase -> {  // 这里使用final的enabledDate
+                if (purchase.getPurchaseDate() != null && enabledDate.isBefore(purchase.getPurchaseDate())) {
                     throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期需晚于购买日期");
                 }
             });
         }
     }
+
 
     private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brand) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
@@ -597,7 +599,10 @@ public class AssetServiceImpl implements AssetService {
         return value == null ? BigDecimal.ZERO : value;
     }
 
-    /** 内部指标封装 */
-    private record AssetMetrics(BigDecimal totalInvest, long useDays, BigDecimal avgCostPerDay, BigDecimal lastNetIncome) {
+    /**
+     * 内部指标封装
+     */
+    private record AssetMetrics(BigDecimal totalInvest, long useDays, BigDecimal avgCostPerDay,
+                                BigDecimal lastNetIncome) {
     }
 }

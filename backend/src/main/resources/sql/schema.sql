@@ -153,7 +153,6 @@ CREATE TABLE IF NOT EXISTS wishlist (
   image_url VARCHAR(500) COMMENT '商品图片',
   status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '购买状态',
   link VARCHAR(500) COMMENT '参考链接',
-  status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '状态',
   notes TEXT COMMENT '备注',
   priority TINYINT NOT NULL DEFAULT 3 COMMENT '优先级（1-5）',
   converted_asset_id BIGINT COMMENT '已转化资产ID',

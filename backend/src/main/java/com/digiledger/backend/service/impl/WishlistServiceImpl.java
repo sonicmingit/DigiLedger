@@ -171,7 +171,6 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getModel(),
                 item.getExpectedPrice(),
                 item.getImageUrl(),
-                item.getStatus(),
                 item.getLink(),
                 item.getStatus(),
                 item.getNotes(),

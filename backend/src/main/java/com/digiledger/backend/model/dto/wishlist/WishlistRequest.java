@@ -8,11 +8,14 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+
 import jakarta.validation.constraints.*;
+import lombok.Data;
 
 /**
  * 心愿单创建/更新请求。
  */
+@Data
 public class WishlistRequest {
 
     @NotBlank(message = "名称不能为空")
@@ -26,9 +29,6 @@ public class WishlistRequest {
     @Size(max = 500, message = "图片链接过长")
     private String imageUrl;
 
-    @Pattern(regexp = "未购买|已购买", message = "状态取值非法")
-    private String status = "未购买";
-
     @Size(max = 500, message = "链接过长")
     private String link;
 
@@ -41,89 +41,9 @@ public class WishlistRequest {
     @Max(value = 5, message = "优先级需在 1-5 之间")
     private Integer priority = 3;
 
-    public String getName() {
-        return name;
-    }
+    @Size(max = 200, message = "型号过长")
+    private String model;
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public Long getBrandId() {
-        return brandId;
-    }
-
-    public void setBrandId(Long brandId) {
-        this.brandId = brandId;
-    }
-
-    public Long getBrandId() {
-        return brandId;
-    }
-
-    public void setBrandId(Long brandId) {
-        this.brandId = brandId;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getLink() {
-        return link;
-    }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
-    }
+    @DecimalMin(value = "0", message = "期望价格需大于等于 0")
+    private BigDecimal expectedPrice;
 }
