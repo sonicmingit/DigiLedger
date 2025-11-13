@@ -122,7 +122,7 @@
       <el-card class="mt">
         <template #header>基础信息</template>
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="品牌">{{ detail.brand || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="品牌">{{ brandLabel }}</el-descriptions-item>
           <el-descriptions-item label="型号">{{ detail.model || '-' }}</el-descriptions-item>
           <el-descriptions-item label="序列号">{{ detail.serialNo || '-' }}</el-descriptions-item>
           <el-descriptions-item label="类别路径">{{ categoryName }}</el-descriptions-item>
@@ -174,6 +174,15 @@ const categoryName = computed(() => {
   }
   return categoryPathMap.value.get(detail.value.categoryId) || '-'
 })
+
+const resolveBrandName = (brand: AssetDetail['brand']) => {
+  const alias = brand?.alias?.trim()
+  if (alias) return alias
+  const name = brand?.name?.trim()
+  return name
+}
+
+const brandLabel = computed(() => resolveBrandName(detail.value?.brand) || '-')
 
 const primaryPurchase = computed(() =>
   detail.value?.purchases.find((purchase) => purchase.type === 'PRIMARY')
@@ -228,7 +237,8 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
   const payload = {
     name: detail.value.name,
     categoryId: detail.value.categoryId!,
-    brand: detail.value.brand || undefined,
+    brandId: detail.value.brand?.id ?? undefined,
+    brand: resolveBrandName(detail.value.brand) || undefined,
     model: detail.value.model || undefined,
     serialNo: detail.value.serialNo || undefined,
     status: detail.value.status as AssetStatus,

@@ -40,17 +40,29 @@
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
           <el-form-item label="品牌">
-            <el-select
-              v-model="form.brand"
-              filterable
-              allow-create
-              default-first-option
-              placeholder="选择或输入品牌"
-              @change="ensureBrandOption"
-              style="width: 100%"
-            >
-              <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item" />
-            </el-select>
+            <div class="brand-field">
+              <el-select
+                v-model="form.brandId"
+                filterable
+                clearable
+                placeholder="选择品牌"
+                @change="handleBrandSelect"
+              >
+                <el-option
+                  v-for="item in brandOptions"
+                  :key="item.id"
+                  :label="item.label"
+                  :value="item.id"
+                />
+              </el-select>
+              <el-input
+                v-model="form.brandName"
+                placeholder="自定义品牌/别名"
+                clearable
+                @blur="normalizeBrandName"
+              />
+            </div>
+            <p class="brand-hint">可选品牌后调整显示名称，留空表示不记录品牌。</p>
           </el-form-item>
         </el-col>
         <el-col :xs="24" :md="12">
@@ -169,7 +181,7 @@
                 text
                 size="small"
                 type="primary"
-                @click="handleCreatePlatform"
+                @click="handleCreatePlatform(purchase)"
               >
                 新建平台
               </el-button>
@@ -179,10 +191,7 @@
             </el-col>
           </el-row>
           <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="8">
-              <el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" :step="10" placeholder="运费" />
-            </el-col>
-            <el-col :xs="24" :md="8">
+            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="8">
               <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
             </el-col>
             <el-col :xs="24" :md="8">
@@ -307,7 +316,8 @@ const form = reactive({
   id: 0,
   name: '',
   categoryId: null as number | null,
-  brand: '',
+  brandId: null as number | null,
+  brandName: '',
   model: '',
   serialNo: '',
   status: '使用中',
@@ -341,16 +351,36 @@ const rules = {
   purchaseDate: [{ required: true, message: '请选择购买日期', trigger: 'change' }]
 }
 
-const brandOptions = ref<string[]>([])
+const { load: loadDicts, refresh: refreshDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
 
-const ensureBrandOption = (value: string) => {
-  if (!value) return
-  if (!brandOptions.value.includes(value)) {
-    brandOptions.value.push(value)
+const brandOptions = computed(() =>
+  brands.value.map((item) => ({
+    id: item.id,
+    label: (item.alias && item.alias.trim()) || item.name
+  }))
+)
+
+const normalizeBrandName = () => {
+  form.brandName = form.brandName.trim()
+  if (form.brandId && !form.brandName) {
+    const brand = brandMap.value.get(form.brandId)
+    if (brand) {
+      form.brandName = (brand.alias?.trim() || brand.name || '').trim()
+    }
   }
 }
 
-const { load: loadDicts, categoryTree, tagTree, platforms } = useDictionaries()
+const handleBrandSelect = (id: number | null) => {
+  if (!id) {
+    form.brandId = null
+    normalizeBrandName()
+    return
+  }
+  const brand = brandMap.value.get(id)
+  if (brand) {
+    form.brandName = (brand.alias?.trim() || brand.name || '').trim()
+  }
+}
 const categoryDialogVisible = ref(false)
 
 const treeProps = {
@@ -385,8 +415,12 @@ const open = (asset?: AssetDetail) => {
     form.id = asset.id
     form.name = asset.name
     form.categoryId = asset.categoryId ?? null
-    form.brand = asset.brand || ''
-    ensureBrandOption(form.brand)
+    form.brandId = asset.brand?.id ?? null
+    form.brandName =
+      (asset.brand?.alias && asset.brand.alias.trim()) ||
+      (asset.brand?.name && asset.brand.name.trim()) ||
+      ''
+    normalizeBrandName()
     form.model = asset.model || ''
     form.serialNo = asset.serialNo || ''
     form.status = asset.status
@@ -422,7 +456,8 @@ const reset = () => {
   form.id = 0
   form.name = ''
   form.categoryId = null
-  form.brand = ''
+  form.brandId = null
+  form.brandName = ''
   form.model = ''
   form.serialNo = ''
   form.status = '使用中'
@@ -506,7 +541,7 @@ const handleCategoryDialogSuccess = (payload: { id: number }) => {
   form.categoryId = payload.id
 }
 
-const handleCreatePlatform = async () => {
+const handleCreatePlatform = async (purchase: any) => {
   try {
     const { value } = await ElMessageBox.prompt('请输入平台名称', '新建平台', {
       confirmButtonText: '创建',
@@ -514,8 +549,9 @@ const handleCreatePlatform = async () => {
       inputPlaceholder: '例如：闲鱼'
     })
     if (!value) return
-    await createPlatform({ name: value })
-    await loadDicts()
+    const id = await createPlatform({ name: value })
+    await refreshDicts()
+    purchase.platformId = id
     ElMessage.success('平台已创建')
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
@@ -532,8 +568,8 @@ const handleCreateTag = async () => {
     })
     if (!value) return
     const id = await createTag({ name: value, parentId: null })
-    await loadDicts()
-    form.tagIds.push(id)
+    await refreshDicts()
+    form.tagIds = Array.from(new Set([...form.tagIds, id]))
     ElMessage.success('标签已创建')
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
@@ -556,10 +592,13 @@ const submit = () => {
 
     loading.value = true
     try {
+      normalizeBrandName()
+      const brandText = form.brandName.trim()
       const payload = {
         name: form.name,
         categoryId: form.categoryId!,
-        brand: form.brand || undefined,
+        brandId: form.brandId || undefined,
+        brand: brandText || undefined,
         model: form.model || undefined,
         serialNo: form.serialNo || undefined,
         status: form.status,
@@ -653,6 +692,38 @@ onMounted(async () => {
 .inline-action {
   margin-top: 4px;
   padding: 0 6px;
+}
+
+.brand-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.brand-field :deep(.el-select) {
+  width: 180px;
+}
+
+.brand-field :deep(.el-input) {
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+@media (max-width: 768px) {
+  .brand-field {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .brand-field :deep(.el-select) {
+    width: 100%;
+  }
 }
 
 .with-extra {

@@ -115,6 +115,8 @@ CREATE TABLE IF NOT EXISTS purchase (
 CREATE TABLE IF NOT EXISTS sale (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   asset_id BIGINT NOT NULL COMMENT '关联资产ID',
+  sale_scope VARCHAR(20) NOT NULL DEFAULT 'ASSET' COMMENT '出售范围',
+  purchase_id BIGINT COMMENT '关联购买记录ID',
   platform_id BIGINT COMMENT '出售平台ID',
   platform_name VARCHAR(100) COMMENT '出售平台名称',
   buyer VARCHAR(200) COMMENT '买家',
@@ -129,7 +131,9 @@ CREATE TABLE IF NOT EXISTS sale (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_sale_asset (asset_id),
+  INDEX idx_sale_purchase (purchase_id),
   CONSTRAINT fk_sale_asset FOREIGN KEY (asset_id) REFERENCES device_asset (id),
+  CONSTRAINT fk_sale_purchase FOREIGN KEY (purchase_id) REFERENCES purchase(id),
   CONSTRAINT fk_sale_platform FOREIGN KEY (platform_id) REFERENCES dict_platform(id)
 ) COMMENT='出售记录表';
 
@@ -148,11 +152,13 @@ CREATE TABLE IF NOT EXISTS wishlist (
   name VARCHAR(200) NOT NULL COMMENT '心愿单名称',
   category_id BIGINT COMMENT '目标类别ID',
   brand_id BIGINT COMMENT '目标品牌ID',
+  model VARCHAR(200) COMMENT '期望型号',
+  expected_price DECIMAL(12,2) COMMENT '期望价格',
   image_url VARCHAR(500) COMMENT '商品图片',
   status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '购买状态',
   link VARCHAR(500) COMMENT '参考链接',
   notes TEXT COMMENT '备注',
-  priority TINYINT DEFAULT 3 COMMENT '优先级',
+  priority TINYINT NOT NULL DEFAULT 3 COMMENT '优先级',
   converted_asset_id BIGINT COMMENT '已转化资产ID',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

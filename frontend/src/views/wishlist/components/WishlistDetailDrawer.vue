@@ -25,7 +25,7 @@
           {{ current.category || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="品牌">
-          {{ current.brand || '-' }}
+          {{ brandLabel }}
         </el-descriptions-item>
         <el-descriptions-item label="型号">
           {{ current.model || '-' }}
@@ -70,13 +70,31 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WishlistItem } from '@/types'
+import { useDictionaries } from '@/composables/useDictionaries'
 
 const visible = ref(false)
 const current = ref<WishlistItem | null>(null)
+const { brandMap } = useDictionaries()
 
 const tags = computed(() => current.value?.tags ?? [])
 const statusTagType = computed(() => (current.value?.status === '已购买' ? 'success' : 'info'))
 const drawerTitle = computed(() => current.value?.name ?? '心愿详情')
+
+const brandLabel = computed(() => {
+  if (!current.value) return '-'
+  if (current.value.brandName && current.value.brandName.trim().length) {
+    return current.value.brandName.trim()
+  }
+  if (current.value.brandId) {
+    const brand = brandMap.value.get(current.value.brandId)
+    if (brand) {
+      const alias = brand.alias?.trim()
+      if (alias) return alias
+      if (brand.name) return brand.name
+    }
+  }
+  return '-'
+})
 
 const formatPrice = (value?: number | null) => {
   if (value === undefined || value === null) {

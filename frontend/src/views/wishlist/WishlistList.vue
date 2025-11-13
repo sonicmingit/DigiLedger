@@ -43,7 +43,9 @@
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="160" />
         <el-table-column prop="category" label="类别" width="140" />
-        <el-table-column prop="brand" label="品牌" width="120" />
+        <el-table-column label="品牌" width="120">
+          <template #default="{ row }">{{ resolveWishlistBrand(row) }}</template>
+        </el-table-column>
         <el-table-column prop="expectedPrice" label="期望价" width="120">
           <template #default="{ row }">{{ row.expectedPrice ? '¥ ' + formatNumber(row.expectedPrice) : '-' }}</template>
         </el-table-column>
@@ -93,15 +95,13 @@
         </el-form-item>
         <el-form-item label="品牌">
           <el-select
-            v-model="form.brand"
+            v-model="form.brandId"
             filterable
-            allow-create
-            default-first-option
-            placeholder="选择或输入品牌"
-            @change="ensureBrandOption"
+            clearable
+            placeholder="选择品牌"
             class="w-full"
           >
-            <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="型号">
@@ -179,7 +179,7 @@ const activeStatus = ref<'全部' | '未购买' | '已购买'>('全部')
 const form = reactive({
   name: '',
   categoryId: null as number | null,
-  brand: '',
+  brandId: null as number | null,
   model: '',
   expectedPrice: undefined as number | undefined,
   link: '',
@@ -196,16 +196,30 @@ const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 }
 
-const brandOptions = ref<string[]>([])
+const brandOptions = computed(() =>
+  brands.value.map((item) => ({
+    id: item.id,
+    label: ((item.alias && item.alias.trim()) || item.name || '').trim()
+  }))
+)
 
-const ensureBrandOption = (value: string) => {
-  if (!value) return
-  if (!brandOptions.value.includes(value)) {
-    brandOptions.value.push(value)
+const resolveWishlistBrand = (item: WishlistItem) => {
+  const explicit = item.brandName?.trim()
+  if (explicit) {
+    return explicit
   }
+  if (item.brandId) {
+    const brand = brandMap.value.get(item.brandId)
+    if (brand) {
+      const alias = brand.alias?.trim()
+      if (alias) return alias
+      if (brand.name) return brand.name
+    }
+  }
+  return '-'
 }
 
-const { load: loadDicts, categoryTree, tagTree } = useDictionaries()
+const { load: loadDicts, categoryTree, tagTree, brands, brandMap } = useDictionaries()
 
 const treeProps = {
   value: 'value',
@@ -236,7 +250,9 @@ const filterItems = () => {
   const keywordValue = keyword.value.trim().toLowerCase()
   filtered.value = items.value.filter((item) => {
     if (!keywordValue) return true
-    return `${item.name} ${item.brand || ''}`.toLowerCase().includes(keywordValue)
+    const brandText = resolveWishlistBrand(item)
+    const combined = `${item.name} ${brandText === '-' ? '' : brandText}`
+    return combined.toLowerCase().includes(keywordValue)
   })
 }
 
@@ -245,10 +261,6 @@ const refresh = async () => {
   try {
     const statusParam = activeStatus.value === '全部' ? undefined : activeStatus.value
     items.value = await fetchWishlist(statusParam ? { status: statusParam } : undefined)
-    const brands = items.value
-      .map((item) => item.brand)
-      .filter((name): name is string => Boolean(name && name.trim().length))
-    brandOptions.value = Array.from(new Set(brands))
     filterItems()
   } finally {
     loading.value = false
@@ -266,7 +278,7 @@ const openDialog = (item?: WishlistItem) => {
     Object.assign(form, {
       name: item.name,
       categoryId: item.categoryId ?? null,
-      brand: item.brand || '',
+      brandId: item.brandId ?? null,
       model: item.model || '',
       expectedPrice: item.expectedPrice,
       link: item.link || '',
@@ -276,7 +288,6 @@ const openDialog = (item?: WishlistItem) => {
       imageKey: extractObjectKey(item.imageUrl),
       tagIds: item.tags ? item.tags.map((tag) => tag.id) : []
     })
-    ensureBrandOption(form.brand)
   } else {
     reset()
   }
@@ -286,7 +297,7 @@ const reset = () => {
   Object.assign(form, {
     name: '',
     categoryId: null,
-    brand: '',
+    brandId: null,
     model: '',
     expectedPrice: undefined,
     link: '',
@@ -306,7 +317,7 @@ const submit = () => {
       const payload = {
         name: form.name,
         categoryId: form.categoryId || undefined,
-        brand: form.brand || undefined,
+        brandId: form.brandId || undefined,
         model: form.model || undefined,
         expectedPrice: form.expectedPrice,
         link: form.link || undefined,
