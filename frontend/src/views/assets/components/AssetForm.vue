@@ -22,15 +22,15 @@
               :props="treeProps"
               check-strictly
               filterable
-              placeholder="请选择类别（叶子节点）"
-              style="width: 100%"
+              placeholder="请选择类别"
+              style="width: 80%"
             />
             <el-button
               class="inline-action"
               text
               size="small"
               type="primary"
-              @click="handleCreateCategory"
+              @click="openCategoryDialog"
             >
               新建
             </el-button>
@@ -55,14 +55,17 @@
                   :value="item.id"
                 />
               </el-select>
-              <el-input
-                v-model="form.brandName"
-                placeholder="自定义品牌/别名"
-                clearable
-                @blur="normalizeBrandName"
-              />
+              <el-button
+                class="inline-action"
+                text
+                size="small"
+                type="primary"
+                @click="handleCreateBrand"
+              >
+                新建
+              </el-button>
             </div>
-            <p class="brand-hint">可选品牌后调整显示名称，留空表示不记录品牌。</p>
+            <!-- <p class="brand-hint">可选品牌后调整显示名称，留空表示不记录品牌。</p> -->
           </el-form-item>
         </el-col>
         <el-col :xs="24" :md="12">
@@ -109,7 +112,7 @@
               filterable
               collapse-tags
               placeholder="选择标签"
-              style="width: 100%"
+              style="width: 80%"
             />
             <el-button
               class="inline-action"
@@ -169,10 +172,10 @@
             <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-select
                 v-model="purchase.platformId"
-                placeholder="来源平台"
+                placeholder="购买平台"
                 filterable
                 clearable
-                style="width: 100%"
+                style="width: 80%"
               >
                 <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
@@ -183,13 +186,14 @@
                 type="primary"
                 @click="handleCreatePlatform(purchase)"
               >
-                新建平台
+                新建
               </el-button>
             </el-col>
             <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
               <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
             </el-col>
           </el-row>
+          
           <el-row :gutter="12" class="mt">
             <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="8">
               <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
@@ -265,6 +269,36 @@
       <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
     </template>
     </el-dialog>
+
+    <!-- 新建类别对话框：可在树上选择父节点，然后输入名称创建 -->
+    <el-dialog v-model="categoryDialogVisible" title="新建类别" width="480px" :destroy-on-close="true">
+      <div style="display:flex;gap:12px">
+        <div style="flex:1; max-height:320px; overflow:auto">
+          <div style="margin-bottom:8px;color:var(--el-text-color-secondary)">选择父节点（不选则创建为根节点）</div>
+          <el-tree
+            :data="categoryOptions"
+            node-key="value"
+            :props="{ children: 'children', label: 'label' }"
+            :highlight-current="true"
+            :default-expand-all="false"
+            :expand-on-click-node="false"
+            :check-strictly="true"
+            @node-click="onCategoryNodeClick"
+          />
+        </div>
+        <div style="width:260px">
+          <el-form label-width="0">
+            <el-form-item label="">
+              <el-input v-model="newCategoryName" placeholder="新类别名称" />
+            </el-form-item>
+            <el-form-item label="">
+              <el-button type="primary" @click="createCategoryConfirm">创建并回显</el-button>
+              <el-button @click="categoryDialogVisible = false">取消</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -277,7 +311,7 @@ import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
-import { createCategory, createPlatform, createTag } from '@/api/dict'
+import { createCategory, createPlatform, createTag, createBrand } from '@/api/dict'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
@@ -289,6 +323,7 @@ const loading = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const coverProgress = ref(0)
+//const categoryDialogVisible = ref(false)
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -585,23 +620,44 @@ const handleCreateCategory = async () => {
 }
 
 const handleCreatePlatform = async (purchase: any) => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入平台名称', '新建平台', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：闲鱼'
-    })
-    if (!value) return
-    const id = await createPlatform({ name: value })
-    await refreshDicts()
-    purchase.platformId = id
-    ElMessage.success('平台已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建平台失败')
-  }
-}
-
+   try {
+     const { value } = await ElMessageBox.prompt('请输入平台名称', '新建平台', {
+       confirmButtonText: '创建',
+       cancelButtonText: '取消',
+       inputPlaceholder: '例如：闲鱼'
+     })
+     if (!value) return
+     const id = await createPlatform({ name: value })
+     await refreshDicts()
+     purchase.platformId = id
+     ElMessage.success('平台已创建')
+   } catch (error) {
+     if (error === 'cancel' || error === 'close') return
+     ElMessage.error('创建平台失败')
+   }
+ }
+ 
+// 新建品牌函数（保持不变）
+ const handleCreateBrand = async () => {
+   try {
+     const { value } = await ElMessageBox.prompt('请输入品牌名称', '新建品牌', {
+       confirmButtonText: '创建',
+       cancelButtonText: '取消',
+       inputPlaceholder: '例如：Apple'
+     })
+     const trimmed = value?.trim()
+     if (!trimmed) return
+     const id = await createBrand({ name: trimmed })
+     await refreshDicts()
+     form.brandId = id
+     form.brandName = trimmed
+     ElMessage.success('品牌已创建')
+   } catch (error) {
+     if (error === 'cancel' || error === 'close') return
+     ElMessage.error('创建品牌失败')
+   }
+ }
+ 
 const handleCreateTag = async () => {
   try {
     const { value } = await ElMessageBox.prompt('请输入标签名称', '新建标签', {
@@ -619,6 +675,44 @@ const handleCreateTag = async () => {
     ElMessage.error('创建标签失败')
   }
 }
+
+// ------ 新增：可在树上选择父节点并创建任意层级节点 ------
+const categoryDialogVisible = ref(false)
+const newCategoryName = ref('')
+const selectedCategoryNode = ref<number | null>(null)
+
+const openCategoryDialog = () => {
+  // 默认将当前选择的 categoryId 作为初始父节点
+  selectedCategoryNode.value = form.categoryId ?? null
+  newCategoryName.value = ''
+  categoryDialogVisible.value = true
+}
+
+const onCategoryNodeClick = (node: any) => {
+  // node.value 对应 buildCategoryOptions 的 value
+  selectedCategoryNode.value = node?.value ?? null
+}
+
+const createCategoryConfirm = async () => {
+  try {
+    const name = newCategoryName.value?.trim()
+    if (!name) {
+      ElMessage.warning('请输入类别名称')
+      return
+    }
+    // 计算 parentId 与排序位置
+    const parentId = selectedCategoryNode.value ?? null
+    const siblings = getCategorySiblings(parentId)
+    const id = await createCategory({ name, parentId, sort: nextCategorySort(siblings) })
+    await refreshDicts()
+    form.categoryId = id
+    categoryDialogVisible.value = false
+    ElMessage.success('类别已创建并回显')
+  } catch (err) {
+    ElMessage.error('创建类别失败')
+  }
+}
+// ------ 结束新增 ------
 
 const submit = () => {
   formRef.value?.validate(async (valid) => {

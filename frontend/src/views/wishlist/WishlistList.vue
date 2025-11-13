@@ -42,7 +42,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="160" />
-        <el-table-column prop="category" label="类别" width="140" />
+        <el-table-column label="类别" width="140">
+          <template #default="{ row }">{{ resolveCategoryName(row) }}</template>
+        </el-table-column>
         <el-table-column label="品牌" width="120">
           <template #default="{ row }">{{ resolveWishlistBrand(row) }}</template>
         </el-table-column>
@@ -204,10 +206,9 @@ const brandOptions = computed(() =>
 )
 
 const resolveWishlistBrand = (item: WishlistItem) => {
-  const explicit = item.brandName?.trim()
-  if (explicit) {
-    return explicit
-  }
+  // 兼容后端可能返回的 brand 字段（字符串）、brandName 或 brandId
+  const explicit = ((item as any).brand && (item as any).brand.toString().trim()) || (item as any).brandName?.trim()
+  if (explicit) return explicit
   if (item.brandId) {
     const brand = brandMap.value.get(item.brandId)
     if (brand) {
@@ -216,6 +217,27 @@ const resolveWishlistBrand = (item: WishlistItem) => {
       if (brand.name) return brand.name
     }
   }
+  return '-'
+}
+
+// 新增：从 categoryOptions 构建映射以通过 categoryId 回显名称
+const categoryMap = computed(() => {
+  const map = new Map<number, string>()
+  const walk = (nodes: any[]) => {
+    nodes.forEach((n) => {
+      if (n && n.value != null) map.set(n.value, n.label)
+      if (n && n.children) walk(n.children)
+    })
+  }
+  walk(categoryOptions.value)
+  return map
+})
+
+const resolveCategoryName = (item: WishlistItem) => {
+  // 优先使用后端可能返回的 categoryName 或直接的 category 字段
+  const explicit = (item as any).categoryName || (item as any).category
+  if (explicit) return explicit
+  if (item.categoryId) return categoryMap.value.get(item.categoryId) ?? '-'
   return '-'
 }
 
