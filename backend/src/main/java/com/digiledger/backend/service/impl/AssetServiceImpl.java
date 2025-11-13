@@ -16,7 +16,6 @@ import com.digiledger.backend.model.entity.AssetTagMap;
 import com.digiledger.backend.model.entity.DeviceAsset;
 import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictCategory;
-import com.digiledger.backend.model.entity.DictBrand;
 import com.digiledger.backend.model.entity.DictPlatform;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.Purchase;
@@ -149,7 +148,6 @@ public class AssetServiceImpl implements AssetService {
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
         DictBrand brand = resolveBrand(request.getBrandId());
         List<Long> tagIds = validateTagIds(request.getTagIds());
-        DictBrand brand = resolveBrand(request.getBrandId());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
         assetMapper.insert(asset);
         persistTags(asset.getId(), tagIds);
@@ -169,7 +167,6 @@ public class AssetServiceImpl implements AssetService {
         String categoryPath = buildCategoryPath(category.getId(), categoryMap);
         DictBrand brand = resolveBrand(request.getBrandId());
         List<Long> tagIds = validateTagIds(request.getTagIds());
-        DictBrand brand = resolveBrand(request.getBrandId());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
         asset.setId(id);
         assetMapper.update(asset);
@@ -271,7 +268,6 @@ public class AssetServiceImpl implements AssetService {
         }
     }
 
-    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brandDict) {
     private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brand) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
@@ -280,13 +276,6 @@ public class AssetServiceImpl implements AssetService {
         asset.setName(request.getName());
         asset.setCategoryId(category != null ? category.getId() : null);
         asset.setCategoryPath(categoryPath);
-        if (brandDict != null) {
-            asset.setBrandId(brandDict.getId());
-            asset.setBrand(brandDict.getName());
-        } else {
-            asset.setBrandId(request.getBrandId());
-            asset.setBrand(request.getBrand());
-        }
         asset.setBrandId(brand != null ? brand.getId() : null);
         asset.setBrand(determineBrandName(request.getBrand(), brand));
         asset.setModel(request.getModel());
@@ -477,14 +466,6 @@ public class AssetServiceImpl implements AssetService {
         return category;
     }
 
-    private DictBrand resolveBrand(Long brandId) {
-        if (brandId == null) {
-            return null;
-        }
-        return Optional.ofNullable(dictBrandMapper.findById(brandId))
-                .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
-    }
-
     private String determineBrandName(String customName, DictBrand brand) {
         if (customName != null && !customName.isBlank()) {
             return customName;
@@ -610,16 +591,6 @@ public class AssetServiceImpl implements AssetService {
         return tags.stream()
                 .map(tag -> new TagDTO(tag.getId(), tag.getName(), tag.getColor(), tag.getIcon()))
                 .toList();
-    }
-
-    private BrandDTO toBrandDTO(DictBrand brand, String fallbackName) {
-        if (brand != null) {
-            return new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort());
-        }
-        if (fallbackName != null && !fallbackName.isBlank()) {
-            return new BrandDTO(null, fallbackName, null, null, null);
-        }
-        return null;
     }
 
     private BigDecimal defaultZero(BigDecimal value) {
