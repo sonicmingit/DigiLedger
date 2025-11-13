@@ -11,6 +11,7 @@ import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
 import com.digiledger.backend.mapper.SaleMapper;
 import com.digiledger.backend.model.dto.asset.*;
+import com.digiledger.backend.model.dto.dict.BrandDTO;
 import com.digiledger.backend.model.entity.AssetTagMap;
 import com.digiledger.backend.model.entity.DeviceAsset;
 import com.digiledger.backend.model.entity.DictBrand;
@@ -111,6 +112,7 @@ public class AssetServiceImpl implements AssetService {
         List<Purchase> purchases = purchaseMapper.findByAssetId(id);
         List<Sale> sales = saleMapper.findByAssetId(id);
         List<TagDTO> tags = toTagDTOs(dictTagMapper.findByAssetId(id));
+        DictBrand brand = asset.getBrandId() == null ? null : dictBrandMapper.findById(asset.getBrandId());
 
         AssetMetrics metrics = calculateMetrics(asset, purchases, sales);
         return new AssetDetailDTO(
@@ -118,8 +120,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getName(),
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
-                asset.getBrandId(),
-                asset.getBrand(),
+                toBrandDTO(brand, asset.getBrand()),
                 asset.getModel(),
                 asset.getSerialNo(),
                 asset.getStatus(),
@@ -548,6 +549,16 @@ public class AssetServiceImpl implements AssetService {
         return tags.stream()
                 .map(tag -> new TagDTO(tag.getId(), tag.getName(), tag.getColor(), tag.getIcon()))
                 .toList();
+    }
+
+    private BrandDTO toBrandDTO(DictBrand brand, String fallbackName) {
+        if (brand != null) {
+            return new BrandDTO(brand.getId(), brand.getName(), brand.getAlias(), brand.getInitial(), brand.getSort());
+        }
+        if (fallbackName != null && !fallbackName.isBlank()) {
+            return new BrandDTO(null, fallbackName, null, null, null);
+        }
+        return null;
     }
 
     private BigDecimal defaultZero(BigDecimal value) {
