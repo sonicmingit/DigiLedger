@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.WishlistTagMapMapper">
+
+    <delete id="deleteByWishlistId" parameterType="long">
+        DELETE FROM wishlist_tag_map WHERE wishlist_id = #{wishlistId}
+    </delete>
+
+    <insert id="batchInsert">
+        INSERT INTO wishlist_tag_map (wishlist_id, tag_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.wishlistId}, #{item.tagId})
+        </foreach>
+    </insert>
+
+    <select id="findByWishlistIds" resultType="com.digiledger.backend.model.entity.WishlistTagMap">
+        SELECT wishlist_id, tag_id, created_at
+        FROM wishlist_tag_map
+        WHERE wishlist_id IN
+        <foreach collection="wishlistIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY wishlist_id ASC, created_at ASC, tag_id ASC
+    </select>
+
+    <select id="findTagIdsByWishlistId" parameterType="long" resultType="long">
+        SELECT tag_id
+        FROM wishlist_tag_map
+        WHERE wishlist_id = #{wishlistId}
+        ORDER BY created_at ASC, tag_id ASC
+    </select>
+
+    <select id="countByTagId" parameterType="long" resultType="long">
+        SELECT COUNT(1) FROM wishlist_tag_map WHERE tag_id = #{tagId}
+    </select>
+
+</mapper>
