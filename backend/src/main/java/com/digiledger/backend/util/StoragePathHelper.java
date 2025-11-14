@@ -60,7 +60,27 @@ public class StoragePathHelper {
         if (objectKey == null || objectKey.isBlank()) {
             return null;
         }
-        return "/oss/" + storageProperties.getBucket() + "/" + objectKey;
+        return buildRelativePath(objectKey);
+    }
+
+    /**
+     * 根据 objectKey 构造完整访问 URL。
+     */
+    public String toFullUrl(String value) {
+        String objectKey = toObjectKey(value);
+        if (objectKey == null || objectKey.isBlank()) {
+            return null;
+        }
+        String baseUrl = storageProperties.getBaseUrl();
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            String normalizedBase = baseUrl.trim();
+            if (!normalizedBase.endsWith("/")) {
+                normalizedBase = normalizedBase + "/";
+            }
+            String normalizedKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+            return normalizedBase + normalizedKey;
+        }
+        return buildRelativePath(objectKey);
     }
 
     /**
@@ -88,6 +108,27 @@ public class StoragePathHelper {
                 .map(this::toRelativeUrl)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 将 objectKey 列表批量转换为完整访问 URL 列表。
+     */
+    public List<String> toFullUrls(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .map(this::toFullUrl)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private String buildRelativePath(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return null;
+        }
+        String normalizedKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+        return "/oss/" + storageProperties.getBucket() + "/" + normalizedKey;
     }
 
     private String stripProtocol(String value) {

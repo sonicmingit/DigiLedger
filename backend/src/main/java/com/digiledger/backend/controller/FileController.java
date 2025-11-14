@@ -29,10 +29,10 @@ public class FileController {
     @PostMapping("/upload")
     public ApiResponse<Map<String, String>> upload(@RequestParam(name = "file") MultipartFile file) {
         String objectKey = fileService.upload(file);
-        String relativeUrl = storagePathHelper.toRelativeUrl(objectKey);
+        String publicUrl = storagePathHelper.toFullUrl(objectKey);
         return ApiResponse.success(Map.of(
                 "objectKey", objectKey,
-                "url", relativeUrl != null ? relativeUrl : ""
+                "url", publicUrl != null ? publicUrl : ""
         ));
     }
 }

@@ -14,4 +14,11 @@ public interface FileService {
      * @return 对象在存储中的 objectKey
      */
     String upload(MultipartFile file);
+
+    /**
+     * 删除对象存储中的文件。
+     *
+     * @param objectKey 对象存储路径
+     */
+    void delete(String objectKey);
 }
