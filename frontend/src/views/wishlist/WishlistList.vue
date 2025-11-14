@@ -57,7 +57,7 @@
             <el-tag :type="row.status === '已购买' ? 'success' : 'info'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300">
+        <el-table-column label="操作" width="360">
           <template #default="{ row }">
             <el-button link type="info" @click="showDetail(row)">详情</el-button>
             <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
@@ -68,6 +68,14 @@
               :disabled="row.status === '已购买'"
             >
               已购买
+            </el-button>
+            <el-button
+              v-if="row.status === '已购买' && row.convertedAssetId"
+              link
+              type="success"
+              @click="goToAssetDetail(row.convertedAssetId)"
+            >
+              物品详情
             </el-button>
             <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
               <template #reference>
@@ -148,8 +156,8 @@
         <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
       </template>
     </el-dialog>
+    <asset-form ref="assetFormRef" @success="handleAssetFormSuccess" />
     <wishlist-detail-drawer ref="detailDrawer" />
-    <wishlist-convert-dialog ref="convertDialog" @success="refresh" />
   </div>
 </template>
 
@@ -158,14 +166,17 @@ import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist } from '@/api/wishlist'
+import { useRouter } from 'vue-router'
+import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
-import WishlistConvertDialog from './components/WishlistConvertDialog.vue'
 import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { buildOssUrl, extractObjectKey } from '@/utils/storage'
+import AssetForm from '@/views/assets/components/AssetForm.vue'
+
+const router = useRouter()
 
 const items = ref<WishlistItem[]>([])
 const filtered = ref<WishlistItem[]>([])
@@ -370,14 +381,51 @@ const remove = async (id: number) => {
 }
 
 const detailDrawer = ref<InstanceType<typeof WishlistDetailDrawer> | null>(null)
-const convertDialog = ref<InstanceType<typeof WishlistConvertDialog> | null>(null)
+const assetFormRef = ref<InstanceType<typeof AssetForm> | null>(null)
 
 const showDetail = (item: WishlistItem) => {
   detailDrawer.value?.open(item)
 }
 
+const resolveBrandNameForPrefill = (item: WishlistItem) => {
+  if (item.brandName && item.brandName.trim().length) {
+    return item.brandName.trim()
+  }
+  if (item.brandId) {
+    const brand = brandMap.value.get(item.brandId)
+    if (brand) {
+      const alias = brand.alias?.trim()
+      if (alias) return alias
+      if (brand.name) return brand.name
+    }
+  }
+  return ''
+}
+
 const convert = (item: WishlistItem) => {
-  convertDialog.value?.open(item)
+  const prefill = {
+    name: item.name,
+    categoryId: item.categoryId ?? null,
+    brandId: item.brandId ?? null,
+    brandName: resolveBrandNameForPrefill(item),
+    model: item.model || '',
+    notes: item.notes || '',
+    coverImageKey: extractObjectKey(item.imageUrl) || '',
+    tagIds: item.tags ? item.tags.map((tag) => tag.id) : undefined
+  }
+  assetFormRef.value?.open(null, {
+    prefill,
+    submit: (payload) => convertWishlist(item.id, payload),
+    successMessage: '已转为物品'
+  })
+}
+
+const handleAssetFormSuccess = async () => {
+  await refresh()
+}
+
+const goToAssetDetail = (assetId: number) => {
+  router.push(`/assets/${assetId}`)
 }
 
 const handleUpload = async (options: any) => {
