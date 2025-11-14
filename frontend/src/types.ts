@@ -90,6 +90,7 @@ export interface WishlistItem {
   name: string
   category?: string
   categoryId?: number
+  categoryName?: string
   brandId?: number
   brandName?: string
   model?: string

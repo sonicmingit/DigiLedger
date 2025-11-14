@@ -168,3 +168,13 @@ CREATE TABLE IF NOT EXISTS wishlist (
   CONSTRAINT fk_wishlist_brand FOREIGN KEY (brand_id) REFERENCES dict_brand(id),
   CONSTRAINT fk_wishlist_asset FOREIGN KEY (converted_asset_id) REFERENCES device_asset(id)
 ) COMMENT='心愿单记录表';
+
+CREATE TABLE IF NOT EXISTS wishlist_tag_map (
+  wishlist_id BIGINT NOT NULL COMMENT '心愿ID',
+  tag_id BIGINT NOT NULL COMMENT '标签ID',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (wishlist_id, tag_id),
+  INDEX idx_wishlist_tag_tag (tag_id),
+  CONSTRAINT fk_wishlist_tag_wishlist FOREIGN KEY (wishlist_id) REFERENCES wishlist(id) ON DELETE CASCADE,
+  CONSTRAINT fk_wishlist_tag_tag FOREIGN KEY (tag_id) REFERENCES dict_tag(id) ON DELETE CASCADE
+) COMMENT='心愿标签映射表';
