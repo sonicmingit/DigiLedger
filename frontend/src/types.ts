@@ -1,8 +1,6 @@
 // 物品状态枚举（中文）
 export type AssetStatus = '使用中' | '已闲置' | '待出售' | '已出售' | '已丢弃'
 
-export type SaleScope = 'ASSET' | 'ACCESSORY'
-
 export interface TagItem {
   id: number
   name: string
@@ -58,7 +56,6 @@ export interface PurchaseRecord {
 // 售出记录
 export interface SaleRecord {
   id: number
-  saleScope: SaleScope
   purchaseId?: number
   platformId?: number
   platformName?: string

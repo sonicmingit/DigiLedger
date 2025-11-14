@@ -8,38 +8,36 @@ import java.time.LocalDateTime;
 
 @Data
 public class Sale {
-    /** 主键 ID */
+    /** Sale ID */
     private Long id;
-    /** 资产 ID */
+    /** Asset ID */
     private Long assetId;
-    /** 出售范围 */
-    private String saleScope;
-    /** 关联购买记录 ID（配件出售） */
+    /** Related purchase record ID (for accessories) */
     private Long purchaseId;
-    /** 出售平台 ID */
+    /** Platform ID */
     private Long platformId;
-    /** 出售平台名称（冗余） */
+    /** Platform name */
     private String platformName;
-    /** 买家名称 */
+    /** Buyer */
     private String buyer;
-    /** 售价 */
+    /** Sale price */
     private BigDecimal salePrice;
-    /** 平台手续费 */
+    /** Platform fee */
     private BigDecimal fee;
-    /** 运费 */
+    /** Shipping cost */
     private BigDecimal shippingCost;
-    /** 其他费用 */
+    /** Other costs */
     private BigDecimal otherCost;
-    /** 净收入 */
+    /** Net income */
     private BigDecimal netIncome;
-    /** 售出日期 */
+    /** Sale date */
     private LocalDate saleDate;
-    /** 附件 JSON */
+    /** Attachments payload */
     private String attachments;
-    /** 备注 */
+    /** Notes */
     private String notes;
-    /** 创建时间 */
+    /** Created timestamp */
     private LocalDateTime createdAt;
-    /** 更新时间 */
+    /** Updated timestamp */
     private LocalDateTime updatedAt;
 }

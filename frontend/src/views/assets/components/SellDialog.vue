@@ -1,16 +1,10 @@
 <template>
   <el-dialog v-model="visible" title="出售向导" width="500px" @closed="reset">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-      <el-form-item label="出售范围" prop="saleScope">
-        <el-radio-group v-model="form.saleScope">
-          <el-radio-button label="ASSET">主商品</el-radio-button>
-          <el-radio-button label="ACCESSORY">配件</el-radio-button>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item v-if="form.saleScope === 'ACCESSORY'" label="选择配件" prop="purchaseId">
+      <el-form-item v-if="accessoryPurchases.length" label="选择配件" prop="purchaseId">
         <el-select
           v-model="form.purchaseId"
-          placeholder="请选择需要出售的配件"
+          placeholder="请选择要出售的配件"
           filterable
           :loading="accessoryLoading"
           :disabled="!accessoryPurchases.length"
@@ -18,11 +12,12 @@
           <el-option
             v-for="item in accessoryPurchases"
             :key="item.id"
-            :label="`${item.name || '未命名配件'} · 购买于 ${item.purchaseDate || '未知'}`"
+            :label="`${item.name || '待处理采购'} - ${item.purchaseDate || '未知'}`"
             :value="item.id"
           />
         </el-select>
       </el-form-item>
+
       <el-form-item label="平台" prop="platformId">
         <el-select v-model="form.platformId" placeholder="选择平台" filterable clearable>
           <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
@@ -58,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { fetchAssetDetail, sellAsset } from '@/api/asset'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
@@ -75,7 +70,6 @@ const { load: loadDicts, platforms } = useDictionaries()
 
 const form = reactive({
   platformId: undefined as number | undefined,
-  saleScope: 'ASSET' as 'ASSET' | 'ACCESSORY',
   purchaseId: undefined as number | undefined,
   buyer: '',
   salePrice: 0,
@@ -89,21 +83,8 @@ const form = reactive({
 const formRef = ref<FormInstance>()
 
 const rules = {
-  saleScope: [{ required: true, message: '请选择出售范围', trigger: 'change' }],
-  purchaseId: [
-    {
-      trigger: 'change',
-      validator: (_rule: unknown, value: number | undefined, callback: (error?: Error) => void) => {
-        if (form.saleScope === 'ACCESSORY' && !value) {
-          callback(new Error('请选择配件'))
-        } else {
-          callback()
-        }
-      }
-    }
-  ],
-  salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }],
-  saleDate: [{ required: true, message: '请选择售出日期', trigger: 'change' }]
+  salePrice: [{ required: true, message: '�������ۼ�', trigger: 'blur' }],
+  saleDate: [{ required: true, message: '��ѡ���۳�����', trigger: 'change' }]
 }
 
 const accessoryPurchases = ref<PurchaseRecord[]>([])
@@ -131,7 +112,6 @@ const open = (asset: { id: number; name: string }) => {
 const reset = () => {
   Object.assign(form, {
     platformId: undefined,
-    saleScope: 'ASSET' as 'ASSET' | 'ACCESSORY',
     purchaseId: undefined,
     buyer: '',
     salePrice: 0,
@@ -147,10 +127,6 @@ const reset = () => {
 
 const submit = () => {
   if (!assetInfo.value) return
-  if (form.saleScope === 'ACCESSORY' && !accessoryPurchases.value.length) {
-    ElMessage.warning('当前资产暂无可出售的配件')
-    return
-  }
   formRef.value?.validate(async (valid: boolean) => {
     if (!valid) return
     loading.value = true
@@ -170,18 +146,4 @@ defineExpose({ open })
 onMounted(async () => {
   await loadDicts()
 })
-
-watch(
-  () => form.saleScope,
-  (scope) => {
-    if (scope === 'ASSET') {
-      form.purchaseId = undefined
-      formRef.value?.clearValidate('purchaseId')
-    } else if (scope === 'ACCESSORY' && assetInfo.value) {
-      if (!accessoryPurchases.value.length && !accessoryLoading.value) {
-        void loadAccessoryPurchases(assetInfo.value.id)
-      }
-    }
-  }
-)
 </script>

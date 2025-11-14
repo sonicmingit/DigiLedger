@@ -94,10 +94,10 @@
           <el-card>
             <template #header>售出记录</template>
             <el-table :data="detail.sales" size="small" empty-text="暂无数据">
-              <el-table-column label="范围" width="100">
+              <el-table-column label="Type" width="100">
                 <template #default="{ row }">
-                  <el-tag size="small" :type="row.saleScope === 'ASSET' ? 'warning' : 'info'">
-                    {{ row.saleScope === 'ASSET' ? '主商品' : '配件' }}
+                  <el-tag size="small" :type="row.purchaseId ? 'info' : 'warning'">
+                    {{ row.purchaseId ? 'Accessory' : 'Main asset' }}
                   </el-tag>
                 </template>
               </el-table-column>
