@@ -10,6 +10,14 @@ export interface TagItem {
   icon?: string
 }
 
+export interface BrandInfo {
+  id: number | null
+  name: string
+  alias?: string | null
+  initial?: string | null
+  sort?: number | null
+}
+
 // 物品列表摘要
 export interface AssetSummary {
   id: number
@@ -67,7 +75,7 @@ export interface SaleRecord {
 
 // 物品详情
 export interface AssetDetail extends AssetSummary {
-  brand?: string
+  brand?: BrandInfo | null
   model?: string
   serialNo?: string
   retiredDate?: string
@@ -82,7 +90,8 @@ export interface WishlistItem {
   name: string
   category?: string
   categoryId?: number
-  brand?: string
+  brandId?: number
+  brandName?: string
   model?: string
   expectedPrice?: number
   link?: string

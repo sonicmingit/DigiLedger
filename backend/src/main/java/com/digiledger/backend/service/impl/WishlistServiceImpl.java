@@ -14,11 +14,14 @@ import com.digiledger.backend.service.WishlistService;
 import com.digiledger.backend.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -50,15 +53,17 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     public List<WishlistDTO> listAll(String status) {
         String normalizedStatus = normalizeStatus(status);
+        Map<Long, String> brandNameCache = new HashMap<>();
         return wishlistMapper.findAll(normalizedStatus).stream()
-                .map(this::toDto)
+                .map(item -> toDto(item, resolveBrandName(item.getBrandId(), brandNameCache)))
                 .collect(Collectors.toList());
     }
 
     @Override
     public WishlistDTO getById(Long id) {
-        return toDto(Optional.ofNullable(wishlistMapper.findById(id))
-                .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND)));
+        WishlistItem item = Optional.ofNullable(wishlistMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
+        return toDto(item, resolveBrandName(item.getBrandId(), new HashMap<>()));
     }
 
     @Override
@@ -161,16 +166,16 @@ public class WishlistServiceImpl implements WishlistService {
         }
     }
 
-    private WishlistDTO toDto(WishlistItem item) {
+    private WishlistDTO toDto(WishlistItem item, String brandName) {
         return new WishlistDTO(
                 item.getId(),
                 item.getName(),
                 item.getCategoryId(),
                 item.getBrandId(),
+                brandName,
                 item.getModel(),
                 item.getExpectedPrice(),
                 storagePathHelper.toRelativeUrl(item.getImageUrl()),
-                item.getLink(),
                 item.getStatus(),
                 item.getLink(),
                 item.getNotes(),
@@ -179,6 +184,30 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getCreatedAt(),
                 item.getUpdatedAt()
         );
+    }
+
+    private String resolveBrandName(Long brandId, Map<Long, String> cache) {
+        if (brandId == null) {
+            return null;
+        }
+        if (cache.containsKey(brandId)) {
+            return cache.get(brandId);
+        }
+        return Optional.ofNullable(dictBrandMapper.findById(brandId))
+                .map(brand -> {
+                    if (StringUtils.hasText(brand.getAlias())) {
+                        return brand.getAlias().trim();
+                    }
+                    return brand.getName();
+                })
+                .map(name -> {
+                    cache.put(brandId, name);
+                    return name;
+                })
+                .orElseGet(() -> {
+                    cache.put(brandId, null);
+                    return null;
+                });
     }
 
     private void validateStatus(String status) {

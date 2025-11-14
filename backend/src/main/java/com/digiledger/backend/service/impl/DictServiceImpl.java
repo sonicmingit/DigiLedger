@@ -240,7 +240,7 @@ public class DictServiceImpl implements DictService {
         }
         DictBrand brand = new DictBrand();
         brand.setName(request.getName());
-        brand.setAlias(request.getAlias());
+        brand.setAlias(Optional.ofNullable(request.getAlias()).orElse(request.getName()));
         brand.setInitial(request.getInitial());
         brand.setSort(Optional.ofNullable(request.getSort()).orElse(0));
         try {

@@ -10,7 +10,7 @@ export const fetchWishlist = (params?: { status?: '未购买' | '已购买' }) =
 export const createWishlist = (payload: {
   name: string
   categoryId?: number
-  brand?: string
+  brandId?: number
   model?: string
   expectedPrice?: number
   link?: string
@@ -26,7 +26,7 @@ export const updateWishlist = (
   payload: {
     name: string
     categoryId?: number
-    brand?: string
+    brandId?: number
     model?: string
     expectedPrice?: number
     link?: string

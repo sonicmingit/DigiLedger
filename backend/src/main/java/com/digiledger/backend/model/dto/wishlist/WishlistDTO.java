@@ -11,6 +11,7 @@ public record WishlistDTO(
         String name,
         Long categoryId,
         Long brandId,
+        String brandName,
         String model,
         BigDecimal expectedPrice,
         String imageUrl,
