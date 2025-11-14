@@ -11,6 +11,7 @@ import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
 import com.digiledger.backend.mapper.SaleMapper;
 import com.digiledger.backend.mapper.WishlistMapper;
+import com.digiledger.backend.mapper.WishlistTagMapMapper;
 import com.digiledger.backend.model.dto.dict.BrandDTO;
 import com.digiledger.backend.model.dto.dict.BrandRequest;
 import com.digiledger.backend.model.dto.dict.CategoryRequest;
@@ -54,6 +55,7 @@ public class DictServiceImpl implements DictService {
     private final PurchaseMapper purchaseMapper;
     private final SaleMapper saleMapper;
     private final AssetTagMapMapper assetTagMapMapper;
+    private final WishlistTagMapMapper wishlistTagMapMapper;
     private final WishlistMapper wishlistMapper;
 
     public DictServiceImpl(DictCategoryMapper dictCategoryMapper,
@@ -64,6 +66,7 @@ public class DictServiceImpl implements DictService {
                            PurchaseMapper purchaseMapper,
                            SaleMapper saleMapper,
                            AssetTagMapMapper assetTagMapMapper,
+                           WishlistTagMapMapper wishlistTagMapMapper,
                            WishlistMapper wishlistMapper) {
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictPlatformMapper = dictPlatformMapper;
@@ -73,6 +76,7 @@ public class DictServiceImpl implements DictService {
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
         this.assetTagMapMapper = assetTagMapMapper;
+        this.wishlistTagMapMapper = wishlistTagMapMapper;
         this.wishlistMapper = wishlistMapper;
     }
 
@@ -361,8 +365,8 @@ public class DictServiceImpl implements DictService {
         if (dictTagMapper.countChildren(id) > 0) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "请先删除子标签");
         }
-        if (assetTagMapMapper.countByTagId(id) > 0) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "标签已关联物品，无法删除");
+        if (assetTagMapMapper.countByTagId(id) > 0 || wishlistTagMapMapper.countByTagId(id) > 0) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "标签已关联物品或心愿，无法删除");
         }
         dictTagMapper.delete(tag.getId());
     }
