@@ -16,6 +16,9 @@ export type AssetPayload = {
   coverImageUrl?: string
   notes?: string
   tagIds?: number[]
+  targetCostStrategy?: 'NONE' | 'PRICE' | 'DATE' | 'CUSTOM'
+  targetCostValue?: number
+  attachAssetIds?: number[]
   purchases?: Array<{
     type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
     name?: string
