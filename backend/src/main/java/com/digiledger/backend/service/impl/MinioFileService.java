@@ -9,6 +9,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,6 +51,21 @@ public class MinioFileService implements FileService {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "上传失败: " + e.getMessage());
         }
         return objectName;
+    }
+
+    @Override
+    public void delete(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return;
+        }
+        try {
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(storageProperties.getBucket())
+                    .object(objectKey)
+                    .build());
+        } catch (Exception e) {
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "删除失败: " + e.getMessage());
+        }
     }
 
     private void validateFile(MultipartFile file) {

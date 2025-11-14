@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: DigiLedger API
-  version: 0.3.4
+  version: 0.3.6
   description: |
     DigiLedger 后端接口，统一返回体为 `{code,data,msg}`。
 servers:
@@ -27,6 +27,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseFile'
+  /api/attachments/upload:
+    post:
+      summary: 上传并保存附件
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 待上传文件
+                biz_type:
+                  type: string
+                  description: 业务类型，如 ASSET、PURCHASE、SALE、WISHLIST 等，可为空以便后续绑定。
+                biz_id:
+                  type: integer
+                  format: int64
+                  description: 业务主键 ID，可为空。
+                extra:
+                  type: string
+                  description: 附加 JSON 描述，可为空。
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAttachment'
+  /api/attachments:
+    get:
+      summary: 按业务查询附件列表
+      parameters:
+        - in: query
+          name: biz_type
+          required: true
+          schema:
+            type: string
+          description: 业务类型，如 ASSET、PURCHASE、SALE、WISHLIST 等。
+        - in: query
+          name: biz_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 业务主键 ID。
+      responses:
+        '200':
+          description: 附件列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAttachmentList'
+  /api/attachments/{id}:
+    delete:
+      summary: 删除附件
+      parameters:
+        - $ref: '#/components/parameters/AttachmentId'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
   /api/dict/brands:
     get:
       summary: 获取品牌字典列表
@@ -401,6 +470,14 @@ components:
       schema:
         type: integer
       description: 购买记录 ID。
+    AttachmentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 附件 ID。
   schemas:
     ApiResponseVoid:
       type: object
@@ -429,7 +506,55 @@ components:
               description: 上传对象在存储中的 objectKey
             url:
               type: string
-              description: 以 /oss/{bucket}/ 开头的相对访问路径
+              description: 根据 storage_base_url 拼接后的完整访问 URL
+    ApiResponseAttachment:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          $ref: '#/components/schemas/Attachment'
+    ApiResponseAttachmentList:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        bizType:
+          type: string
+          nullable: true
+        bizId:
+          type: integer
+          format: int64
+          nullable: true
+        objectKey:
+          type: string
+        url:
+          type: string
+        fileName:
+          type: string
+          nullable: true
+        fileType:
+          type: string
+          nullable: true
+        fileSize:
+          type: integer
+          format: int64
+          nullable: true
+        extra:
+          type: string
+          nullable: true
+          description: JSON 扩展信息
+        createdAt:
+          type: string
+          format: date-time
     ApiResponseBrandList:
       allOf:
         - $ref: '#/components/schemas/ApiResponseVoid'

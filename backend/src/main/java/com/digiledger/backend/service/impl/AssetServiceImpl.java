@@ -133,7 +133,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getPurchaseDate(),
                 asset.getEnabledDate(),
                 asset.getRetiredDate(),
-                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
+                storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
                 asset.getNotes(),
                 tags,
                 metrics.totalInvest,
@@ -369,7 +369,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
                 asset.getStatus(),
-                storagePathHelper.toRelativeUrl(asset.getCoverImageUrl()),
+                storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
                 metrics.totalInvest,
                 metrics.avgCostPerDay,
                 metrics.useDays,
@@ -457,7 +457,7 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getPurchaseDate(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
-                storagePathHelper.toRelativeUrls(parseStringList(purchase.getAttachments())),
+                storagePathHelper.toFullUrls(parseStringList(purchase.getAttachments())),
                 purchase.getNotes()
         );
     }
@@ -488,7 +488,7 @@ public class AssetServiceImpl implements AssetService {
                 sale.getOtherCost(),
                 sale.getNetIncome(),
                 sale.getSaleDate(),
-                storagePathHelper.toRelativeUrls(parseStringList(sale.getAttachments())),
+                storagePathHelper.toFullUrls(parseStringList(sale.getAttachments())),
                 sale.getNotes()
         );
     }
