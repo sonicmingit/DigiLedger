@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { ElMessage } from 'element-plus'
 
 interface ApiEnvelope<T> {
   code: number
@@ -17,7 +18,9 @@ const unwrap = async <T>(promise: Promise<AxiosResponse<ApiEnvelope<T>>>) => {
   const resp = await promise
   const { code, data, msg } = resp.data
   if (code !== 200) {
-    throw new Error(msg || '请求失败')
+    const errMsg = msg || '请求失败'
+    ElMessage.error(errMsg)
+    throw new Error(errMsg)
   }
   return data
 }
