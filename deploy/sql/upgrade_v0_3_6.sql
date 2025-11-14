@@ -26,6 +26,7 @@ FROM device_asset a
 CROSS JOIN sys_setting s
 WHERE a.cover_image_url IS NOT NULL AND a.cover_image_url <> '';
 
+-- 需要mysql版本支持
 INSERT INTO file_attachment (biz_type, biz_id, object_key, file_name, created_at, updated_at)
 SELECT 'PURCHASE', p.id, JSON_UNQUOTE(JSON_EXTRACT(j.value, '$')) AS object_key,
        NULL, NOW(), NOW()

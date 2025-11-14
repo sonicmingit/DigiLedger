@@ -1,6 +1,9 @@
 const OSS_BUCKET = 'digiledger'
 const OSS_PREFIX = `/oss/${OSS_BUCKET}/`
 
+const isAbsoluteUrl = (value: string) =>
+  value.startsWith('http://') || value.startsWith('https://') || value.startsWith('//')
+
 const normalizeBase = () => {
   const raw = (import.meta.env.VITE_API_BASE as string | undefined) || ''
   if (!raw) return ''
@@ -58,7 +61,13 @@ export const extractObjectKey = (value?: string | null): string => {
 }
 
 export const buildOssUrl = (value?: string | null): string => {
-  const objectKey = extractObjectKey(value)
+  if (!value) return ''
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  if (isAbsoluteUrl(trimmed)) {
+    return trimmed
+  }
+  const objectKey = extractObjectKey(trimmed)
   if (!objectKey) return ''
   const base = normalizeBase()
   const prefix = base ? `${base}${OSS_PREFIX}` : OSS_PREFIX

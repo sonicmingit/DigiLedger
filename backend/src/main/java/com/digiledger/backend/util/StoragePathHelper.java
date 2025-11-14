@@ -66,22 +66,46 @@ public class StoragePathHelper {
     /**
      * 根据 objectKey 构造完整访问 URL。
      */
+    /**
+     * 根据 objectKey 构造完整访问 URL。
+     */
     public String toFullUrl(String value) {
         String objectKey = toObjectKey(value);
         if (objectKey == null || objectKey.isBlank()) {
             return null;
         }
         String baseUrl = storageProperties.getBaseUrl();
+        String bucket = storageProperties.getBucket();
+
+        // 构建完整的URL: baseUrl + bucket + objectKey
+        StringBuilder urlBuilder = new StringBuilder();
+
+        // 处理基础URL
         if (baseUrl != null && !baseUrl.isBlank()) {
             String normalizedBase = baseUrl.trim();
+            // 确保基础URL以斜杠结尾
             if (!normalizedBase.endsWith("/")) {
                 normalizedBase = normalizedBase + "/";
             }
-            String normalizedKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
-            return normalizedBase + normalizedKey;
+            urlBuilder.append(normalizedBase);
         }
-        return buildRelativePath(objectKey);
+
+        // 添加bucket名称
+        if (bucket != null && !bucket.isBlank()) {
+            urlBuilder.append(bucket);
+            // 确保bucket后有斜杠
+            if (!bucket.endsWith("/")) {
+                urlBuilder.append("/");
+            }
+        }
+
+        // 添加对象键，确保开头没有多余的斜杠
+        String normalizedKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+        urlBuilder.append(normalizedKey);
+
+        return urlBuilder.toString();
     }
+
 
     /**
      * 将字符串列表批量转换为 objectKey 列表。
