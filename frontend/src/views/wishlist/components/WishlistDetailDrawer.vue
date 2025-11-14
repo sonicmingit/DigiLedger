@@ -22,7 +22,7 @@
           {{ formatPrice(current.expectedPrice) }}
         </el-descriptions-item>
         <el-descriptions-item label="类别">
-          {{ current.category || '-' }}
+          {{ categoryLabel }}
         </el-descriptions-item>
         <el-descriptions-item label="品牌">
           {{ brandLabel }}
@@ -74,11 +74,26 @@ import { useDictionaries } from '@/composables/useDictionaries'
 
 const visible = ref(false)
 const current = ref<WishlistItem | null>(null)
-const { brandMap } = useDictionaries()
+const { brandMap, categoryPathMap } = useDictionaries()
 
 const tags = computed(() => current.value?.tags ?? [])
 const statusTagType = computed(() => (current.value?.status === '已购买' ? 'success' : 'info'))
 const drawerTitle = computed(() => current.value?.name ?? '心愿详情')
+
+const categoryLabel = computed(() => {
+  if (!current.value) return '-'
+  const explicit = current.value.category ?? current.value.categoryName
+  if (explicit && explicit.toString().trim().length) {
+    return explicit.toString().trim()
+  }
+  if (current.value.categoryId) {
+    const path = categoryPathMap.value.get(current.value.categoryId)
+    if (path && path.trim().length) {
+      return path.trim()
+    }
+  }
+  return '-'
+})
 
 const brandLabel = computed(() => {
   if (!current.value) return '-'
