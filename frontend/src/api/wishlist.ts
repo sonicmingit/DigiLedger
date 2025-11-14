@@ -18,6 +18,7 @@ export const createWishlist = (payload: {
   priority?: number
   imageUrl?: string
   tagIds?: number[]
+  relatedAssetId?: number
 }) => http.post<number>('/wishlist', payload)
 
 // 更新指定心愿条目
@@ -34,6 +35,7 @@ export const updateWishlist = (
     priority?: number
     imageUrl?: string
     tagIds?: number[]
+    relatedAssetId?: number
   }
 ) => http.put<void>(`/wishlist/${id}`, payload)
 
@@ -42,3 +44,9 @@ export const deleteWishlist = (id: number) => http.delete<void>(`/wishlist/${id}
 
 // 转换心愿条目为物品，返回新物品 ID
 export const convertWishlist = (id: number, payload: AssetPayload) => http.post<number>(`/wishlist/${id}/convert`, payload)
+
+// 获取心愿详情
+export const fetchWishlistDetail = (id: number) => http.get<WishlistItem>(`/wishlist/${id}`)
+
+// 标记为已购买
+export const markWishlistPurchased = (id: number) => http.post<void>(`/wishlist/${id}/mark-purchased`)
