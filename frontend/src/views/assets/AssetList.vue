@@ -22,7 +22,7 @@
           </el-input>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh">
+          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh" style="width: 120px;">
             <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
@@ -57,7 +57,6 @@
             :props="treeProps"
             multiple
             show-checkbox
-            collapse-tags
             clearable
             filterable
             placeholder="选择标签"
@@ -96,6 +95,8 @@
       <el-table
         v-if="viewMode === 'table'"
         ref="tableRef"
+        class="asset-table"
+        :class="{ 'is-compact': compact }"
         :data="assets"
         stripe
         style="width: 100%"
@@ -151,13 +152,14 @@
         </el-table-column>
       </el-table>
 
-      <div v-else class="card-grid">
+      <div v-else :class="['card-grid', { 'is-compact': compact }]">
         <asset-card
           v-for="item in assets"
           :key="item.id"
           :asset="item"
           :selectable="true"
           :selected="selectedIds.includes(item.id)"
+          :compact="compact"
           @toggle-select="(value) => toggleSelection(item.id, value)"
           @view="viewDetail"
           @edit="openEdit"
@@ -190,7 +192,7 @@ import {
   fetchAssetDetail,
   updateAsset
 } from '@/api/asset'
-import type { AssetSummary, AssetStatus } from '@/types'
+import type { AssetSummary, AssetStatus, BrandInfo } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import BatchTagDialog from './components/BatchTagDialog.vue'
@@ -207,6 +209,8 @@ const loading = ref(false)
 const viewMode = ref<'table' | 'card'>('table')
 const compact = ref(false)
 const selectedIds = ref<number[]>([])
+let updatingRoute = false
+let applyingRoute = false
 
 const filters = reactive({
   keyword: '',
@@ -217,6 +221,13 @@ const filters = reactive({
 })
 
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
+
+const resolveBrandText = (brand?: BrandInfo | null) => {
+  const alias = brand?.alias?.trim()
+  if (alias) return alias
+  const name = brand?.name?.trim()
+  return name || undefined
+}
 
 const statusTabOptions = computed(() => [
   { label: '全部', value: 'all' },
@@ -260,6 +271,112 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
+
+const buildQuerySignature = (query: Record<string, any>) =>
+  Object.entries(query)
+    .map(([key, value]) => {
+      const raw = Array.isArray(value) ? value.join(',') : value ?? ''
+      return [key, String(raw)]
+    })
+    .filter(([, value]) => value !== '')
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&')
+
+const syncFiltersToRoute = () => {
+  if (applyingRoute) return
+  const nextQuery: Record<string, any> = {}
+  ;['create', 'edit'].forEach((key) => {
+    const value = route.query[key]
+    if (value != null) {
+      nextQuery[key] = value
+    }
+  })
+  const keyword = filters.keyword.trim()
+  if (keyword) nextQuery.q = keyword
+  if (filters.status) nextQuery.status = filters.status
+  if (filters.categoryId) nextQuery.category = String(filters.categoryId)
+  if (filters.platformId) nextQuery.platform = String(filters.platformId)
+  if (filters.tagIds.length) nextQuery.tags = filters.tagIds.join(',')
+  if (viewMode.value === 'card') nextQuery.view = 'card'
+  if (compact.value) nextQuery.compact = '1'
+  const currentSignature = buildQuerySignature(route.query as Record<string, any>)
+  const nextSignature = buildQuerySignature(nextQuery)
+  if (currentSignature === nextSignature) {
+    return
+  }
+  updatingRoute = true
+  router
+    .replace({ query: nextQuery })
+    .finally(() => {
+      updatingRoute = false
+    })
+}
+
+const applyRouteFilters = () => {
+  const query = route.query
+  filters.keyword = typeof query.q === 'string' ? query.q : ''
+  filters.status =
+    typeof query.status === 'string' && statuses.includes(query.status as AssetStatus)
+      ? (query.status as AssetStatus)
+      : ''
+  filters.categoryId =
+    typeof query.category === 'string' && !Number.isNaN(Number(query.category))
+      ? Number(query.category)
+      : null
+  filters.platformId =
+    typeof query.platform === 'string' && !Number.isNaN(Number(query.platform))
+      ? Number(query.platform)
+      : null
+  filters.tagIds =
+    typeof query.tags === 'string' && query.tags.trim().length
+      ? query.tags
+          .split(',')
+          .map((id) => Number(id))
+          .filter((id) => !Number.isNaN(id))
+      : []
+  viewMode.value = query.view === 'card' ? 'card' : 'table'
+  compact.value = query.compact === '1'
+}
+
+const handleRouteActions = () => {
+  const { create, edit } = route.query
+  if (create === '1') {
+    formRef.value?.open()
+    const next = { ...route.query }
+    delete next.create
+    updatingRoute = true
+    router.replace({ query: next }).finally(() => {
+      updatingRoute = false
+    })
+  }
+  if (edit) {
+    const id = Number(edit)
+    if (!Number.isNaN(id)) {
+      openEdit(id)
+    }
+    const next = { ...route.query }
+    delete next.edit
+    updatingRoute = true
+    router.replace({ query: next }).finally(() => {
+      updatingRoute = false
+    })
+  }
+}
+
+watch(
+  () => ({
+    keyword: filters.keyword,
+    status: filters.status,
+    categoryId: filters.categoryId,
+    platformId: filters.platformId,
+    tagIds: [...filters.tagIds]
+  }),
+  () => syncFiltersToRoute()
+)
+
+watch(viewMode, () => syncFiltersToRoute())
+watch(compact, () => syncFiltersToRoute())
 
 const refresh = async () => {
   loading.value = true
@@ -337,7 +454,8 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
   await updateAsset(asset.id, {
     name: detail.name,
     categoryId: detail.categoryId!,
-    brand: detail.brand || undefined,
+    brandId: detail.brand?.id ?? undefined,
+    brand: resolveBrandText(detail.brand),
     model: detail.model || undefined,
     serialNo: detail.serialNo || undefined,
     status,
@@ -385,7 +503,8 @@ const handleBatchConfirm = async (tags: number[]) => {
         await updateAsset(id, {
           name: detail.name,
           categoryId: detail.categoryId!,
-          brand: detail.brand || undefined,
+          brandId: detail.brand?.id ?? undefined,
+          brand: resolveBrandText(detail.brand),
           model: detail.model || undefined,
           serialNo: detail.serialNo || undefined,
           status: detail.status,
@@ -427,34 +546,26 @@ const handleFormSuccess = async () => {
   await refresh()
 }
 
-const syncFromRoute = () => {
-  const { create, edit } = route.query
-  if (create === '1') {
-    formRef.value?.open()
-    router.replace({ query: { ...route.query, create: undefined } })
-  }
-  if (edit) {
-    const id = Number(edit)
-    if (!Number.isNaN(id)) {
-      openEdit(id)
-    }
-    const next = { ...route.query }
-    delete next.edit
-    router.replace({ query: next })
-  }
-}
-
 watch(
   () => route.query,
   () => {
-    syncFromRoute()
+    if (updatingRoute) return
+    applyingRoute = true
+    applyRouteFilters()
+    applyingRoute = false
+    handleRouteActions()
+    refresh()
   }
 )
 
 onMounted(async () => {
   await loadDicts()
+  applyingRoute = true
+  applyRouteFilters()
+  applyingRoute = false
   await refresh()
-  syncFromRoute()
+  handleRouteActions()
+  syncFiltersToRoute()
 })
 </script>
 
@@ -536,6 +647,20 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+}
+
+.asset-table.is-compact :deep(.el-table__cell) {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.asset-table.is-compact :deep(.el-table__header-wrapper .el-table__cell) {
+  padding: 6px 8px;
+}
+
+.card-grid.is-compact {
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
 .compact-col {

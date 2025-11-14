@@ -11,6 +11,12 @@
         <el-tab-pane label="标签管理" name="tags">
           <tag-manager />
         </el-tab-pane>
+        <el-tab-pane label="品牌管理" name="brands">
+          <brand-manager />
+        </el-tab-pane>
+        <el-tab-pane label="上传测试" name="upload">
+          <upload-tester />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -21,6 +27,8 @@ import { ref, onMounted } from 'vue'
 import CategoryManager from './components/CategoryManager.vue'
 import PlatformManager from './components/PlatformManager.vue'
 import TagManager from './components/TagManager.vue'
+import BrandManager from './components/BrandManager.vue'
+import UploadTester from './components/UploadTester.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const active = ref('categories')

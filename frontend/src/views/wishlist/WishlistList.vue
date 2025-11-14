@@ -42,8 +42,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="160" />
-        <el-table-column prop="category" label="类别" width="140" />
-        <el-table-column prop="brand" label="品牌" width="120" />
+        <el-table-column label="类别" width="140">
+          <template #default="{ row }">{{ resolveCategoryName(row) }}</template>
+        </el-table-column>
+        <el-table-column label="品牌" width="120">
+          <template #default="{ row }">{{ resolveWishlistBrand(row) }}</template>
+        </el-table-column>
         <el-table-column prop="expectedPrice" label="期望价" width="120">
           <template #default="{ row }">{{ row.expectedPrice ? '¥ ' + formatNumber(row.expectedPrice) : '-' }}</template>
         </el-table-column>
@@ -93,15 +97,13 @@
         </el-form-item>
         <el-form-item label="品牌">
           <el-select
-            v-model="form.brand"
+            v-model="form.brandId"
             filterable
-            allow-create
-            default-first-option
-            placeholder="选择或输入品牌"
-            @change="ensureBrandOption"
+            clearable
+            placeholder="选择品牌"
             class="w-full"
           >
-            <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="型号">
@@ -120,7 +122,6 @@
             :props="treeProps"
             multiple
             show-checkbox
-            collapse-tags
             filterable
             clearable
             placeholder="选择标签"
@@ -179,7 +180,7 @@ const activeStatus = ref<'全部' | '未购买' | '已购买'>('全部')
 const form = reactive({
   name: '',
   categoryId: null as number | null,
-  brand: '',
+  brandId: null as number | null,
   model: '',
   expectedPrice: undefined as number | undefined,
   link: '',
@@ -196,16 +197,50 @@ const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 }
 
-const brandOptions = ref<string[]>([])
+const brandOptions = computed(() =>
+  brands.value.map((item) => ({
+    id: item.id,
+    label: ((item.alias && item.alias.trim()) || item.name || '').trim()
+  }))
+)
 
-const ensureBrandOption = (value: string) => {
-  if (!value) return
-  if (!brandOptions.value.includes(value)) {
-    brandOptions.value.push(value)
+const resolveWishlistBrand = (item: WishlistItem) => {
+  // 兼容后端可能返回的 brand 字段（字符串）、brandName 或 brandId
+  const explicit = ((item as any).brand && (item as any).brand.toString().trim()) || (item as any).brandName?.trim()
+  if (explicit) return explicit
+  if (item.brandId) {
+    const brand = brandMap.value.get(item.brandId)
+    if (brand) {
+      const alias = brand.alias?.trim()
+      if (alias) return alias
+      if (brand.name) return brand.name
+    }
   }
+  return '-'
 }
 
-const { load: loadDicts, categoryTree, tagTree } = useDictionaries()
+// 新增：从 categoryOptions 构建映射以通过 categoryId 回显名称
+const categoryMap = computed(() => {
+  const map = new Map<number, string>()
+  const walk = (nodes: any[]) => {
+    nodes.forEach((n) => {
+      if (n && n.value != null) map.set(n.value, n.label)
+      if (n && n.children) walk(n.children)
+    })
+  }
+  walk(categoryOptions.value)
+  return map
+})
+
+const resolveCategoryName = (item: WishlistItem) => {
+  // 优先使用后端可能返回的 categoryName 或直接的 category 字段
+  const explicit = (item as any).categoryName || (item as any).category
+  if (explicit) return explicit
+  if (item.categoryId) return categoryMap.value.get(item.categoryId) ?? '-'
+  return '-'
+}
+
+const { load: loadDicts, categoryTree, tagTree, brands, brandMap } = useDictionaries()
 
 const treeProps = {
   value: 'value',
@@ -236,7 +271,9 @@ const filterItems = () => {
   const keywordValue = keyword.value.trim().toLowerCase()
   filtered.value = items.value.filter((item) => {
     if (!keywordValue) return true
-    return `${item.name} ${item.brand || ''}`.toLowerCase().includes(keywordValue)
+    const brandText = resolveWishlistBrand(item)
+    const combined = `${item.name} ${brandText === '-' ? '' : brandText}`
+    return combined.toLowerCase().includes(keywordValue)
   })
 }
 
@@ -245,10 +282,6 @@ const refresh = async () => {
   try {
     const statusParam = activeStatus.value === '全部' ? undefined : activeStatus.value
     items.value = await fetchWishlist(statusParam ? { status: statusParam } : undefined)
-    const brands = items.value
-      .map((item) => item.brand)
-      .filter((name): name is string => Boolean(name && name.trim().length))
-    brandOptions.value = Array.from(new Set(brands))
     filterItems()
   } finally {
     loading.value = false
@@ -266,7 +299,7 @@ const openDialog = (item?: WishlistItem) => {
     Object.assign(form, {
       name: item.name,
       categoryId: item.categoryId ?? null,
-      brand: item.brand || '',
+      brandId: item.brandId ?? null,
       model: item.model || '',
       expectedPrice: item.expectedPrice,
       link: item.link || '',
@@ -276,7 +309,6 @@ const openDialog = (item?: WishlistItem) => {
       imageKey: extractObjectKey(item.imageUrl),
       tagIds: item.tags ? item.tags.map((tag) => tag.id) : []
     })
-    ensureBrandOption(form.brand)
   } else {
     reset()
   }
@@ -286,7 +318,7 @@ const reset = () => {
   Object.assign(form, {
     name: '',
     categoryId: null,
-    brand: '',
+    brandId: null,
     model: '',
     expectedPrice: undefined,
     link: '',
@@ -306,7 +338,7 @@ const submit = () => {
       const payload = {
         name: form.name,
         categoryId: form.categoryId || undefined,
-        brand: form.brand || undefined,
+        brandId: form.brandId || undefined,
         model: form.model || undefined,
         expectedPrice: form.expectedPrice,
         link: form.link || undefined,
