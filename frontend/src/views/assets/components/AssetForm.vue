@@ -308,6 +308,7 @@ import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
+import type { AssetPayload } from '@/api/asset'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { createCategory, createPlatform, createTag, createBrand } from '@/api/dict'
@@ -315,13 +316,16 @@ import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storag
 
 const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 
-const emit = defineEmits<{ (e: 'success'): void }>()
+const emit = defineEmits<{ (e: 'success', assetId?: number): void }>()
 
 const visible = ref(false)
 const loading = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const coverProgress = ref(0)
+const customSubmit = ref<((payload: AssetPayload) => Promise<any>) | null>(null)
+const customSuccessMessage = ref<string | null>(null)
+const customAfterSuccess = ref<((result: any) => void) | null>(null)
 //const categoryDialogVisible = ref(false)
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -370,6 +374,34 @@ const form = reactive({
     attachments: string[]
   }>
 })
+
+type AssetFormState = typeof form
+
+type AssetFormPrefill = Partial<
+  Pick<
+    AssetFormState,
+    | 'name'
+    | 'categoryId'
+    | 'brandId'
+    | 'brandName'
+    | 'model'
+    | 'serialNo'
+    | 'status'
+    | 'purchaseDate'
+    | 'enabledDate'
+    | 'coverImageKey'
+    | 'tagIds'
+    | 'notes'
+    | 'purchases'
+  >
+>
+
+type AssetFormOpenOptions = {
+  prefill?: AssetFormPrefill
+  submit?: (payload: AssetPayload) => Promise<any>
+  successMessage?: string
+  onSuccess?: (result: any) => void
+}
 
 const coverImagePreview = computed(() => buildOssUrl(form.coverImageKey))
 
@@ -435,7 +467,10 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
 
-const open = (asset?: AssetDetail) => {
+const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
+  customSubmit.value = options?.submit ?? null
+  customSuccessMessage.value = options?.successMessage ?? null
+  customAfterSuccess.value = options?.onSuccess ?? null
   visible.value = true
   isEdit.value = !!asset
   if (asset) {
@@ -476,6 +511,9 @@ const open = (asset?: AssetDetail) => {
     reset()
     form.purchaseDate = today()
     form.enabledDate = today()
+    if (options?.prefill) {
+      applyPrefill(options.prefill)
+    }
   }
 }
 
@@ -495,6 +533,27 @@ const reset = () => {
   form.notes = ''
   form.purchases = []
   coverProgress.value = 0
+}
+
+const applyPrefill = (prefill: AssetFormPrefill) => {
+  if (prefill.name !== undefined) form.name = prefill.name
+  if (prefill.categoryId !== undefined) form.categoryId = prefill.categoryId
+  if (prefill.brandId !== undefined) form.brandId = prefill.brandId
+  if (prefill.brandName !== undefined) form.brandName = prefill.brandName
+  if (prefill.model !== undefined) form.model = prefill.model
+  if (prefill.serialNo !== undefined) form.serialNo = prefill.serialNo
+  if (prefill.status !== undefined) form.status = prefill.status
+  if (prefill.purchaseDate !== undefined) form.purchaseDate = prefill.purchaseDate
+  if (prefill.enabledDate !== undefined) form.enabledDate = prefill.enabledDate
+  if (prefill.coverImageKey !== undefined) form.coverImageKey = prefill.coverImageKey
+  if (prefill.tagIds !== undefined) form.tagIds = Array.isArray(prefill.tagIds) ? [...prefill.tagIds] : []
+  if (prefill.notes !== undefined) form.notes = prefill.notes
+  if (prefill.purchases !== undefined) {
+    form.purchases = prefill.purchases.map((purchase) => ({
+      ...purchase,
+      attachments: Array.isArray(purchase.attachments) ? [...purchase.attachments] : []
+    })) as AssetFormState['purchases']
+  }
 }
 
 const syncEnabledDate = () => {
@@ -758,15 +817,26 @@ const submit = () => {
           attachments: extractObjectKeys(p.attachments)
         }))
       }
-      if (isEdit.value) {
+      let result: any
+      if (customSubmit.value) {
+        result = await customSubmit.value(payload)
+        if (customSuccessMessage.value) {
+          ElMessage.success(customSuccessMessage.value)
+        } else {
+          ElMessage.success('操作成功')
+        }
+      } else if (isEdit.value) {
         await updateAsset(form.id, payload)
         ElMessage.success('更新成功')
+        result = form.id
       } else {
-        await createAsset(payload)
+        const assetId = await createAsset(payload)
         ElMessage.success('创建成功')
+        result = assetId
       }
       visible.value = false
-      emit('success')
+      emit('success', result)
+      customAfterSuccess.value?.(result)
     } finally {
       loading.value = false
     }
