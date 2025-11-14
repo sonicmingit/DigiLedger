@@ -16,7 +16,10 @@
     </insert>
 
     <select id="findByWishlistIds" resultType="com.digiledger.backend.model.entity.WishlistTagMap">
-        SELECT wishlist_id, tag_id, created_at
+        SELECT
+        wishlist_id AS wishlistId,
+        tag_id AS tagId,
+        created_at AS createdAt
         FROM wishlist_tag_map
         WHERE wishlist_id IN
         <foreach collection="wishlistIds" item="id" open="(" separator="," close=")">
@@ -24,6 +27,7 @@
         </foreach>
         ORDER BY wishlist_id ASC, created_at ASC, tag_id ASC
     </select>
+
 
     <select id="findTagIdsByWishlistId" parameterType="long" resultType="long">
         SELECT tag_id

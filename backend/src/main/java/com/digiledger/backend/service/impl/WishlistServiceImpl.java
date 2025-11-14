@@ -18,6 +18,7 @@ import com.digiledger.backend.model.entity.WishlistTagMap;
 import com.digiledger.backend.service.AssetService;
 import com.digiledger.backend.service.WishlistService;
 import com.digiledger.backend.util.StoragePathHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * 心愿单服务实现，可转化资产。
  */
 @Service
+@Slf4j
 public class WishlistServiceImpl implements WishlistService {
 
     private static final Set<String> ALLOWED_STATUSES = Set.of("未购买", "已购买");
@@ -294,7 +296,16 @@ public class WishlistServiceImpl implements WishlistService {
         if (wishlistIds == null || wishlistIds.isEmpty()) {
             return Map.of();
         }
+        //List<WishlistTagMap> relations = wishlistTagMapMapper.findByWishlistIds(wishlistIds);
         List<WishlistTagMap> relations = wishlistTagMapMapper.findByWishlistIds(wishlistIds);
+        log.debug("Query returned {} relations", relations.size());
+        if (!relations.isEmpty()) {
+            log.debug("First relation: wishlistId={}, tagId={}, createdAt={}",
+                    relations.get(0).getWishlistId(),
+                    relations.get(0).getTagId(),
+                    relations.get(0).getCreatedAt());
+        }
+
         if (relations.isEmpty()) {
             return Map.of();
         }
