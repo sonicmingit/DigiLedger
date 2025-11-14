@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.FileAttachmentMapper">
+
+    <resultMap id="FileAttachmentResultMap" type="com.digiledger.backend.model.entity.FileAttachment">
+        <id column="id" property="id" />
+        <result column="biz_type" property="bizType" />
+        <result column="biz_id" property="bizId" />
+        <result column="object_key" property="objectKey" />
+        <result column="file_name" property="fileName" />
+        <result column="file_type" property="fileType" />
+        <result column="file_size" property="fileSize" />
+        <result column="extra" property="extra" />
+        <result column="is_deleted" property="deleted" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, biz_type, biz_id, object_key, file_name, file_type, file_size, extra, is_deleted, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.FileAttachment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO file_attachment (
+            biz_type, biz_id, object_key, file_name, file_type, file_size, extra, is_deleted
+        ) VALUES (
+            #{bizType}, #{bizId}, #{objectKey}, #{fileName}, #{fileType}, #{fileSize}, #{extra}, #{deleted, jdbcType=TINYINT}
+        )
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="FileAttachmentResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM file_attachment
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByBiz" resultMap="FileAttachmentResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM file_attachment
+        WHERE is_deleted = 0
+          AND biz_type = #{bizType}
+          AND biz_id = #{bizId}
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <update id="softDelete">
+        UPDATE file_attachment
+        SET is_deleted = 1,
+            updated_at = NOW()
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="updateBizInfo">
+        UPDATE file_attachment
+        SET biz_type = #{bizType},
+            biz_id = #{bizId},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

@@ -178,3 +178,19 @@ CREATE TABLE IF NOT EXISTS wishlist_tag_map (
   CONSTRAINT fk_wishlist_tag_wishlist FOREIGN KEY (wishlist_id) REFERENCES wishlist(id) ON DELETE CASCADE,
   CONSTRAINT fk_wishlist_tag_tag FOREIGN KEY (tag_id) REFERENCES dict_tag(id) ON DELETE CASCADE
 ) COMMENT='心愿标签映射表';
+
+CREATE TABLE IF NOT EXISTS file_attachment (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  biz_type VARCHAR(50) DEFAULT NULL COMMENT '业务类型',
+  biz_id BIGINT DEFAULT NULL COMMENT '业务主键ID',
+  object_key VARCHAR(500) NOT NULL COMMENT '对象存储相对路径',
+  file_name VARCHAR(255) DEFAULT NULL COMMENT '原始文件名',
+  file_type VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
+  file_size BIGINT DEFAULT NULL COMMENT '文件大小（字节）',
+  extra JSON DEFAULT NULL COMMENT '扩展字段（JSON）',
+  is_deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否已删除',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_attachment_biz (biz_type, biz_id),
+  INDEX idx_attachment_object (object_key)
+) COMMENT='统一附件表';

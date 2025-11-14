@@ -216,7 +216,7 @@ public class WishlistServiceImpl implements WishlistService {
                 brandName,
                 item.getModel(),
                 item.getExpectedPrice(),
-                storagePathHelper.toRelativeUrl(item.getImageUrl()),
+                storagePathHelper.toFullUrl(item.getImageUrl()),
                 item.getStatus(),
                 item.getLink(),
                 item.getNotes(),

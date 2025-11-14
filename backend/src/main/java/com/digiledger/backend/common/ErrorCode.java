@@ -10,6 +10,7 @@ public enum ErrorCode {
     PURCHASE_NOT_FOUND(404, "购买记录不存在"),
     SALE_NOT_FOUND(404, "售出记录不存在"),
     WISHLIST_NOT_FOUND(404, "心愿单条目不存在"),
+    ATTACHMENT_NOT_FOUND(404, "附件不存在"),
     ASSET_DELETE_CONFLICT(409, "资产存在关联记录，无法删除"),
     SALE_STATUS_CONFLICT(409, "资产状态不允许售出"),
     DATE_RANGE_CONFLICT(409, "日期范围不合法"),
