@@ -4,11 +4,12 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import lombok.Data;
 
@@ -46,4 +47,6 @@ public class WishlistRequest {
 
     @Pattern(regexp = "未购买|已购买", message = "状态非法")
     private String status = "未购买";
+
+    private List<@NotNull(message = "标签ID不能为空") Long> tagIds;
 }

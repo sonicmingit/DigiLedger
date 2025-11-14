@@ -823,6 +823,9 @@ components:
         category_id:
           type: integer
           nullable: true
+        category_name:
+          type: string
+          nullable: true
         brand_id:
           type: integer
           nullable: true
@@ -846,6 +849,10 @@ components:
         converted_asset_id:
           type: integer
           nullable: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
         created_at:
           type: string
           format: date-time
@@ -876,6 +883,24 @@ components:
           type: string
           description: UNPURCHASED/PURCHASED。
         notes:
+          type: string
+          nullable: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          description: 标签ID列表。
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+        icon:
           type: string
           nullable: true
         link:
