@@ -246,16 +246,29 @@
             >
               <el-button text>上传附件</el-button>
             </el-upload>
-            <el-tag
+            <div
               v-for="(url, idx) in purchase.attachments"
-              :key="url"
-              size="small"
-              class="tag"
-              closable
-              @close="removeAttachment(purchase, url)"
+              :key="`${idx}-${url}`"
+              class="attachment-thumb"
             >
-              附件{{ idx + 1 }}
-            </el-tag>
+              <el-image
+                v-if="resolveOssUrl(url)"
+                :src="resolveOssUrl(url)"
+                fit="cover"
+                class="attachment-image"
+                :preview-src-list="[resolveOssUrl(url)]"
+              />
+              <div v-else class="attachment-fallback">附件{{ idx + 1 }}</div>
+              <el-button
+                text
+                type="danger"
+                size="small"
+                class="attachment-remove"
+                @click="removeAttachment(purchase, url)"
+              >
+                删除
+              </el-button>
+            </div>
           </div>
           <div class="purchase-actions">
             <el-button type="danger" text @click="removePurchase(index)">删除记录</el-button>
@@ -404,6 +417,7 @@ type AssetFormOpenOptions = {
 }
 
 const coverImagePreview = computed(() => buildOssUrl(form.coverImageKey))
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
 
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -488,7 +502,7 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
     form.status = asset.status
     form.purchaseDate = asset.purchaseDate || today()
     form.enabledDate = form.purchaseDate
-    form.coverImageKey = extractObjectKey(asset.coverImageUrl)
+    form.coverImageKey = asset.coverImageUrl || ''
     form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = asset.notes || ''
     form.purchases = asset.purchases
@@ -504,7 +518,9 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
           name: p.type === 'PRIMARY' ? undefined : p.name || '',
-          attachments: extractObjectKeys(p.attachments || [])
+          attachments: Array.isArray(p.attachments)
+            ? p.attachments.filter((item): item is string => !!item)
+            : []
         }))
       : []
   } else {
@@ -591,8 +607,8 @@ const handlePurchaseTypeChange = (purchase: any) => {
 
 const handleUpload = async (options: UploadRequestOptions) => {
   try {
-    const { objectKey } = await uploadFile(options.file)
-    form.coverImageKey = objectKey
+    const { objectKey, url } = await uploadFile(options.file)
+    form.coverImageKey = url || buildOssUrl(objectKey) || objectKey
     coverProgress.value = 100
     ElMessage.success('上传成功')
     options.onSuccess(objectKey)
@@ -605,14 +621,15 @@ const handleUpload = async (options: UploadRequestOptions) => {
 
 const uploadAttachment = async (options: UploadRequestOptions, purchase: any) => {
   try {
-    const { objectKey } = await uploadFile(options.file)
-    purchase.attachments.push(objectKey)
+    const { objectKey, url } = await uploadFile(options.file)
+    purchase.attachments.push(url || buildOssUrl(objectKey) || objectKey)
     ElMessage.success('附件上传成功')
     options.onSuccess(objectKey)
   } catch (err: any) {
     options.onError(err)
     ElMessage.error('附件上传失败')
   }
+}
 }
 
 const removeAttachment = (purchase: any, url: string) => {
@@ -887,6 +904,32 @@ onMounted(async () => {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+
+.attachment-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.attachment-image,
+.attachment-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.attachment-remove {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 0;
 }
 
 .purchase-actions {
