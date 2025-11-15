@@ -29,7 +29,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
+  // 不拦截非 GET 请求
   if (request.method !== 'GET') return
+
+  // 不拦截后端 API 请求，直接走网络
+  if (request.url.includes('/api/')) {
+    event.respondWith(fetch(request))
+    return
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {

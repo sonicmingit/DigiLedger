@@ -186,7 +186,7 @@ const saving = ref(false)
 const current = ref<WishlistItem | null>(null)
 const formRef = ref<FormInstance>()
 const keyword = ref('')
-const activeStatus = ref<'全部' | '未购买' | '已购买'>('全部')
+const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
 
 const form = reactive({
   name: '',
