@@ -80,13 +80,6 @@
             <el-input v-model="form.serialNo" placeholder="如 SN / IMEI" />
           </el-form-item>
         </el-col>
-        <el-col :xs="24" :md="12">
-          <el-form-item label="状态" prop="status">
-            <el-select v-model="form.status" placeholder="选择状态">
-              <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
-            </el-select>
-          </el-form-item>
-        </el-col>
       </el-row>
       <el-row :gutter="16">
         <el-col :xs="24" :md="12">
@@ -210,6 +203,7 @@
                 :shortcuts="dateShortcuts"
                 placeholder="购买日期"
                 clearable
+                @change="() => syncPurchaseWarranty(purchase)"
               />
             </el-col>
             <el-col :xs="24" :md="8">
@@ -219,6 +213,7 @@
                 :step="1"
                 placeholder="质保（月）"
                 controls-position="right"
+                @change="() => syncPurchaseWarranty(purchase)"
               />
             </el-col>
             <el-col :xs="24" :md="8">
@@ -228,7 +223,7 @@
                 value-format="YYYY-MM-DD"
                 :shortcuts="dateShortcuts"
                 placeholder="质保到期日"
-                clearable
+                disabled
               />
             </el-col>
           </el-row>
@@ -282,41 +277,17 @@
     </template>
     </el-dialog>
 
-    <!-- 新建类别对话框：可在树上选择父节点，然后输入名称创建 -->
-    <el-dialog v-model="categoryDialogVisible" title="新建类别" width="480px" :destroy-on-close="true">
-      <div style="display:flex;gap:12px">
-        <div style="flex:1; max-height:320px; overflow:auto">
-          <div style="margin-bottom:8px;color:var(--el-text-color-secondary)">选择父节点（不选则创建为根节点）</div>
-          <el-tree
-            :data="categoryOptions"
-            node-key="value"
-            :props="{ children: 'children', label: 'label' }"
-            :highlight-current="true"
-            :default-expand-all="false"
-            :expand-on-click-node="false"
-            :check-strictly="true"
-            @node-click="onCategoryNodeClick"
-          />
-        </div>
-        <div style="width:260px">
-          <el-form label-width="0">
-            <el-form-item label="">
-              <el-input v-model="newCategoryName" placeholder="新类别名称" />
-            </el-form-item>
-            <el-form-item label="">
-              <el-button type="primary" @click="createCategoryConfirm">创建并回显</el-button>
-              <el-button @click="categoryDialogVisible = false">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-      </div>
-    </el-dialog>
+    <category-create-dialog
+      v-model="categoryDialogVisible"
+      :default-parent-id="categoryDialogParentId"
+      @success="handleCategoryCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
@@ -324,10 +295,10 @@ import type { AssetDetail } from '@/types'
 import type { AssetPayload } from '@/api/asset'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
-import { createCategory, createPlatform, createTag, createBrand } from '@/api/dict'
+import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
+import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
-
-const statuses = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
+import { calcWarrantyExpireDate } from '@/utils/date'
 
 const emit = defineEmits<{ (e: 'success', assetId?: number): void }>()
 
@@ -422,11 +393,11 @@ const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择类别', trigger: 'change' }],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
   purchaseDate: [{ required: true, message: '请选择购买日期', trigger: 'change' }]
 }
 
-const { load: loadDicts, refresh: refreshDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
+const { load: loadDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
+const { promptPlatformCreation, promptBrandCreation, promptTagCreation } = useDictionaryCreator()
 
 const brandOptions = computed(() =>
   brands.value.map((item) => ({
@@ -523,6 +494,7 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
             : []
         }))
       : []
+    form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   } else {
     reset()
     form.purchaseDate = today()
@@ -569,11 +541,17 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
       ...purchase,
       attachments: Array.isArray(purchase.attachments) ? [...purchase.attachments] : []
     })) as AssetFormState['purchases']
+    form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   }
 }
 
 const syncEnabledDate = () => {
   form.enabledDate = form.purchaseDate || today()
+}
+
+const syncPurchaseWarranty = (purchase: AssetFormState['purchases'][number]) => {
+  if (!purchase) return
+  purchase.warrantyExpireDate = calcWarrantyExpireDate(purchase.purchaseDate, purchase.warrantyMonths)
 }
 
 const addPurchase = () => {
@@ -591,6 +569,8 @@ const addPurchase = () => {
     name: form.purchases.length ? '' : undefined,
     attachments: []
   })
+  const last = form.purchases[form.purchases.length - 1]
+  syncPurchaseWarranty(last)
 }
 
 const removePurchase = (index: number) => {
@@ -608,7 +588,8 @@ const handlePurchaseTypeChange = (purchase: any) => {
 const handleUpload = async (options: UploadRequestOptions) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    form.coverImageKey = url || buildOssUrl(objectKey) || objectKey
+    const stored = objectKey || extractObjectKey(url) || url
+    form.coverImageKey = stored
     coverProgress.value = 100
     ElMessage.success('上传成功')
     options.onSuccess(objectKey)
@@ -622,7 +603,8 @@ const handleUpload = async (options: UploadRequestOptions) => {
 const uploadAttachment = async (options: UploadRequestOptions, purchase: any) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    purchase.attachments.push(url || buildOssUrl(objectKey) || objectKey)
+    const stored = objectKey || extractObjectKey(url) || url
+    purchase.attachments.push(stored)
     ElMessage.success('附件上传成功')
     options.onSuccess(objectKey)
   } catch (err: any) {
@@ -630,164 +612,57 @@ const uploadAttachment = async (options: UploadRequestOptions, purchase: any) =>
     ElMessage.error('附件上传失败')
   }
 }
-}
 
 const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
 }
 
-const findCategoryNode = (id: number | null, nodes: CategoryNode[] = categoryTree.value): CategoryNode | null => {
-  if (id == null) return null
-  const stack = [...nodes]
-  while (stack.length) {
-    const node = stack.pop()!
-    if (node.id === id) {
-      return node
-    }
-    if (node.children?.length) {
-      stack.push(...node.children)
-    }
-  }
-  return null
-}
-
-const getCategorySiblings = (parentId: number | null): CategoryNode[] => {
-  if (parentId == null) {
-    return categoryTree.value
-  }
-  const stack = [...categoryTree.value]
-  while (stack.length) {
-    const node = stack.pop()!
-    if (node.id === parentId) {
-      return node.children || []
-    }
-    if (node.children?.length) {
-      stack.push(...node.children)
-    }
-  }
-  return []
-}
-
-const nextCategorySort = (siblings: CategoryNode[]) =>
-  siblings.reduce((max, item) => Math.max(max, item.sort ?? 0), 0) + 10
-
-const handleCreateCategory = async () => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入类别名称', '新建类别', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：笔记本电脑'
-    })
-    const trimmed = value?.trim()
-    if (!trimmed) return
-
-    const currentNode = findCategoryNode(form.categoryId)
-    const parentId = currentNode?.parentId ?? null
-    const siblings = getCategorySiblings(parentId)
-    const id = await createCategory({ name: trimmed, parentId, sort: nextCategorySort(siblings) })
-    await refreshDicts()
-    form.categoryId = id
-    ElMessage.success('类别已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建类别失败')
-  }
-}
-
 const handleCreatePlatform = async (purchase: any) => {
-   try {
-     const { value } = await ElMessageBox.prompt('请输入平台名称', '新建平台', {
-       confirmButtonText: '创建',
-       cancelButtonText: '取消',
-       inputPlaceholder: '例如：闲鱼'
-     })
-     if (!value) return
-     const id = await createPlatform({ name: value })
-     await refreshDicts()
-     purchase.platformId = id
-     ElMessage.success('平台已创建')
-   } catch (error) {
-     if (error === 'cancel' || error === 'close') return
-     ElMessage.error('创建平台失败')
-   }
- }
- 
-// 新建品牌函数（保持不变）
- const handleCreateBrand = async () => {
-   try {
-     const { value } = await ElMessageBox.prompt('请输入品牌名称', '新建品牌', {
-       confirmButtonText: '创建',
-       cancelButtonText: '取消',
-       inputPlaceholder: '例如：Apple'
-     })
-     const trimmed = value?.trim()
-     if (!trimmed) return
-     const id = await createBrand({ name: trimmed })
-     await refreshDicts()
-     form.brandId = id
-     form.brandName = trimmed
-     ElMessage.success('品牌已创建')
-   } catch (error) {
-     if (error === 'cancel' || error === 'close') return
-     ElMessage.error('创建品牌失败')
-   }
- }
- 
+  try {
+    const result = await promptPlatformCreation()
+    if (result) {
+      purchase.platformId = result.id
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建平台失败')
+  }
+}
+
+const handleCreateBrand = async () => {
+  try {
+    const result = await promptBrandCreation()
+    if (result) {
+      form.brandId = result.id
+      form.brandName = result.name
+      normalizeBrandName()
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建品牌失败')
+  }
+}
+
 const handleCreateTag = async () => {
   try {
-    const { value } = await ElMessageBox.prompt('请输入标签名称', '新建标签', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: '例如：主力设备'
-    })
-    if (!value) return
-    const id = await createTag({ name: value, parentId: null })
-    await refreshDicts()
-    form.tagIds = Array.from(new Set([...form.tagIds, id]))
-    ElMessage.success('标签已创建')
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    ElMessage.error('创建标签失败')
+    const result = await promptTagCreation()
+    if (result) {
+      form.tagIds = Array.from(new Set([...form.tagIds, result.id]))
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建标签失败')
   }
 }
 
-// ------ 新增：可在树上选择父节点并创建任意层级节点 ------
 const categoryDialogVisible = ref(false)
-const newCategoryName = ref('')
-const selectedCategoryNode = ref<number | null>(null)
+const categoryDialogParentId = ref<number | null>(null)
 
 const openCategoryDialog = () => {
-  // 默认将当前选择的 categoryId 作为初始父节点
-  selectedCategoryNode.value = form.categoryId ?? null
-  newCategoryName.value = ''
+  categoryDialogParentId.value = form.categoryId ?? null
   categoryDialogVisible.value = true
 }
 
-const onCategoryNodeClick = (node: any) => {
-  // node.value 对应 buildCategoryOptions 的 value
-  selectedCategoryNode.value = node?.value ?? null
+const handleCategoryCreated = (payload: { id: number }) => {
+  form.categoryId = payload.id
 }
-
-const createCategoryConfirm = async () => {
-  try {
-    const name = newCategoryName.value?.trim()
-    if (!name) {
-      ElMessage.warning('请输入类别名称')
-      return
-    }
-    // 计算 parentId 与排序位置
-    const parentId = selectedCategoryNode.value ?? null
-    const siblings = getCategorySiblings(parentId)
-    const id = await createCategory({ name, parentId, sort: nextCategorySort(siblings) })
-    await refreshDicts()
-    form.categoryId = id
-    categoryDialogVisible.value = false
-    ElMessage.success('类别已创建并回显')
-  } catch (err) {
-    ElMessage.error('创建类别失败')
-  }
-}
-// ------ 结束新增 ------
 
 const submit = () => {
   formRef.value?.validate(async (valid) => {

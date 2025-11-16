@@ -12,9 +12,14 @@
         <el-input v-model="form.name" placeholder="请输入配件/服务名称" />
       </el-form-item>
       <el-form-item label="平台">
-        <el-select v-model="form.platformId" filterable clearable placeholder="来源平台">
-          <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
+        <div class="platform-field">
+          <el-select v-model="form.platformId" filterable clearable placeholder="来源平台">
+            <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+          <el-button class="inline-action" text size="small" type="primary" @click="handleCreatePlatform">
+            新建
+          </el-button>
+        </div>
       </el-form-item>
       <el-form-item label="价格" prop="price">
         <el-input-number v-model="form.price" :min="0" :precision="2" :step="100" />
@@ -31,25 +36,60 @@
           type="date"
           value-format="YYYY-MM-DD"
           :shortcuts="dateShortcuts"
+          @change="syncWarranty"
         />
       </el-form-item>
       <el-form-item label="卖家">
         <el-input v-model="form.seller" />
       </el-form-item>
       <el-form-item label="质保（月）">
-        <el-input-number v-model="form.warrantyMonths" :min="0" :step="1" />
+        <el-input-number v-model="form.warrantyMonths" :min="0" :step="1" @change="syncWarranty" />
       </el-form-item>
-      <el-form-item label="质保到期">
+      <el-form-item label="质保到期日">
         <el-date-picker
           v-model="form.warrantyExpireDate"
           type="date"
           value-format="YYYY-MM-DD"
           :shortcuts="dateShortcuts"
-          clearable
+          disabled
         />
       </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="form.notes" type="textarea" rows="2" />
+      </el-form-item>
+      <el-form-item label="附件">
+        <div class="attachments">
+          <el-upload
+            :http-request="uploadAttachment"
+            :show-file-list="false"
+            multiple
+          >
+            <el-button text type="primary">上传图片</el-button>
+          </el-upload>
+          <div
+            v-for="(item, index) in form.attachments"
+            :key="`${item}-${index}`"
+            class="attachment"
+          >
+            <el-image
+              v-if="isImage(item)"
+              :src="resolveOssUrl(item)"
+              fit="cover"
+              :preview-src-list="[resolveOssUrl(item)]"
+              class="attachment-image"
+            />
+            <el-link v-else :href="resolveOssUrl(item)" target="_blank" type="primary">附件{{ index + 1 }}</el-link>
+            <el-button
+              class="remove"
+              text
+              type="danger"
+              size="small"
+              @click="removeAttachment(index)"
+            >
+              删除
+            </el-button>
+          </div>
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -60,10 +100,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import type { FormInstance } from 'element-plus'
+import { reactive, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, UploadRequestOptions } from 'element-plus'
+import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import type { PurchaseRecord } from '@/types'
+import { buildOssUrl, extractObjectKey } from '@/utils/storage'
+import { calcWarrantyExpireDate } from '@/utils/date'
 
 const emit = defineEmits<{
   (e: 'submit', payload: Partial<PurchaseRecord>): void
@@ -73,6 +118,7 @@ const visible = ref(false)
 const loading = ref(false)
 const formRef = ref<FormInstance>()
 const { load: loadDicts, platforms } = useDictionaries()
+const { promptPlatformCreation } = useDictionaryCreator()
 
 const form = reactive({
   id: 0,
@@ -86,7 +132,8 @@ const form = reactive({
   seller: '',
   warrantyMonths: undefined as number | undefined,
   warrantyExpireDate: '',
-  notes: ''
+  notes: '',
+  attachments: [] as string[]
 })
 
 const dateShortcuts = [
@@ -117,6 +164,15 @@ const rules = {
 
 const title = ref('新增购买记录')
 
+const syncWarranty = () => {
+  form.warrantyExpireDate = calcWarrantyExpireDate(form.purchaseDate, form.warrantyMonths)
+}
+
+watch(
+  () => [form.purchaseDate, form.warrantyMonths],
+  () => syncWarranty()
+)
+
 const open = async (purchase?: PurchaseRecord) => {
   await loadDicts()
   visible.value = true
@@ -135,10 +191,14 @@ const open = async (purchase?: PurchaseRecord) => {
     form.warrantyMonths = purchase.warrantyMonths || undefined
     form.warrantyExpireDate = purchase.warrantyExpireDate || ''
     form.notes = purchase.notes || ''
+    form.attachments = Array.isArray(purchase.attachments)
+      ? purchase.attachments.map((item) => extractObjectKey(item) || item)
+      : []
   } else {
     title.value = '新增附属品'
     reset()
   }
+  syncWarranty()
 }
 
 const reset = () => {
@@ -154,6 +214,8 @@ const reset = () => {
   form.warrantyMonths = undefined
   form.warrantyExpireDate = ''
   form.notes = ''
+  form.attachments = []
+  syncWarranty()
 }
 
 const handleTypeChange = () => {
@@ -166,7 +228,7 @@ const submit = () => {
   formRef.value?.validate((valid) => {
     if (!valid) return
     loading.value = true
-    emit('submit', { ...form })
+    emit('submit', { ...form, attachments: [...form.attachments] })
   })
 }
 
@@ -178,8 +240,79 @@ const close = () => {
   visible.value = false
 }
 
+const uploadAttachment = async (options: UploadRequestOptions) => {
+  try {
+    const { objectKey, url } = await uploadFile(options.file)
+    const stored = objectKey || extractObjectKey(url) || url
+    form.attachments.push(stored)
+    ElMessage.success('附件上传成功')
+    options.onSuccess(objectKey)
+  } catch (error: any) {
+    options.onError(error)
+    ElMessage.error(error?.message || '附件上传失败')
+  }
+}
+
+const removeAttachment = (index: number) => {
+  form.attachments.splice(index, 1)
+}
+
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
+
+const isImage = (value: string) => {
+  const text = (value || '').toLowerCase()
+  const pure = text.split('?')[0]
+  return /(\.png|\.jpe?g|\.gif|\.bmp|\.webp|\.svg)$/.test(pure)
+}
+
+const handleCreatePlatform = async () => {
+  try {
+    const result = await promptPlatformCreation()
+    if (result) {
+      form.platformId = result.id
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建平台失败')
+  }
+}
+
 defineExpose({ open, reset, setLoading, close })
 </script>
 
 <style scoped>
+.platform-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-action {
+  padding: 0 6px;
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.attachment {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.attachment-image {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.remove {
+  padding: 0;
+}
 </style>

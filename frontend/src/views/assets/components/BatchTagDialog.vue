@@ -2,16 +2,21 @@
   <el-dialog v-model="visible" title="批量设置标签" width="420px" @closed="reset">
     <el-form label-width="0">
       <el-form-item>
-        <el-tree-select
-          v-model="selected"
-          :data="tagOptions"
-          :props="treeProps"
-          multiple
-          show-checkbox
-          filterable
-          style="width: 100%"
-          placeholder="选择应用到的标签"
-        />
+        <div class="tag-selector">
+          <el-tree-select
+            v-model="selected"
+            :data="tagOptions"
+            :props="treeProps"
+            multiple
+            show-checkbox
+            filterable
+            style="width: 100%"
+            placeholder="选择应用到的标签"
+          />
+          <el-button class="inline-action" text size="small" type="primary" @click="handleCreateTag">
+            新建
+          </el-button>
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -23,7 +28,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import type { TagNode } from '@/api/dict'
 
 const emit = defineEmits<{
@@ -35,6 +42,7 @@ const loading = ref(false)
 const selected = ref<number[]>([])
 
 const { load: loadDicts, tagTree } = useDictionaries()
+const { promptTagCreation } = useDictionaryCreator()
 
 const treeProps = {
   value: 'value',
@@ -50,6 +58,17 @@ const buildOptions = (nodes: TagNode[]): any[] =>
   }))
 
 const tagOptions = computed(() => buildOptions(tagTree.value))
+
+const handleCreateTag = async () => {
+  try {
+    const result = await promptTagCreation()
+    if (result) {
+      selected.value = Array.from(new Set([...selected.value, result.id]))
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建标签失败')
+  }
+}
 
 const open = async (defaultValues: number[] = []) => {
   await loadDicts()
@@ -79,4 +98,13 @@ defineExpose({ open, setLoading, close })
 </script>
 
 <style scoped>
+.tag-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-action {
+  padding: 0 6px;
+}
 </style>
