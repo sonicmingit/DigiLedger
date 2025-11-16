@@ -1,4 +1,4 @@
-# DigiLedger V0.3.5 产品设计
+# DigiLedger V0.3.8 产品设计
 
 > 约定 & 范围
 >
@@ -7,7 +7,7 @@
 > - 架构：**前后端分离**。后端 `Spring Boot + MyBatis + MySQL`；前端 `Vue3 + Vite + Element Plus`。
 > - 部署：**Docker/Compose 一键启动**（含 MySQL、后端、前端、Nginx 反代）。
 > - 接口返回体：统一为 `{ code, data, msg }`，`code=200` 表示成功。
-> - 版本：V0.3.5（按天均摊方案A，支持相对文件路径与主题切换）。。
+> - 版本：V0.3.8（心愿单关联跳转、出售成本指标、上传回显修复版）。
 
 ------
 
@@ -33,9 +33,10 @@
 - **购买记录**：主购买 + 配件/服务扩展，支持附件（发票/截图）。
 - **使用统计**：按天均摊；启用日期至当前/售出/报废。
 - **折旧**：不计算折旧，仅展示总投入与日均成本。
-- **转售**：记录售出平台、价格、费用、净收入；资产状态联动。
+- **转售**：记录售出平台、价格、费用、净收入；资产状态联动，支持附件与亏损/日月均使用价格快照。
 - **统计/报表**：按类别、平台、年份聚合；仪表盘 KPI。
 - **导入导出**：CSV 导入资产（含主购买）、列表导出。
+- **心愿单详情**：展示已关联的资产列表，支持点击跳转物品详情，并在资产被删除时给出中文提示。
 
 ------
 
@@ -79,11 +80,20 @@ use_days =
 
 > `days_between(a,b)` 为自然日差，含首不含尾；最低为 1，避免除零。
 
+> **说明**：售出后的物品全部以对应售出记录的 `sale_date` 作为截止时间，形成“使用天数快照”，不再使用当前日期。
+
 ### 3.3 平均日成本（按天均摊）
 
 ```
 avg_cost_per_day = total_invest / max(use_days, 1)
 ```
+
+### 3.4 售出使用成本指标
+
+- **亏损价格 loss_amount** = 购买投入（含运费） - 售出价格；正值代表亏损，负值表示收益。
+- **日均使用价格 daily_usage_cost** = loss_amount ÷ use_days（使用天数为 0 时强制为 0）。
+- **月均使用价格 monthly_usage_cost** = loss_amount ÷ (use_days ÷ 30)，以 30 天折算 1 个月；若使用天数不足 1 天则同样返回 0。
+- 以上指标均在售出时即时计算，并与该条售出记录一并返回给前端展示，作为固定快照。
 
 ------
 
@@ -145,6 +155,7 @@ CREATE TABLE purchase (
   invoice_no VARCHAR(100),
   warranty_months INT,
   warranty_expire_date DATE,
+  product_link VARCHAR(1000), -- V0.3.8 新增：外部商品链接
   attachments JSON,
   notes TEXT,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -172,6 +183,8 @@ CREATE TABLE sale (
   INDEX idx_asset (asset_id),
   CONSTRAINT fk_sale_asset FOREIGN KEY (asset_id) REFERENCES device_asset(id)
 );
+
+-- 售出响应 DTO 额外包含：use_days、loss_amount、daily_usage_cost、monthly_usage_cost，用于前端展示，不额外持久化。
 
 CREATE TABLE op_log (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,

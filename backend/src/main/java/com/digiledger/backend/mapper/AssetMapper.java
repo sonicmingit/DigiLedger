@@ -32,6 +32,12 @@ public interface AssetMapper {
                           @Param("purchaseId") Long purchaseId,
                           @Param("purchaseDate") java.time.LocalDate purchaseDate);
 
+    List<DeviceAsset> findByIds(@Param("ids") List<Long> ids);
+
+    int updateStatusAndRetiredDate(@Param("id") Long id,
+                                   @Param("status") String status,
+                                   @Param("retiredDate") java.time.LocalDate retiredDate);
+
     long countByCategory(@Param("categoryId") Long categoryId,
                          @Param("categoryPathLike") String categoryPathLike,
                          @Param("categoryPathSuffix") String categoryPathSuffix);

@@ -38,6 +38,8 @@ public class Purchase {
     private Integer warrantyMonths;
     /** 质保到期日期 */
     private LocalDate warrantyExpireDate;
+    /** 商品链接 */
+    private String productLink;
     /** 附件 JSON */
     private String attachments;
     /** 备注 */

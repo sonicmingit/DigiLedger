@@ -13,9 +13,15 @@ public interface SaleMapper {
 
     List<Sale> findByAssetId(@Param("assetId") Long assetId);
 
+    Sale findById(@Param("id") Long id);
+
     int insert(Sale sale);
 
+    int update(Sale sale);
+
     int deleteByAsset(@Param("assetId") Long assetId);
+
+    int deleteById(@Param("id") Long id);
 
     int countByAsset(@Param("assetId") Long assetId);
 

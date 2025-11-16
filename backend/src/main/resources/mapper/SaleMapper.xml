@@ -35,6 +35,10 @@
         SELECT * FROM sale WHERE asset_id = #{assetId} ORDER BY sale_date DESC, id DESC
     </select>
 
+    <select id="findById" resultMap="saleResultMap">
+        SELECT * FROM sale WHERE id = #{id}
+    </select>
+
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.Sale" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sale (
             asset_id, sale_scope, purchase_id, platform_id, platform_name, buyer, sale_price, fee, shipping_cost,
@@ -45,8 +49,31 @@
         )
     </insert>
 
+    <update id="update" parameterType="com.digiledger.backend.model.entity.Sale">
+        UPDATE sale
+        SET sale_scope = #{saleScope},
+            purchase_id = #{purchaseId},
+            platform_id = #{platformId},
+            platform_name = #{platformName},
+            buyer = #{buyer},
+            sale_price = #{salePrice},
+            fee = #{fee},
+            shipping_cost = #{shippingCost},
+            other_cost = #{otherCost},
+            net_income = #{netIncome},
+            sale_date = #{saleDate},
+            attachments = #{attachments},
+            notes = #{notes},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
     <delete id="deleteByAsset" parameterType="long">
         DELETE FROM sale WHERE asset_id = #{assetId}
+    </delete>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM sale WHERE id = #{id}
     </delete>
 
     <select id="countByAsset" parameterType="long" resultType="int">

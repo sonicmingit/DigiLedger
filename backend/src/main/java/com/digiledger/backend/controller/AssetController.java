@@ -93,4 +93,18 @@ public class AssetController {
         assetService.updateAssetStatus(id, request.getStatus());
         return ApiResponse.success();
     }
+
+    @PutMapping("/{assetId}/sales/{saleId}")
+    public ApiResponse<SaleDTO> updateSale(@PathVariable("assetId") @NotNull @Min(1) Long assetId,
+                                           @PathVariable("saleId") @NotNull @Min(1) Long saleId,
+                                           @RequestBody @Valid AssetSellRequest request) {
+        return ApiResponse.success(assetService.updateSale(assetId, saleId, request));
+    }
+
+    @DeleteMapping("/{assetId}/sales/{saleId}")
+    public ApiResponse<Void> deleteSale(@PathVariable("assetId") @NotNull @Min(1) Long assetId,
+                                        @PathVariable("saleId") @NotNull @Min(1) Long saleId) {
+        assetService.deleteSale(assetId, saleId);
+        return ApiResponse.success();
+    }
 }

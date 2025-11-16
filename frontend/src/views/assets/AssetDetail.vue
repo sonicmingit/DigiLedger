@@ -81,13 +81,21 @@
                 <template #default="{ row }">¥ {{ formatNumber(row.price) }}</template>
               </el-table-column>
               <el-table-column prop="purchaseDate" label="购买日期" width="120" />
+              <el-table-column label="商品链接" width="140">
+                <template #default="{ row }">
+                  <el-link v-if="row.productLink" :href="row.productLink" target="_blank" type="primary">
+                    查看
+                  </el-link>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="210">
                 <template #default="{ row }">
                   <el-button
                     v-if="row.attachments?.length"
                     link
                     type="info"
-                    @click="openAttachmentDialog(row)">
+                    @click="openAttachmentDialog(row.type === 'PRIMARY' ? detail.name || '主商品' : row.name || '购买记录', row.attachments)">
                     附件 ({{ row.attachments.length }})
                   </el-button>
                   <el-button link type="primary" @click="openEditPurchase(row)">编辑</el-button>
@@ -120,6 +128,55 @@
               </el-table-column>
               <el-table-column prop="netIncome" label="净收入" width="120">
                 <template #default="{ row }">¥ {{ formatNumber(row.netIncome) }}</template>
+              </el-table-column>
+              <el-table-column label="使用天数" width="120">
+                <template #default="{ row }">
+                  <span v-if="row.useDays">{{ row.useDays }} 天</span>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="成本指标" min-width="220">
+                <template #default="{ row }">
+                  <div class="sale-metrics">
+                    <span :class="lossClass(row.lossAmount)">{{ formatLoss(row.lossAmount) }}</span>
+                    <span>日均：{{ formatCurrency(row.dailyUsageCost) }}</span>
+                    <span>月均：{{ formatCurrency(row.monthlyUsageCost) }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="附件" min-width="200">
+                <template #default="{ row }">
+                  <div v-if="row.attachments?.length" class="sale-attachments">
+                    <template v-for="(item, index) in row.attachments.slice(0, 3)" :key="`${item}-${index}`">
+                      <el-image
+                        v-if="isImageAttachment(item)"
+                        :src="resolveOssUrl(item)"
+                        fit="cover"
+                        :preview-src-list="[resolveOssUrl(item)]"
+                        class="sale-attachment-thumb"
+                      />
+                      <el-link v-else :href="resolveOssUrl(item)" target="_blank" type="primary">
+                        附件{{ index + 1 }}
+                      </el-link>
+                    </template>
+                    <el-button
+                      v-if="row.attachments.length > 3"
+                      text
+                      type="primary"
+                      size="small"
+                      @click="openAttachmentDialog(`售出 · ${detail.name}`, row.attachments)"
+                    >
+                      更多
+                    </el-button>
+                  </div>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="180">
+                <template #default="{ row }">
+                  <el-button link type="primary" @click="editSale(row)">编辑</el-button>
+                  <el-button link type="danger" @click="confirmDeleteSale(row)">删除</el-button>
+                </template>
               </el-table-column>
             </el-table>
           </el-card>
@@ -175,8 +232,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { fetchAssetDetail, updateAsset } from '@/api/asset'
-import type { AssetDetail, PurchaseRecord, AssetStatus } from '@/types'
+import { deleteSale, fetchAssetDetail, updateAsset } from '@/api/asset'
+import type { AssetDetail, PurchaseRecord, AssetStatus, SaleRecord } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import PurchaseEditorDialog from './components/PurchaseEditorDialog.vue'
@@ -229,7 +286,53 @@ const back = () => router.push('/assets')
 const edit = () => detail.value && formRef.value?.open(detail.value)
 const sell = () => detail.value && sellDialog.value?.open({ id: detail.value.id, name: detail.value.name })
 
-const formatNumber = (value: number) => value.toFixed(2)
+const editSale = (sale: SaleRecord) => {
+  if (!detail.value) return
+  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name }, sale)
+}
+
+const confirmDeleteSale = async (sale: SaleRecord) => {
+  if (!detail.value) return
+  await ElMessageBox.confirm('删除售出记录会将物品状态恢复为“使用中”，是否继续？', '提示', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await deleteSale(detail.value.id, sale.id)
+  ElMessage.success('售出记录已删除')
+  await reload()
+}
+
+const formatNumber = (value?: number | null) => {
+  const num = Number(value ?? 0)
+  if (Number.isNaN(num)) {
+    return '0.00'
+  }
+  return num.toFixed(2)
+}
+
+const formatCurrency = (value?: number | null) => `¥ ${formatNumber(value)}`
+
+const formatLoss = (value?: number | null) => {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) {
+    return '成本数据不足'
+  }
+  const num = Number(value)
+  if (num > 0) {
+    return `亏损 ¥ ${formatNumber(num)}`
+  }
+  if (num < 0) {
+    return `收益 ¥ ${formatNumber(Math.abs(num))}`
+  }
+  return '持平'
+}
+
+const lossClass = (value?: number | null) => {
+  if (value === undefined || value === null || Number.isNaN(Number(value)) || Number(value) === 0) {
+    return 'loss-neutral'
+  }
+  return Number(value) > 0 ? 'loss-loss' : 'loss-gain'
+}
 
 const purchaseTypeLabel = (type: PurchaseRecord['type']) => {
   switch (type) {
@@ -269,13 +372,13 @@ const attachmentPreviewList = computed(() =>
     .filter((url): url is string => !!url)
 )
 
-const openAttachmentDialog = (purchase: PurchaseRecord) => {
-  const name =
-    purchase.type === 'PRIMARY'
-      ? detail.value?.name || '主商品'
-      : purchase.name?.trim() || '购买记录'
-  attachmentDialog.title = `${name} · 附件`
-  attachmentDialog.items = Array.isArray(purchase.attachments) ? [...purchase.attachments] : []
+const openAttachmentDialog = (title: string, attachments?: string[]) => {
+  if (!attachments || !attachments.length) {
+    ElMessage.info('暂无附件可查看')
+    return
+  }
+  attachmentDialog.title = title
+  attachmentDialog.items = [...attachments]
   attachmentDialog.visible = true
 }
 
@@ -321,6 +424,7 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
       warrantyExpireDate: p.warrantyExpireDate || undefined,
       notes: p.notes || undefined,
       name: p.type === 'PRIMARY' ? undefined : p.name,
+      productLink: p.productLink || undefined,
       attachments: extractObjectKeys(p.attachments)
     }))
   }
@@ -341,6 +445,7 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
       purchases[index] = {
         ...previous,
         ...payload,
+        productLink: payload.productLink ?? previous.productLink,
         attachments: payload.attachments ? [...payload.attachments] : previous.attachments
       }
     }
@@ -358,6 +463,7 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
       purchaseDate: payload.purchaseDate!,
       warrantyMonths: payload.warrantyMonths,
       warrantyExpireDate: payload.warrantyExpireDate,
+      productLink: payload.productLink,
       attachments: payload.attachments ? [...payload.attachments] : [],
       notes: payload.notes
     })
@@ -477,6 +583,40 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.sale-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.sale-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sale-attachment-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.loss-loss {
+  color: #ef4444;
+}
+
+.loss-gain {
+  color: #22c55e;
+}
+
+.loss-neutral {
+  color: #94a3b8;
 }
 
 @media (max-width: 768px) {
