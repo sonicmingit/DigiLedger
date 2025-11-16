@@ -49,7 +49,7 @@
         </div>
         <div class="actions">
           <el-button type="primary" @click="edit">编辑</el-button>
-          <el-button type="success" @click="sell">出售向导</el-button>
+          <el-button type="success" :disabled="detail.status === '已出售'" @click="sell">出售向导</el-button>
           <el-button @click="back">返回列表</el-button>
         </div>
       </el-card>
@@ -284,7 +284,14 @@ const reload = async () => {
 
 const back = () => router.push('/assets')
 const edit = () => detail.value && formRef.value?.open(detail.value)
-const sell = () => detail.value && sellDialog.value?.open({ id: detail.value.id, name: detail.value.name })
+const sell = () => {
+  if (!detail.value) return
+  if (detail.value.status === '已出售') {
+    ElMessage.warning('已出售的物品不可重复出售')
+    return
+  }
+  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name })
+}
 
 const editSale = (sale: SaleRecord) => {
   if (!detail.value) return
