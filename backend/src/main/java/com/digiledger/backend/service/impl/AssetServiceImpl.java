@@ -289,7 +289,8 @@ public class AssetServiceImpl implements AssetService {
         } else {
             enabledDate = request.getEnabledDate();
         }
-        if (enabledDate == null) {
+        // 弃用启用日期
+        /*if (enabledDate == null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "启用日期不能为空");
         }
         if (purchaseDate != null && enabledDate.isBefore(purchaseDate)) {
@@ -304,7 +305,7 @@ public class AssetServiceImpl implements AssetService {
                     throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期需晚于购买日期");
                 }
             });
-        }
+        }*/
     }
 
 
