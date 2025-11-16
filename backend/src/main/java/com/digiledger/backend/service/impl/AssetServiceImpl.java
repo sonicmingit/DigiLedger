@@ -449,11 +449,30 @@ public class AssetServiceImpl implements AssetService {
                 .map(Sale::getSaleDate);
     }
 
-    private long calculateUseDaysForSale(DeviceAsset asset, Sale sale) {
-        LocalDate start = resolveUsageStart(asset);
+    /**
+     * 计算单条售出记录的使用天数，优先以配件自身购买日期为起点。
+     */
+    private long calculateUseDaysForSale(DeviceAsset asset, Sale sale, List<Purchase> purchases) {
+        LocalDate start = resolveSaleUsageStart(asset, sale, purchases);
         LocalDate saleDate = Optional.ofNullable(sale.getSaleDate()).orElse(LocalDate.now());
         long days = ChronoUnit.DAYS.between(start, saleDate);
         return Math.max(days, 1);
+    }
+
+    /**
+     * 推导售出记录的起始使用日期。
+     */
+    private LocalDate resolveSaleUsageStart(DeviceAsset asset, Sale sale, List<Purchase> purchases) {
+        SaleScope saleScope = parseSaleScope(sale);
+        if (saleScope == SaleScope.ACCESSORY && sale.getPurchaseId() != null) {
+            return purchases.stream()
+                    .filter(purchase -> Objects.equals(purchase.getId(), sale.getPurchaseId()))
+                    .map(Purchase::getPurchaseDate)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElseGet(() -> resolveUsageStart(asset));
+        }
+        return resolveUsageStart(asset);
     }
 
     private BigDecimal calculateTotalInvest(List<Purchase> purchases) {
@@ -513,6 +532,7 @@ public class AssetServiceImpl implements AssetService {
             if (!"ACCESSORY".equalsIgnoreCase(purchase.getType())) {
                 throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持出售配件类型的购买记录");
             }
+            validateAccessorySaleUniqueness(purchase.getId(), sale.getId());
             sale.setPurchaseId(purchase.getId());
         } else {
             sale.setPurchaseId(null);
@@ -604,7 +624,7 @@ public class AssetServiceImpl implements AssetService {
             return null;
         }
         SaleScope saleScope = parseSaleScope(sale);
-        long useDays = calculateUseDaysForSale(asset, sale);
+        long useDays = calculateUseDaysForSale(asset, sale, purchases);
         BigDecimal salePrice = Optional.ofNullable(sale.getSalePrice()).orElse(BigDecimal.ZERO);
         BigDecimal lossAmount = resolveSaleCost(sale, purchases)
                 .subtract(salePrice)
@@ -789,6 +809,19 @@ public class AssetServiceImpl implements AssetService {
 
     private BigDecimal defaultZero(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    /**
+     * 校验同一配件是否已有售出记录，防止重复出售。
+     */
+    private void validateAccessorySaleUniqueness(Long purchaseId, Long currentSaleId) {
+        if (purchaseId == null) {
+            return;
+        }
+        Sale existing = saleMapper.findByPurchaseId(purchaseId);
+        if (existing != null && !Objects.equals(existing.getId(), currentSaleId)) {
+            throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "该配件已售出，无法重复出售");
+        }
     }
 
     /**
