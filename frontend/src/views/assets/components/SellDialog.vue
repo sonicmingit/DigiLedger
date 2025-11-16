@@ -147,7 +147,17 @@ const loadAccessoryPurchases = async (assetId: number) => {
   accessoryLoading.value = true
   try {
     const detail = await fetchAssetDetail(assetId)
-    accessoryPurchases.value = detail.purchases.filter((item) => item.type === 'ACCESSORY')
+    const soldPurchaseIds = new Set(
+      (detail.sales || [])
+        .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
+        .map((sale) => sale.purchaseId!)
+    )
+    if (form.purchaseId) {
+      soldPurchaseIds.delete(form.purchaseId)
+    }
+    accessoryPurchases.value = detail.purchases
+      .filter((item) => item.type === 'ACCESSORY')
+      .filter((item) => !soldPurchaseIds.has(item.id))
   } finally {
     accessoryLoading.value = false
   }

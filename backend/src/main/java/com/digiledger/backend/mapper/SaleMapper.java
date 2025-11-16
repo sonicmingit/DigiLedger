@@ -15,6 +15,8 @@ public interface SaleMapper {
 
     Sale findById(@Param("id") Long id);
 
+    Sale findByPurchaseId(@Param("purchaseId") Long purchaseId);
+
     int insert(Sale sale);
 
     int update(Sale sale);
