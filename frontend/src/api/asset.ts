@@ -30,6 +30,7 @@ export type AssetPayload = {
     purchaseDate: string
     warrantyMonths?: number
     warrantyExpireDate?: string
+    productLink?: string
     attachments?: string[]
     notes?: string
   }>
@@ -82,3 +83,9 @@ export const deleteAsset = (id: number) => http.delete<void>(`/assets/${id}`)
 // 提交出售向导数据，返回售出记录
 export const sellAsset = (id: number, payload: SellPayload) =>
   http.post<SaleRecord>(`/assets/${id}/sell`, payload)
+
+export const updateSale = (assetId: number, saleId: number, payload: SellPayload) =>
+  http.put<SaleRecord>(`/assets/${assetId}/sales/${saleId}`, payload)
+
+export const deleteSale = (assetId: number, saleId: number) =>
+  http.delete<void>(`/assets/${assetId}/sales/${saleId}`)

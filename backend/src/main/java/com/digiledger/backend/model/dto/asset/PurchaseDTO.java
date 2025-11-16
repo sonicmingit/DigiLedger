@@ -20,6 +20,7 @@ public record PurchaseDTO(
         LocalDate purchaseDate,
         Integer warrantyMonths,
         LocalDate warrantyExpireDate,
+        String productLink,
         List<String> attachments,
         String notes
 ) {

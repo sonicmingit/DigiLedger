@@ -42,6 +42,9 @@ public class PurchaseRequest {
 
     private LocalDate warrantyExpireDate;
 
+    @Size(max = 1000, message = "商品链接过长")
+    private String productLink;
+
     private List<@Size(max = 500, message = "附件 URL 过长") String> attachments;
 
     private String notes;

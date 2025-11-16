@@ -8,11 +8,11 @@
   >
     <div v-if="current" class="wishlist-detail">
       <el-image
-        v-if="current.imageUrl"
-        :src="current.imageUrl"
+        v-if="coverUrl"
+        :src="coverUrl"
         fit="cover"
         class="cover"
-        :preview-src-list="[current.imageUrl]"
+        :preview-src-list="[coverUrl]"
       />
       <el-descriptions :column="1" border>
         <el-descriptions-item label="状态">
@@ -54,7 +54,23 @@
           {{ formatDateTime(current.updatedAt) }}
         </el-descriptions-item>
         <el-descriptions-item label="关联资产">
-          <template v-if="current.convertedAssetId">#{{ current.convertedAssetId }}</template>
+          <template v-if="relatedAssets.length">
+            <ul class="related-assets">
+              <li v-for="asset in relatedAssets" :key="asset.assetId" class="related-asset">
+                <el-link
+                  v-if="asset.available"
+                  type="primary"
+                  @click="navigateAsset(asset)"
+                >
+                  {{ asset.assetName || `物品 #${asset.assetId}` }}
+                </el-link>
+                <span v-else class="invalid-asset">
+                  {{ asset.assetName || `物品 #${asset.assetId}` }}
+                  <el-tag type="danger" size="small">已失效</el-tag>
+                </span>
+              </li>
+            </ul>
+          </template>
           <template v-else>-</template>
         </el-descriptions-item>
         <el-descriptions-item label="备注">
@@ -69,16 +85,22 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { WishlistItem } from '@/types'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import type { WishlistAssetRef, WishlistItem } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { buildOssUrl } from '@/utils/storage'
 
 const visible = ref(false)
 const current = ref<WishlistItem | null>(null)
 const { brandMap, categoryPathMap } = useDictionaries()
+const router = useRouter()
 
 const tags = computed(() => current.value?.tags ?? [])
 const statusTagType = computed(() => (current.value?.status === '已购买' ? 'success' : 'info'))
 const drawerTitle = computed(() => current.value?.name ?? '心愿详情')
+const coverUrl = computed(() => buildOssUrl(current.value?.imageUrl))
+const relatedAssets = computed(() => current.value?.relatedAssets ?? [])
 
 const categoryLabel = computed(() => {
   if (!current.value) return '-'
@@ -129,6 +151,19 @@ const formatDateTime = (value?: string) => {
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
 }
 
+const navigateAsset = (asset: WishlistAssetRef) => {
+  if (!asset.assetId) {
+    ElMessage.warning('关联的物品信息缺失，无法跳转')
+    return
+  }
+  if (!asset.available) {
+    ElMessage.warning('关联的物品不存在或已被删除')
+    return
+  }
+  router.push(`/assets/${asset.assetId}`)
+  visible.value = false
+}
+
 const open = (item: WishlistItem) => {
   current.value = item
   visible.value = true
@@ -149,6 +184,25 @@ defineExpose({ open })
   height: 220px;
   border-radius: 12px;
   object-fit: cover;
+}
+
+.related-assets {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.related-asset {
+  list-style: disc;
+}
+
+.invalid-asset {
+  color: var(--el-text-color-secondary);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }
 
 

@@ -141,7 +141,7 @@ public class AssetServiceImpl implements AssetService {
                 metrics.avgCostPerDay,
                 metrics.lastNetIncome,
                 purchases.stream().map(this::toPurchaseDTO).toList(),
-                sales.stream().map(this::toSaleDTO).toList()
+                sales.stream().map(sale -> toSaleDTO(sale, asset, purchases)).toList()
         );
     }
 
@@ -213,48 +213,15 @@ public class AssetServiceImpl implements AssetService {
             throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "资产状态不允许售出");
         }
         Map<Long, DictPlatform> platformCache = new HashMap<>();
-        DictPlatform salePlatform = resolvePlatform(request.getPlatformId(), platformCache);
         Sale sale = new Sale();
         sale.setAssetId(id);
-        sale.setSaleScope(saleScope.name());
-        if (saleScope == SaleScope.ACCESSORY) {
-            Long purchaseId = request.getPurchaseId();
-            if (purchaseId == null) {
-                throw new BizException(ErrorCode.VALIDATION_ERROR, "配件出售需要选择购买记录");
-            }
-            Purchase purchase = Optional.ofNullable(purchaseMapper.findById(purchaseId))
-                    .orElseThrow(() -> new BizException(ErrorCode.PURCHASE_NOT_FOUND));
-            if (!Objects.equals(purchase.getAssetId(), id)) {
-                throw new BizException(ErrorCode.VALIDATION_ERROR, "购买记录不属于该资产");
-            }
-            if (!"ACCESSORY".equalsIgnoreCase(purchase.getType())) {
-                throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持出售配件类型的购买记录");
-            }
-            sale.setPurchaseId(purchase.getId());
-        }
-        if (salePlatform != null) {
-            sale.setPlatformId(salePlatform.getId());
-            sale.setPlatformName(salePlatform.getName());
-        }
-        sale.setBuyer(request.getBuyer());
-        sale.setSalePrice(request.getSalePrice());
-        sale.setFee(defaultZero(request.getFee()));
-        sale.setShippingCost(defaultZero(request.getShippingCost()));
-        sale.setOtherCost(defaultZero(request.getOtherCost()));
-        sale.setNetIncome(request.getSalePrice()
-                .subtract(defaultZero(request.getFee()))
-                .subtract(defaultZero(request.getShippingCost()))
-                .subtract(defaultZero(request.getOtherCost())));
-        sale.setSaleDate(request.getSaleDate());
-        sale.setAttachments(toJson(request.getAttachments()));
-        sale.setNotes(request.getNotes());
+        applySaleRequest(asset, request, platformCache, sale);
         saleMapper.insert(sale);
-        if (saleScope == SaleScope.ASSET) {
-            asset.setStatus("已出售");
-            asset.setRetiredDate(request.getSaleDate());
-            assetMapper.update(asset);
-        }
-        return toSaleDTO(saleMapper.findLatestByAsset(id));
+        syncAssetStatusBySales(asset);
+        List<Purchase> purchases = purchaseMapper.findByAssetId(id);
+        Sale saved = saleMapper.findById(sale.getId());
+        DeviceAsset latestAsset = assetMapper.findById(id);
+        return toSaleDTO(saved, latestAsset, purchases);
     }
 
     @Override
@@ -266,6 +233,51 @@ public class AssetServiceImpl implements AssetService {
         Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
         assetMapper.updateStatus(id, status);
+    }
+
+    @Override
+    @Transactional
+    public SaleDTO updateSale(Long assetId, Long saleId, AssetSellRequest request) {
+        DeviceAsset asset = Optional.ofNullable(assetMapper.findById(assetId))
+                .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        Sale existing = Optional.ofNullable(saleMapper.findById(saleId))
+                .orElseThrow(() -> new BizException(ErrorCode.SALE_NOT_FOUND));
+        if (!Objects.equals(existing.getAssetId(), assetId)) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "售出记录不属于当前资产");
+        }
+        SaleScope saleScope = Optional.ofNullable(request.getSaleScope()).orElse(SaleScope.ASSET);
+        List<String> allowedStatuses = List.of("待出售", "已闲置", "使用中", "已出售");
+        if (saleScope == SaleScope.ASSET && !allowedStatuses.contains(asset.getStatus())) {
+            throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "当前状态不可编辑为整机售出");
+        }
+        LocalDate enabledDate = Optional.ofNullable(asset.getEnabledDate())
+                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate()));
+        if (request.getSaleDate().isBefore(enabledDate)) {
+            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于启用日期");
+        }
+        Map<Long, DictPlatform> platformCache = new HashMap<>();
+        applySaleRequest(asset, request, platformCache, existing);
+        existing.setId(saleId);
+        saleMapper.update(existing);
+        syncAssetStatusBySales(asset);
+        List<Purchase> purchases = purchaseMapper.findByAssetId(assetId);
+        Sale saved = saleMapper.findById(saleId);
+        DeviceAsset latestAsset = assetMapper.findById(assetId);
+        return toSaleDTO(saved, latestAsset, purchases);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSale(Long assetId, Long saleId) {
+        DeviceAsset asset = Optional.ofNullable(assetMapper.findById(assetId))
+                .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        Sale existing = Optional.ofNullable(saleMapper.findById(saleId))
+                .orElseThrow(() -> new BizException(ErrorCode.SALE_NOT_FOUND));
+        if (!Objects.equals(existing.getAssetId(), assetId)) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "售出记录不属于当前资产");
+        }
+        saleMapper.deleteById(saleId);
+        syncAssetStatusBySales(asset);
     }
 
     private void validateDates(AssetCreateRequest request) {
@@ -342,6 +354,7 @@ public class AssetServiceImpl implements AssetService {
             purchase.setInvoiceNo("");
             purchase.setWarrantyMonths(request.getWarrantyMonths());
             purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
+            purchase.setProductLink(request.getProductLink());
             purchase.setAttachments(toJson(request.getAttachments()));
             purchase.setNotes(request.getNotes());
             purchaseMapper.insert(purchase);
@@ -391,9 +404,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     private AssetMetrics calculateMetrics(DeviceAsset asset, List<Purchase> purchases, List<Sale> sales) {
-        BigDecimal totalInvest = purchases.stream()
-                .map(p -> p.getPrice().add(Optional.ofNullable(p.getShippingCost()).orElse(BigDecimal.ZERO)))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInvest = calculateTotalInvest(purchases);
         long useDays = calculateUseDays(asset, sales);
         BigDecimal avgCost = useDays == 0 ? BigDecimal.ZERO : totalInvest
                 .divide(BigDecimal.valueOf(useDays), 2, RoundingMode.HALF_UP);
@@ -403,16 +414,141 @@ public class AssetServiceImpl implements AssetService {
     }
 
     private long calculateUseDays(DeviceAsset asset, List<Sale> sales) {
-        LocalDate start = Optional.ofNullable(asset.getEnabledDate())
-                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(LocalDate.now()));
-        LocalDate end = switch (asset.getStatus()) {
-            case "已出售" -> sales.stream().max(Comparator.comparing(Sale::getSaleDate))
-                    .map(Sale::getSaleDate).orElse(LocalDate.now());
-            case "已丢弃" -> Optional.ofNullable(asset.getRetiredDate()).orElse(LocalDate.now());
-            default -> LocalDate.now();
-        };
+        LocalDate start = resolveUsageStart(asset);
+        LocalDate end = resolveUsageEnd(asset, sales);
         long days = ChronoUnit.DAYS.between(start, end);
         return Math.max(days, 1);
+    }
+
+    private LocalDate resolveUsageStart(DeviceAsset asset) {
+        return Optional.ofNullable(asset.getEnabledDate())
+                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(LocalDate.now()));
+    }
+
+    private LocalDate resolveUsageEnd(DeviceAsset asset, List<Sale> sales) {
+        Optional<LocalDate> latestSale = latestAssetSaleDate(sales);
+        if (latestSale.isPresent()) {
+            return latestSale.get();
+        }
+        if ("已出售".equals(asset.getStatus())) {
+            return Optional.ofNullable(asset.getRetiredDate()).orElse(LocalDate.now());
+        }
+        if ("已丢弃".equals(asset.getStatus())) {
+            return Optional.ofNullable(asset.getRetiredDate()).orElse(LocalDate.now());
+        }
+        return LocalDate.now();
+    }
+
+    private Optional<LocalDate> latestAssetSaleDate(List<Sale> sales) {
+        if (sales == null || sales.isEmpty()) {
+            return Optional.empty();
+        }
+        return sales.stream()
+                .filter(sale -> SaleScope.ASSET.name().equalsIgnoreCase(sale.getSaleScope()))
+                .max(Comparator.comparing(Sale::getSaleDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(Sale::getSaleDate);
+    }
+
+    private long calculateUseDaysForSale(DeviceAsset asset, Sale sale) {
+        LocalDate start = resolveUsageStart(asset);
+        LocalDate saleDate = Optional.ofNullable(sale.getSaleDate()).orElse(LocalDate.now());
+        long days = ChronoUnit.DAYS.between(start, saleDate);
+        return Math.max(days, 1);
+    }
+
+    private BigDecimal calculateTotalInvest(List<Purchase> purchases) {
+        if (purchases == null || purchases.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return purchases.stream()
+                .map(this::calculatePurchaseCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal calculatePurchaseCost(Purchase purchase) {
+        if (purchase == null) {
+            return BigDecimal.ZERO;
+        }
+        return purchase.getPrice().add(Optional.ofNullable(purchase.getShippingCost()).orElse(BigDecimal.ZERO));
+    }
+
+    private BigDecimal resolveSaleCost(Sale sale, List<Purchase> purchases) {
+        SaleScope saleScope = parseSaleScope(sale);
+        if (saleScope == SaleScope.ACCESSORY && sale.getPurchaseId() != null) {
+            return purchases.stream()
+                    .filter(p -> Objects.equals(p.getId(), sale.getPurchaseId()))
+                    .findFirst()
+                    .map(this::calculatePurchaseCost)
+                    .orElse(BigDecimal.ZERO);
+        }
+        return calculateTotalInvest(purchases);
+    }
+
+    private SaleScope parseSaleScope(Sale sale) {
+        return Optional.ofNullable(sale.getSaleScope())
+                .map(scope -> {
+                    try {
+                        return SaleScope.valueOf(scope);
+                    } catch (IllegalArgumentException ex) {
+                        return SaleScope.ASSET;
+                    }
+                })
+                .orElse(SaleScope.ASSET);
+    }
+
+    private void applySaleRequest(DeviceAsset asset, AssetSellRequest request,
+                                  Map<Long, DictPlatform> platformCache, Sale sale) {
+        SaleScope saleScope = Optional.ofNullable(request.getSaleScope()).orElse(SaleScope.ASSET);
+        sale.setSaleScope(saleScope.name());
+        if (saleScope == SaleScope.ACCESSORY) {
+            Long purchaseId = request.getPurchaseId();
+            if (purchaseId == null) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "配件出售需要选择购买记录");
+            }
+            Purchase purchase = Optional.ofNullable(purchaseMapper.findById(purchaseId))
+                    .orElseThrow(() -> new BizException(ErrorCode.PURCHASE_NOT_FOUND));
+            if (!Objects.equals(purchase.getAssetId(), asset.getId())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "购买记录不属于该资产");
+            }
+            if (!"ACCESSORY".equalsIgnoreCase(purchase.getType())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持出售配件类型的购买记录");
+            }
+            sale.setPurchaseId(purchase.getId());
+        } else {
+            sale.setPurchaseId(null);
+        }
+        DictPlatform salePlatform = resolvePlatform(request.getPlatformId(), platformCache);
+        if (salePlatform != null) {
+            sale.setPlatformId(salePlatform.getId());
+            sale.setPlatformName(salePlatform.getName());
+        } else {
+            sale.setPlatformId(null);
+            sale.setPlatformName(null);
+        }
+        sale.setBuyer(request.getBuyer());
+        sale.setSalePrice(request.getSalePrice());
+        sale.setFee(defaultZero(request.getFee()));
+        sale.setShippingCost(defaultZero(request.getShippingCost()));
+        sale.setOtherCost(defaultZero(request.getOtherCost()));
+        sale.setNetIncome(request.getSalePrice()
+                .subtract(defaultZero(request.getFee()))
+                .subtract(defaultZero(request.getShippingCost()))
+                .subtract(defaultZero(request.getOtherCost())));
+        sale.setSaleDate(request.getSaleDate());
+        sale.setAttachments(toJson(request.getAttachments()));
+        sale.setNotes(request.getNotes());
+    }
+
+    private void syncAssetStatusBySales(DeviceAsset asset) {
+        List<Sale> sales = saleMapper.findByAssetId(asset.getId());
+        Optional<LocalDate> latestSale = latestAssetSaleDate(sales);
+        if (latestSale.isPresent()) {
+            assetMapper.updateStatusAndRetiredDate(asset.getId(), "已出售", latestSale.get());
+            return;
+        }
+        if ("已出售".equals(asset.getStatus())) {
+            assetMapper.updateStatusAndRetiredDate(asset.getId(), "使用中", null);
+        }
     }
 
     private List<String> parseStringList(String jsonArray) {
@@ -457,24 +593,29 @@ public class AssetServiceImpl implements AssetService {
                 purchase.getPurchaseDate(),
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
+                purchase.getProductLink(),
                 storagePathHelper.toFullUrls(parseStringList(purchase.getAttachments())),
                 purchase.getNotes()
         );
     }
 
-    private SaleDTO toSaleDTO(Sale sale) {
+    private SaleDTO toSaleDTO(Sale sale, DeviceAsset asset, List<Purchase> purchases) {
         if (sale == null) {
             return null;
         }
-        SaleScope saleScope = Optional.ofNullable(sale.getSaleScope())
-                .map(scope -> {
-                    try {
-                        return SaleScope.valueOf(scope);
-                    } catch (IllegalArgumentException ex) {
-                        return SaleScope.ASSET;
-                    }
-                })
-                .orElse(SaleScope.ASSET);
+        SaleScope saleScope = parseSaleScope(sale);
+        long useDays = calculateUseDaysForSale(asset, sale);
+        BigDecimal salePrice = Optional.ofNullable(sale.getSalePrice()).orElse(BigDecimal.ZERO);
+        BigDecimal lossAmount = resolveSaleCost(sale, purchases)
+                .subtract(salePrice)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal dailyUsageCost = useDays == 0
+                ? BigDecimal.ZERO
+                : lossAmount.divide(BigDecimal.valueOf(useDays), 2, RoundingMode.HALF_UP);
+        BigDecimal monthlyUsageCost = useDays == 0
+                ? BigDecimal.ZERO
+                : lossAmount.multiply(BigDecimal.valueOf(30))
+                .divide(BigDecimal.valueOf(useDays), 2, RoundingMode.HALF_UP);
         return new SaleDTO(
                 sale.getId(),
                 saleScope,
@@ -488,6 +629,10 @@ public class AssetServiceImpl implements AssetService {
                 sale.getOtherCost(),
                 sale.getNetIncome(),
                 sale.getSaleDate(),
+                useDays,
+                lossAmount,
+                dailyUsageCost,
+                monthlyUsageCost,
                 storagePathHelper.toFullUrls(parseStringList(sale.getAttachments())),
                 sale.getNotes()
         );

@@ -25,6 +25,7 @@ public record WishlistDTO(
         Integer priority,
         List<TagDTO> tags,
         Long convertedAssetId,
+        List<WishlistAssetRefDTO> relatedAssets,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

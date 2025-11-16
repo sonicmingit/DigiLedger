@@ -42,6 +42,9 @@
       <el-form-item label="卖家">
         <el-input v-model="form.seller" />
       </el-form-item>
+      <el-form-item label="商品链接">
+        <el-input v-model="form.productLink" placeholder="可填写购买页面链接" />
+      </el-form-item>
       <el-form-item label="质保（月）">
         <el-input-number v-model="form.warrantyMonths" :min="0" :step="1" @change="syncWarranty" />
       </el-form-item>
@@ -107,7 +110,7 @@ import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import type { PurchaseRecord } from '@/types'
-import { buildOssUrl, extractObjectKey } from '@/utils/storage'
+import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 import { calcWarrantyExpireDate } from '@/utils/date'
 
 const emit = defineEmits<{
@@ -130,6 +133,7 @@ const form = reactive({
   quantity: 1,
   purchaseDate: new Date().toISOString().slice(0, 10),
   seller: '',
+  productLink: '',
   warrantyMonths: undefined as number | undefined,
   warrantyExpireDate: '',
   notes: '',
@@ -188,6 +192,7 @@ const open = async (purchase?: PurchaseRecord) => {
     form.quantity = purchase.quantity
     form.purchaseDate = purchase.purchaseDate
     form.seller = purchase.seller || ''
+    form.productLink = purchase.productLink || ''
     form.warrantyMonths = purchase.warrantyMonths || undefined
     form.warrantyExpireDate = purchase.warrantyExpireDate || ''
     form.notes = purchase.notes || ''
@@ -211,6 +216,7 @@ const reset = () => {
   form.quantity = 1
   form.purchaseDate = new Date().toISOString().slice(0, 10)
   form.seller = ''
+  form.productLink = ''
   form.warrantyMonths = undefined
   form.warrantyExpireDate = ''
   form.notes = ''
@@ -228,7 +234,7 @@ const submit = () => {
   formRef.value?.validate((valid) => {
     if (!valid) return
     loading.value = true
-    emit('submit', { ...form, attachments: [...form.attachments] })
+    emit('submit', { ...form, attachments: extractObjectKeys(form.attachments) })
   })
 }
 
@@ -243,10 +249,12 @@ const close = () => {
 const uploadAttachment = async (options: UploadRequestOptions) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    const stored = objectKey || extractObjectKey(url) || url
-    form.attachments.push(stored)
+    const stored = url || objectKey || extractObjectKey(url)
+    if (stored) {
+      form.attachments.push(stored)
+    }
     ElMessage.success('附件上传成功')
-    options.onSuccess(objectKey)
+    options.onSuccess?.(objectKey)
   } catch (error: any) {
     options.onError(error)
     ElMessage.error(error?.message || '附件上传失败')

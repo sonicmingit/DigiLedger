@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="出售向导" width="500px" @closed="reset">
+  <el-dialog v-model="visible" :title="dialogTitle" width="520px" @closed="reset">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="出售范围" prop="saleScope">
         <el-radio-group v-model="form.saleScope">
@@ -54,27 +54,50 @@
       <el-form-item label="备注" prop="notes">
         <el-input v-model="form.notes" type="textarea" rows="3" placeholder="可记录交易说明" />
       </el-form-item>
+      <el-form-item label="附件">
+        <div class="attachments">
+          <el-upload :http-request="uploadAttachment" :show-file-list="false" multiple>
+            <el-button text type="primary">上传附件</el-button>
+          </el-upload>
+          <div v-for="(item, index) in form.attachments" :key="`${item}-${index}`" class="attachment">
+            <el-image
+              v-if="isImage(item)"
+              :src="resolveOssUrl(item)"
+              fit="cover"
+              :preview-src-list="[resolveOssUrl(item)]"
+              class="attachment-image"
+            />
+            <el-link v-else :href="resolveOssUrl(item)" target="_blank" type="primary">附件{{ index + 1 }}</el-link>
+            <el-button text type="danger" size="small" @click="removeAttachment(index)">删除</el-button>
+          </div>
+        </div>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="loading" @click="submit">确认出售</el-button>
+      <el-button type="primary" :loading="loading" @click="submit">
+        {{ isEdit ? '保存' : '确认出售' }}
+      </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
-import { fetchAssetDetail, sellAsset } from '@/api/asset'
+import { computed, ref, reactive, onMounted, watch } from 'vue'
+import { fetchAssetDetail, sellAsset, updateSale } from '@/api/asset'
 import { ElMessage } from 'element-plus'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
-import type { PurchaseRecord } from '@/types'
+import type { PurchaseRecord, SaleRecord } from '@/types'
+import { uploadFile } from '@/api/file'
+import { buildOssUrl, extractObjectKeys } from '@/utils/storage'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
 
 const visible = ref(false)
 const assetInfo = ref<{ id: number; name: string } | null>(null)
+const editingSaleId = ref<number | null>(null)
 const loading = ref(false)
 
 const { load: loadDicts, platforms } = useDictionaries()
@@ -90,10 +113,14 @@ const form = reactive({
   shippingCost: 0,
   otherCost: 0,
   saleDate: '',
-  notes: ''
+  notes: '',
+  attachments: [] as string[]
 })
 
 const formRef = ref<FormInstance>()
+
+const isEdit = computed(() => editingSaleId.value !== null)
+const dialogTitle = computed(() => (isEdit.value ? '编辑售出记录' : '出售向导'))
 
 const rules = {
   saleScope: [{ required: true, message: '请选择出售范围', trigger: 'change' }],
@@ -126,10 +153,29 @@ const loadAccessoryPurchases = async (assetId: number) => {
   }
 }
 
-const open = (asset: { id: number; name: string }) => {
+const fillFormFromSale = (sale: SaleRecord) => {
+  form.platformId = sale.platformId
+  form.saleScope = sale.saleScope
+  form.purchaseId = sale.purchaseId
+  form.buyer = sale.buyer || ''
+  form.salePrice = sale.salePrice
+  form.fee = sale.fee
+  form.shippingCost = sale.shippingCost
+  form.otherCost = sale.otherCost
+  form.saleDate = sale.saleDate
+  form.notes = sale.notes || ''
+  form.attachments = Array.isArray(sale.attachments) ? [...sale.attachments] : []
+}
+
+const open = (asset: { id: number; name: string }, sale?: SaleRecord) => {
   assetInfo.value = asset
   visible.value = true
   accessoryPurchases.value = []
+  reset()
+  if (sale) {
+    editingSaleId.value = sale.id
+    fillFormFromSale(sale)
+  }
   if (asset.id) {
     void loadAccessoryPurchases(asset.id)
   }
@@ -146,9 +192,11 @@ const reset = () => {
     shippingCost: 0,
     otherCost: 0,
     saleDate: '',
-    notes: ''
+    notes: '',
+    attachments: [] as string[]
   })
   accessoryPurchases.value = []
+  editingSaleId.value = null
   formRef.value?.clearValidate()
 }
 
@@ -162,8 +210,14 @@ const submit = () => {
     if (!valid) return
     loading.value = true
     try {
-      await sellAsset(assetInfo.value!.id, { ...form })
-      ElMessage.success('售出成功')
+      const payload = { ...form, attachments: extractObjectKeys(form.attachments) }
+      if (editingSaleId.value) {
+        await updateSale(assetInfo.value!.id, editingSaleId.value, payload)
+        ElMessage.success('售出记录已更新')
+      } else {
+        await sellAsset(assetInfo.value!.id, payload)
+        ElMessage.success('售出成功')
+      }
       visible.value = false
       emit('success')
     } finally {
@@ -202,6 +256,33 @@ watch(
     }
   }
 )
+
+const uploadAttachment = async (options: UploadRequestOptions) => {
+  try {
+    const { objectKey, url } = await uploadFile(options.file)
+    const stored = url || objectKey
+    if (stored) {
+      form.attachments.push(stored)
+    }
+    ElMessage.success('附件上传成功')
+    options.onSuccess?.(objectKey)
+  } catch (error: any) {
+    options.onError?.(error)
+    ElMessage.error(error?.message || '附件上传失败')
+  }
+}
+
+const removeAttachment = (index: number) => {
+  form.attachments.splice(index, 1)
+}
+
+const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
+
+const isImage = (value: string) => {
+  const text = (value || '').toLowerCase()
+  const pure = text.split('?')[0]
+  return /(\.png|\.jpe?g|\.gif|\.bmp|\.webp|\.svg)$/.test(pure)
+}
 </script>
 
 <style scoped>
@@ -213,5 +294,26 @@ watch(
 
 .inline-action {
   padding: 0 6px;
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.attachment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.attachment-image {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 </style>

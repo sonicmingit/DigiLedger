@@ -22,6 +22,10 @@ public record SaleDTO(
         BigDecimal otherCost,
         BigDecimal netIncome,
         LocalDate saleDate,
+        Long useDays,
+        BigDecimal lossAmount,
+        BigDecimal dailyUsageCost,
+        BigDecimal monthlyUsageCost,
         List<String> attachments,
         String notes
 ) {
