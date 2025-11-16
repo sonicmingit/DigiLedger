@@ -51,6 +51,7 @@ export interface PurchaseRecord {
   purchaseDate: string
   warrantyMonths?: number
   warrantyExpireDate?: string
+  productLink?: string
   attachments: string[]
   notes?: string
 }
@@ -69,8 +70,18 @@ export interface SaleRecord {
   otherCost: number
   netIncome: number
   saleDate: string
+  useDays: number
+  lossAmount: number
+  dailyUsageCost: number
+  monthlyUsageCost: number
   attachments: string[]
   notes?: string
+}
+
+export interface WishlistAssetRef {
+  assetId: number
+  assetName?: string | null
+  available: boolean
 }
 
 // 物品详情
@@ -102,6 +113,7 @@ export interface WishlistItem {
   imageUrl?: string
   tags?: TagItem[]
   convertedAssetId?: number
+  relatedAssets?: WishlistAssetRef[]
   createdAt: string
   updatedAt: string
 }

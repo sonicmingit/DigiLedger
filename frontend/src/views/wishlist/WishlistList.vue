@@ -399,7 +399,7 @@ const submit = () => {
         notes: form.notes || undefined,
         priority: form.priority,
         status: form.status,
-        imageUrl: form.imageKey || undefined,
+        imageUrl: extractObjectKey(form.imageKey) || form.imageKey || undefined,
         tagIds: form.tagIds
       }
       if (current.value) {
@@ -474,7 +474,7 @@ const goToAssetDetail = (assetId: number) => {
 const handleUpload = async (options: any) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    form.imageKey = objectKey || extractObjectKey(url) || url
+    form.imageKey = url || objectKey || extractObjectKey(url) || ''
     ElMessage.success('上传成功')
     options.onSuccess(objectKey)
   } catch (error: any) {

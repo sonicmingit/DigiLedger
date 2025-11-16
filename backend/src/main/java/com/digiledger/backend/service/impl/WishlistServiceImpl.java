@@ -2,6 +2,7 @@ package com.digiledger.backend.service.impl;
 
 import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
+import com.digiledger.backend.mapper.AssetMapper;
 import com.digiledger.backend.mapper.DictBrandMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
@@ -9,8 +10,10 @@ import com.digiledger.backend.mapper.WishlistMapper;
 import com.digiledger.backend.mapper.WishlistTagMapMapper;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.asset.TagDTO;
+import com.digiledger.backend.model.dto.wishlist.WishlistAssetRefDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistRequest;
+import com.digiledger.backend.model.entity.DeviceAsset;
 import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.WishlistItem;
@@ -49,6 +52,7 @@ public class WishlistServiceImpl implements WishlistService {
     private final DictCategoryMapper dictCategoryMapper;
     private final DictBrandMapper dictBrandMapper;
     private final DictTagMapper dictTagMapper;
+    private final AssetMapper assetMapper;
     private final WishlistTagMapMapper wishlistTagMapMapper;
     private final AssetService assetService;
     private final StoragePathHelper storagePathHelper;
@@ -59,7 +63,8 @@ public class WishlistServiceImpl implements WishlistService {
                                DictTagMapper dictTagMapper,
                                WishlistTagMapMapper wishlistTagMapMapper,
                                AssetService assetService,
-                               StoragePathHelper storagePathHelper) {
+                               StoragePathHelper storagePathHelper,
+                               AssetMapper assetMapper) {
         this.wishlistMapper = wishlistMapper;
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictBrandMapper = dictBrandMapper;
@@ -67,6 +72,7 @@ public class WishlistServiceImpl implements WishlistService {
         this.wishlistTagMapMapper = wishlistTagMapMapper;
         this.assetService = assetService;
         this.storagePathHelper = storagePathHelper;
+        this.assetMapper = assetMapper;
     }
 
     @Override
@@ -77,6 +83,10 @@ public class WishlistServiceImpl implements WishlistService {
             return List.of();
         }
         Map<Long, DictCategory> categoryMap = loadCategoryMap();
+        Map<Long, DeviceAsset> assetCache = loadAssetMap(items.stream()
+                .map(WishlistItem::getConvertedAssetId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
         Map<Long, String> brandNameCache = new HashMap<>();
         Map<Long, List<Long>> tagIdMap = loadWishlistTagIds(items.stream()
                 .map(WishlistItem::getId)
@@ -87,7 +97,8 @@ public class WishlistServiceImpl implements WishlistService {
                         item,
                         resolveBrandName(item.getBrandId(), brandNameCache),
                         resolveCategoryName(item.getCategoryId(), categoryMap),
-                        toTagDTOs(tagIdMap.get(item.getId()), tagCache)))
+                        toTagDTOs(tagIdMap.get(item.getId()), tagCache),
+                        resolveAssetRefs(item, assetCache)))
                 .collect(Collectors.toList());
     }
 
@@ -98,11 +109,15 @@ public class WishlistServiceImpl implements WishlistService {
         Map<Long, DictCategory> categoryMap = loadCategoryMap();
         Map<Long, List<Long>> tagIdMap = loadWishlistTagIds(List.of(item.getId()));
         Map<Long, DictTag> tagCache = loadTagCache(tagIdMap.values());
+        Map<Long, DeviceAsset> assetCache = loadAssetMap(item.getConvertedAssetId() == null
+                ? List.of()
+                : List.of(item.getConvertedAssetId()));
         return toDto(
                 item,
                 resolveBrandName(item.getBrandId(), new HashMap<>()),
                 resolveCategoryName(item.getCategoryId(), categoryMap),
-                toTagDTOs(tagIdMap.get(item.getId()), tagCache));
+                toTagDTOs(tagIdMap.get(item.getId()), tagCache),
+                resolveAssetRefs(item, assetCache));
     }
 
     @Override
@@ -208,7 +223,8 @@ public class WishlistServiceImpl implements WishlistService {
         }
     }
 
-    private WishlistDTO toDto(WishlistItem item, String brandName, String categoryName, List<TagDTO> tags) {
+    private WishlistDTO toDto(WishlistItem item, String brandName, String categoryName,
+                              List<TagDTO> tags, List<WishlistAssetRefDTO> relatedAssets) {
         return new WishlistDTO(
                 item.getId(),
                 item.getName(),
@@ -225,9 +241,33 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getPriority(),
                 tags,
                 item.getConvertedAssetId(),
+                relatedAssets,
                 item.getCreatedAt(),
                 item.getUpdatedAt()
         );
+    }
+
+    private Map<Long, DeviceAsset> loadAssetMap(List<Long> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return Map.of();
+        }
+        List<DeviceAsset> assets = assetMapper.findByIds(assetIds);
+        if (assets == null || assets.isEmpty()) {
+            return Map.of();
+        }
+        return assets.stream().collect(Collectors.toMap(DeviceAsset::getId, asset -> asset));
+    }
+
+    private List<WishlistAssetRefDTO> resolveAssetRefs(WishlistItem item, Map<Long, DeviceAsset> assetCache) {
+        Long assetId = item.getConvertedAssetId();
+        if (assetId == null) {
+            return List.of();
+        }
+        DeviceAsset asset = assetCache.get(assetId);
+        if (asset == null) {
+            return List.of(new WishlistAssetRefDTO(assetId, null, false));
+        }
+        return List.of(new WishlistAssetRefDTO(asset.getId(), asset.getName(), true));
     }
 
     private String resolveBrandName(Long brandId, Map<Long, String> cache) {
