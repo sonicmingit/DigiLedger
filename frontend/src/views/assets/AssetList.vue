@@ -140,15 +140,15 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
             <el-button link @click="openEdit(row.id)">编辑</el-button>
-            <el-button link type="success" @click="openSell(row)">出售</el-button>
+            <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
             <el-dropdown
+              v-if="row.status !== '已出售'"
               trigger="click"
               :hide-on-click="true"
-              :disabled="row.status === '已出售'"
               @command="(value) => handleStatusCommand(row, value as AssetStatus)"
             >
               <span class="status-action">
-                <el-button link type="warning" :disabled="row.status === '已出售'">修改状态</el-button>
+                <el-button link type="warning">修改状态</el-button>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -187,15 +187,21 @@
           <template #actions>
             <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
             <el-button text size="small" @click.stop="openEdit(item.id)">编辑</el-button>
-            <el-button text size="small" type="success" @click.stop="openSell(item)">出售</el-button>
+            <el-button
+              v-if="item.status !== '已出售'"
+              text
+              size="small"
+              type="success"
+              @click.stop="openSell(item)"
+            >出售</el-button>
             <el-dropdown
+              v-if="item.status !== '已出售'"
               trigger="click"
               :hide-on-click="true"
-              :disabled="item.status === '已出售'"
               @command="(value) => handleStatusCommand(item, value as AssetStatus)"
             >
               <span class="status-action">
-                <el-button text size="small" type="warning" :disabled="item.status === '已出售'">修改状态</el-button>
+                <el-button text size="small" type="warning">修改状态</el-button>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -450,6 +456,10 @@ const openEdit = async (id: number) => {
 }
 
 const openSell = (asset: AssetSummary) => {
+  if (asset.status === '已出售') {
+    ElMessage.warning('已出售的物品不可重复出售')
+    return
+  }
   sellDialog.value?.open({ id: asset.id, name: asset.name })
 }
 
