@@ -588,8 +588,10 @@ const handlePurchaseTypeChange = (purchase: any) => {
 const handleUpload = async (options: UploadRequestOptions) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    const stored = objectKey || extractObjectKey(url) || url
-    form.coverImageKey = stored
+    const stored = url || objectKey || extractObjectKey(url)
+    if (stored) {
+      form.coverImageKey = stored
+    }
     coverProgress.value = 100
     ElMessage.success('上传成功')
     options.onSuccess(objectKey)
@@ -603,8 +605,10 @@ const handleUpload = async (options: UploadRequestOptions) => {
 const uploadAttachment = async (options: UploadRequestOptions, purchase: any) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
-    const stored = objectKey || extractObjectKey(url) || url
-    purchase.attachments.push(stored)
+    const stored = url || objectKey || extractObjectKey(url)
+    if (stored) {
+      purchase.attachments.push(stored)
+    }
     ElMessage.success('附件上传成功')
     options.onSuccess(objectKey)
   } catch (err: any) {

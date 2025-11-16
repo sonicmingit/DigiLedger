@@ -95,6 +95,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         purchase.setInvoiceNo("");
         purchase.setWarrantyMonths(request.getWarrantyMonths());
         purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
+        purchase.setProductLink(request.getProductLink());
         purchase.setAttachments(toJson(request.getAttachments()));
         purchase.setNotes(request.getNotes());
         return purchase;

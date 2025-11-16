@@ -19,6 +19,7 @@
         <result column="invoice_no" property="invoiceNo" />
         <result column="warranty_months" property="warrantyMonths" />
         <result column="warranty_expire_date" property="warrantyExpireDate" />
+        <result column="product_link" property="productLink" />
         <result column="attachments" property="attachments" />
         <result column="notes" property="notes" />
         <result column="created_at" property="createdAt" />
@@ -43,11 +44,11 @@
         INSERT INTO purchase (
             asset_id, type, name, platform_id, platform_name, seller, price, currency, quantity,
             shipping_cost, purchase_date, invoice_no, warranty_months,
-            warranty_expire_date, attachments, notes
+            warranty_expire_date, product_link, attachments, notes
         ) VALUES (
             #{assetId}, #{type}, #{name}, #{platformId}, #{platformName}, #{seller}, #{price}, #{currency}, #{quantity},
             #{shippingCost}, #{purchaseDate}, #{invoiceNo}, #{warrantyMonths},
-            #{warrantyExpireDate}, #{attachments}, #{notes}
+            #{warrantyExpireDate}, #{productLink}, #{attachments}, #{notes}
         )
     </insert>
 
@@ -66,6 +67,7 @@
             invoice_no = #{invoiceNo},
             warranty_months = #{warrantyMonths},
             warranty_expire_date = #{warrantyExpireDate},
+            product_link = #{productLink},
             attachments = #{attachments},
             notes = #{notes},
             updated_at = CURRENT_TIMESTAMP
