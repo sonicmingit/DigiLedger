@@ -92,27 +92,37 @@
           <el-input v-model="form.name" />
         </el-form-item>
         <el-form-item label="类别">
-          <el-tree-select
-            v-model="form.categoryId"
-            :data="categoryOptions"
-            :props="treeProps"
-            filterable
-            check-strictly
-            clearable
-            placeholder="选择类别"
-            class="w-full"
-          />
+          <div class="selector-with-action">
+            <el-tree-select
+              v-model="form.categoryId"
+              :data="categoryOptions"
+              :props="treeProps"
+              filterable
+              check-strictly
+              clearable
+              placeholder="选择类别"
+              class="w-full"
+            />
+            <el-button class="inline-action" text size="small" type="primary" @click="openCategoryDialog">
+              新建
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="品牌">
-          <el-select
-            v-model="form.brandId"
-            filterable
-            clearable
-            placeholder="选择品牌"
-            class="w-full"
-          >
-            <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
-          </el-select>
+          <div class="selector-with-action">
+            <el-select
+              v-model="form.brandId"
+              filterable
+              clearable
+              placeholder="选择品牌"
+              class="w-full"
+            >
+              <el-option v-for="item in brandOptions" :key="item.id" :label="item.label" :value="item.id" />
+            </el-select>
+            <el-button class="inline-action" text size="small" type="primary" @click="handleCreateBrand">
+              新建
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="型号">
           <el-input v-model="form.model" />
@@ -124,17 +134,22 @@
           <el-input v-model="form.link" placeholder="http(s)://" />
         </el-form-item>
         <el-form-item label="标签">
-          <el-tree-select
-            v-model="form.tagIds"
-            :data="tagOptions"
-            :props="treeProps"
-            multiple
-            show-checkbox
-            filterable
-            clearable
-            placeholder="选择标签"
-            class="w-full"
-          />
+          <div class="selector-with-action">
+            <el-tree-select
+              v-model="form.tagIds"
+              :data="tagOptions"
+              :props="treeProps"
+              multiple
+              show-checkbox
+              filterable
+              clearable
+              placeholder="选择标签"
+              class="w-full"
+            />
+            <el-button class="inline-action" text size="small" type="primary" @click="handleCreateTag">
+              新建
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="优先级">
           <el-select v-model="form.priority" placeholder="选择优先级">
@@ -158,6 +173,11 @@
     </el-dialog>
     <asset-form ref="assetFormRef" @success="handleAssetFormSuccess" />
     <wishlist-detail-drawer ref="detailDrawer" />
+    <category-create-dialog
+      v-model="categoryDialogVisible"
+      :default-parent-id="form.categoryId ?? null"
+      @success="handleCategoryCreated"
+    />
   </div>
 </template>
 
@@ -172,9 +192,11 @@ import type { WishlistItem } from '@/types'
 import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { buildOssUrl, extractObjectKey } from '@/utils/storage'
 import AssetForm from '@/views/assets/components/AssetForm.vue'
+import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const router = useRouter()
 
@@ -187,6 +209,7 @@ const current = ref<WishlistItem | null>(null)
 const formRef = ref<FormInstance>()
 const keyword = ref('')
 const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
+const categoryDialogVisible = ref(false)
 
 const form = reactive({
   name: '',
@@ -208,12 +231,31 @@ const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 }
 
+const openCategoryDialog = () => {
+  categoryDialogVisible.value = true
+}
+
+const handleCategoryCreated = (payload: { id: number }) => {
+  form.categoryId = payload.id
+}
+
 const brandOptions = computed(() =>
   brands.value.map((item) => ({
     id: item.id,
     label: ((item.alias && item.alias.trim()) || item.name || '').trim()
   }))
 )
+
+const handleCreateBrand = async () => {
+  try {
+    const result = await promptBrandCreation()
+    if (result) {
+      form.brandId = result.id
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建品牌失败')
+  }
+}
 
 const resolveWishlistBrand = (item: WishlistItem) => {
   // 兼容后端可能返回的 brand 字段（字符串）、brandName 或 brandId
@@ -252,6 +294,7 @@ const resolveCategoryName = (item: WishlistItem) => {
 }
 
 const { load: loadDicts, categoryTree, tagTree, brands, brandMap } = useDictionaries()
+const { promptBrandCreation, promptTagCreation } = useDictionaryCreator()
 
 const treeProps = {
   value: 'value',
@@ -430,13 +473,24 @@ const goToAssetDetail = (assetId: number) => {
 
 const handleUpload = async (options: any) => {
   try {
-    const { objectKey } = await uploadFile(options.file)
-    form.imageKey = objectKey
+    const { objectKey, url } = await uploadFile(options.file)
+    form.imageKey = objectKey || extractObjectKey(url) || url
     ElMessage.success('上传成功')
     options.onSuccess(objectKey)
   } catch (error: any) {
     ElMessage.error(error.message || '上传失败')
     options.onError(error)
+  }
+}
+
+const handleCreateTag = async () => {
+  try {
+    const result = await promptTagCreation()
+    if (result) {
+      form.tagIds = Array.from(new Set([...form.tagIds, result.id]))
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建标签失败')
   }
 }
 
@@ -483,6 +537,16 @@ onMounted(async () => {
   border-radius: 12px;
   margin-left: 12px;
   object-fit: cover;
+}
+
+.selector-with-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-action {
+  padding: 0 6px;
 }
 
 .image-placeholder {
