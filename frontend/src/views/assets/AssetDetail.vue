@@ -81,8 +81,15 @@
                 <template #default="{ row }">¥ {{ formatNumber(row.price) }}</template>
               </el-table-column>
               <el-table-column prop="purchaseDate" label="购买日期" width="120" />
-              <el-table-column label="操作" width="150">
+              <el-table-column label="操作" width="210">
                 <template #default="{ row }">
+                  <el-button
+                    v-if="row.attachments?.length"
+                    link
+                    type="info"
+                    @click="openAttachmentDialog(row)">
+                    附件 ({{ row.attachments.length }})
+                  </el-button>
                   <el-button link type="primary" @click="openEditPurchase(row)">编辑</el-button>
                   <el-button link type="danger" @click="confirmDeletePurchase(row)">删除</el-button>
                 </template>
@@ -135,11 +142,37 @@
     <asset-form ref="formRef" @success="reload" />
     <sell-dialog ref="sellDialog" @success="reload" />
     <purchase-editor-dialog ref="purchaseDialog" @submit="handlePurchaseSubmit" />
+    <el-dialog
+      v-model="attachmentDialog.visible"
+      :title="attachmentDialog.title"
+      width="560px"
+      @closed="attachmentDialog.items = []"
+    >
+      <div class="attachment-viewer" v-if="attachmentDialog.items.length">
+        <div
+          v-for="(item, index) in attachmentDialog.items"
+          :key="`${item}-${index}`"
+          class="attachment-item"
+        >
+          <el-image
+            v-if="isImageAttachment(item)"
+            :src="resolveOssUrl(item)"
+            :preview-src-list="attachmentPreviewList"
+            fit="cover"
+            class="attachment-image"
+          />
+          <el-link v-else :href="resolveOssUrl(item)" target="_blank" type="primary">
+            查看附件 {{ index + 1 }}
+          </el-link>
+        </div>
+      </div>
+      <el-empty v-else description="暂无附件" />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fetchAssetDetail, updateAsset } from '@/api/asset'
@@ -217,6 +250,35 @@ const openCreatePurchase = () => {
 
 const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
 
+const isImageAttachment = (value: string) => {
+  const text = (value || '').toLowerCase()
+  const pure = text.split('?')[0]
+  return /(\.png|\.jpe?g|\.gif|\.bmp|\.webp|\.svg)$/.test(pure)
+}
+
+const attachmentDialog = reactive({
+  visible: false,
+  title: '',
+  items: [] as string[]
+})
+
+const attachmentPreviewList = computed(() =>
+  attachmentDialog.items
+    .filter((item) => isImageAttachment(item))
+    .map((item) => resolveOssUrl(item))
+    .filter((url): url is string => !!url)
+)
+
+const openAttachmentDialog = (purchase: PurchaseRecord) => {
+  const name =
+    purchase.type === 'PRIMARY'
+      ? detail.value?.name || '主商品'
+      : purchase.name?.trim() || '购买记录'
+  attachmentDialog.title = `${name} · 附件`
+  attachmentDialog.items = Array.isArray(purchase.attachments) ? [...purchase.attachments] : []
+  attachmentDialog.visible = true
+}
+
 const openEditPurchase = (purchase: PurchaseRecord) => {
   purchaseDialog.value?.open(purchase)
 }
@@ -275,7 +337,12 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
   if (payload.id) {
     const index = purchases.findIndex((item) => item.id === payload.id)
     if (index >= 0) {
-      purchases[index] = { ...purchases[index], ...payload }
+      const previous = purchases[index]
+      purchases[index] = {
+        ...previous,
+        ...payload,
+        attachments: payload.attachments ? [...payload.attachments] : previous.attachments
+      }
     }
   } else {
     purchases.push({
@@ -291,7 +358,7 @@ const handlePurchaseSubmit = async (payload: Partial<PurchaseRecord>) => {
       purchaseDate: payload.purchaseDate!,
       warrantyMonths: payload.warrantyMonths,
       warrantyExpireDate: payload.warrantyExpireDate,
-      attachments: [],
+      attachments: payload.attachments ? [...payload.attachments] : [],
       notes: payload.notes
     })
   }
@@ -371,6 +438,27 @@ onMounted(async () => {
   margin-top: 16px;
   display: flex;
   gap: 12px;
+}
+
+.attachment-viewer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.attachment-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachment-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .mt {

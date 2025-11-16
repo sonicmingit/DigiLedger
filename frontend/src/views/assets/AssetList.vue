@@ -111,9 +111,7 @@
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-select v-model="row.status" size="small" @change="(value) => changeStatus(row, value)">
-              <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
-            </el-select>
+            <el-tag size="small">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="主商品价格" width="140">
@@ -138,11 +136,33 @@
             <span v-if="!row.tags.length">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="260">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
             <el-button link @click="openEdit(row.id)">编辑</el-button>
             <el-button link type="success" @click="openSell(row)">出售</el-button>
+            <el-dropdown
+              trigger="click"
+              :hide-on-click="true"
+              :disabled="row.status === '已出售'"
+              @command="(value) => handleStatusCommand(row, value as AssetStatus)"
+            >
+              <span class="status-action">
+                <el-button link type="warning" :disabled="row.status === '已出售'">修改状态</el-button>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="status in editableStatuses"
+                    :key="status"
+                    :command="status"
+                    :disabled="row.status === status"
+                  >
+                    {{ status }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
@@ -163,12 +183,33 @@
           @toggle-select="(value) => toggleSelection(item.id, value)"
           @view="viewDetail"
           @edit="openEdit"
-          @status-change="(status) => changeStatus(item, status)"
         >
           <template #actions>
             <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
             <el-button text size="small" @click.stop="openEdit(item.id)">编辑</el-button>
             <el-button text size="small" type="success" @click.stop="openSell(item)">出售</el-button>
+            <el-dropdown
+              trigger="click"
+              :hide-on-click="true"
+              :disabled="item.status === '已出售'"
+              @command="(value) => handleStatusCommand(item, value as AssetStatus)"
+            >
+              <span class="status-action">
+                <el-button text size="small" type="warning" :disabled="item.status === '已出售'">修改状态</el-button>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="status in editableStatuses"
+                    :key="status"
+                    :command="status"
+                    :disabled="item.status === status"
+                  >
+                    {{ status }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </asset-card>
       </div>
@@ -221,6 +262,7 @@ const filters = reactive({
 })
 
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
+const editableStatuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已丢弃']
 
 const resolveBrandText = (brand?: BrandInfo | null) => {
   const alias = brand?.alias?.trim()
@@ -448,39 +490,55 @@ const toggleSelection = (id: number, checked: boolean) => {
   }
 }
 
+const handleStatusCommand = (asset: AssetSummary, status: AssetStatus) => {
+  void changeStatus(asset, status)
+}
+
 const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
+  if (asset.status === '已出售') {
+    ElMessage.warning('已出售的物品不可修改状态')
+    return
+  }
+  if (status === '已出售') {
+    ElMessage.warning('请通过出售向导完成售出流程')
+    return
+  }
   if (asset.status === status) return
   const detail = await fetchAssetDetail(asset.id)
-  await updateAsset(asset.id, {
-    name: detail.name,
-    categoryId: detail.categoryId!,
-    brandId: detail.brand?.id ?? undefined,
-    brand: resolveBrandText(detail.brand),
-    model: detail.model || undefined,
-    serialNo: detail.serialNo || undefined,
-    status,
-    purchaseDate: detail.purchaseDate || undefined,
-    enabledDate: detail.purchaseDate || detail.enabledDate,
-    coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
-    notes: detail.notes || undefined,
-    tagIds: detail.tags?.map((tag) => tag.id) || [],
-    purchases: detail.purchases.map((p) => ({
-      type: p.type,
-      platformId: p.platformId,
-      seller: p.seller || undefined,
-      price: p.price,
-      shippingCost: p.shippingCost,
-      quantity: p.quantity,
-      purchaseDate: p.purchaseDate,
-      warrantyMonths: p.warrantyMonths ?? undefined,
-      warrantyExpireDate: p.warrantyExpireDate || undefined,
-      notes: p.notes || undefined,
-      name: p.name,
-      attachments: extractObjectKeys(p.attachments)
-    }))
-  })
-  asset.status = status
-  ElMessage.success('状态已更新')
+  try {
+    await updateAsset(asset.id, {
+      name: detail.name,
+      categoryId: detail.categoryId!,
+      brandId: detail.brand?.id ?? undefined,
+      brand: resolveBrandText(detail.brand),
+      model: detail.model || undefined,
+      serialNo: detail.serialNo || undefined,
+      status,
+      purchaseDate: detail.purchaseDate || undefined,
+      enabledDate: detail.purchaseDate || detail.enabledDate,
+      coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
+      notes: detail.notes || undefined,
+      tagIds: detail.tags?.map((tag) => tag.id) || [],
+      purchases: detail.purchases.map((p) => ({
+        type: p.type,
+        platformId: p.platformId,
+        seller: p.seller || undefined,
+        price: p.price,
+        shippingCost: p.shippingCost,
+        quantity: p.quantity,
+        purchaseDate: p.purchaseDate,
+        warrantyMonths: p.warrantyMonths ?? undefined,
+        warrantyExpireDate: p.warrantyExpireDate || undefined,
+        notes: p.notes || undefined,
+        name: p.name,
+        attachments: extractObjectKeys(p.attachments)
+      }))
+    })
+    asset.status = status
+    ElMessage.success('状态已更新')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '状态更新失败')
+  }
 }
 
 const toggleCompact = () => {
@@ -632,6 +690,11 @@ onMounted(async () => {
 .toolbar-actions {
   display: flex;
   gap: 8px;
+}
+
+.status-action {
+  display: inline-flex;
+  align-items: center;
 }
 
 .tag-item {

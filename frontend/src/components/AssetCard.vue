@@ -5,22 +5,8 @@
     @click="handleCardClick"
   >
     <div class="card-header">
-      <div class="status-toggle" @click.stop>
-        <el-select
-          v-if="!statusReadonly"
-          v-model="localStatus"
-          size="small"
-          class="status-select"
-          @change="onStatusChange"
-        >
-          <el-option
-            v-for="item in statusOptions"
-            :key="item"
-            :label="item"
-            :value="item"
-          />
-        </el-select>
-        <el-tag v-else size="small">{{ asset.status }}</el-tag>
+      <div class="status-label">
+        <el-tag size="small">{{ asset.status }}</el-tag>
       </div>
       <el-checkbox v-if="selectable" :model-value="selected" @change="toggleSelect" />
     </div>
@@ -60,22 +46,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import type { AssetStatus, AssetSummary } from '@/types'
+import { computed } from 'vue'
+import type { AssetSummary } from '@/types'
 import { buildOssUrl } from '@/utils/storage'
 
 const props = withDefaults(
   defineProps<{
     asset: AssetSummary
-    statusOptions?: AssetStatus[]
-    statusReadonly?: boolean
     selectable?: boolean
     selected?: boolean
     compact?: boolean
   }>(),
   {
-    statusOptions: () => ['使用中', '已闲置', '待出售', '已出售', '已丢弃'],
-    statusReadonly: false,
     selectable: false,
     selected: false,
     compact: false
@@ -83,21 +65,11 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'status-change', status: AssetStatus): void
   (e: 'view', id: number): void
   (e: 'edit', id: number): void
   (e: 'toggle-select', value: boolean): void
   (e: 'card-click', id: number): void
 }>()
-
-const localStatus = ref<AssetStatus>(props.asset.status)
-
-watch(
-  () => props.asset.status,
-  (status) => {
-    localStatus.value = status
-  }
-)
 
 const fallback = computed(
   () =>
@@ -114,11 +86,6 @@ const formatNumber = (value: number | undefined) => {
 }
 
 const formatDate = (value: string) => value
-
-const onStatusChange = (value: AssetStatus) => {
-  localStatus.value = value
-  emit('status-change', value)
-}
 
 const toggleSelect = (value: boolean) => {
   emit('toggle-select', value)
@@ -190,13 +157,8 @@ const handleCoverClick = () => {
   align-items: center;
 }
 
-.status-toggle {
-  min-width: 120px;
-}
-
-.status-select :deep(.el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.35);
+.status-label {
+  min-width: 80px;
 }
 
 .cover {

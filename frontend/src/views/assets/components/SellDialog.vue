@@ -24,9 +24,14 @@
         </el-select>
       </el-form-item>
       <el-form-item label="平台" prop="platformId">
-        <el-select v-model="form.platformId" placeholder="选择平台" filterable clearable>
-          <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
+        <div class="selector-with-action">
+          <el-select v-model="form.platformId" placeholder="选择平台" filterable clearable>
+            <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+          <el-button class="inline-action" text size="small" type="primary" @click="handleCreatePlatform">
+            新建
+          </el-button>
+        </div>
       </el-form-item>
       <el-form-item label="买家" prop="buyer">
         <el-input v-model="form.buyer" placeholder="可选填写" />
@@ -63,6 +68,7 @@ import { fetchAssetDetail, sellAsset } from '@/api/asset'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { useDictionaries } from '@/composables/useDictionaries'
+import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import type { PurchaseRecord } from '@/types'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
@@ -72,6 +78,7 @@ const assetInfo = ref<{ id: number; name: string } | null>(null)
 const loading = ref(false)
 
 const { load: loadDicts, platforms } = useDictionaries()
+const { promptPlatformCreation } = useDictionaryCreator()
 
 const form = reactive({
   platformId: undefined as number | undefined,
@@ -165,6 +172,17 @@ const submit = () => {
   })
 }
 
+const handleCreatePlatform = async () => {
+  try {
+    const result = await promptPlatformCreation()
+    if (result) {
+      form.platformId = result.id
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建平台失败')
+  }
+}
+
 defineExpose({ open })
 
 onMounted(async () => {
@@ -185,3 +203,15 @@ watch(
   }
 )
 </script>
+
+<style scoped>
+.selector-with-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-action {
+  padding: 0 6px;
+}
+</style>
