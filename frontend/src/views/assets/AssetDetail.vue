@@ -27,7 +27,24 @@
               <span v-if="!detail.tags.length">无标签</span>
             </div>
           </div>
-          <img v-if="resolveOssUrl(detail.coverImageUrl)" :src="resolveOssUrl(detail.coverImageUrl)" class="cover" />
+          <div class="cover-panel">
+            <div class="cover-preview">
+              <img v-if="coverPreviewUrl" :src="coverPreviewUrl" class="cover" />
+              <div v-else class="cover-placeholder">暂无封面</div>
+            </div>
+            <div class="cover-buttons">
+              <el-button type="text" size="small" @click="openCoverSuggestionDialog">智能找图设封面</el-button>
+              <el-button
+                v-if="coverPreviewUrl"
+                type="text"
+                size="small"
+                :loading="removingBackground"
+                @click="handleRemoveBackground"
+              >
+                一键抠图
+              </el-button>
+            </div>
+          </div>
         </div>
         <div class="metrics">
           <div class="metric">
@@ -224,18 +241,32 @@
       </div>
       <el-empty v-else description="暂无附件" />
     </el-dialog>
-  </div>
+      <cover-suggestion-dialog
+      v-model="coverSuggestionDialogVisible"
+      :asset-id="detail?.id"
+      :query="coverSuggestionQuery"
+      @select="handleCoverSuggestionSelected"
+    />
+</div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { deleteSale, fetchAssetDetail, updateAsset } from '@/api/asset'
+import {
+  deleteSale,
+  fetchAssetDetail,
+  removeCoverBackground,
+  setCoverFromUrl,
+  updateAsset
+} from '@/api/asset'
 import type { AssetDetail, PurchaseRecord, AssetStatus, SaleRecord } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import PurchaseEditorDialog from './components/PurchaseEditorDialog.vue'
+import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
+import type { CoverSuggestion } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 
@@ -358,6 +389,54 @@ const openCreatePurchase = () => {
 }
 
 const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
+
+const coverPreviewUrl = computed(() => (detail.value ? resolveOssUrl(detail.value.coverImageUrl) : ''))
+const coverSuggestionDialogVisible = ref(false)
+const removingBackground = ref(false)
+const coverSuggestionQuery = computed(() => {
+  if (!detail.value) return ''
+  const parts = [
+    detail.value.name,
+    resolveBrandName(detail.value.brand),
+    detail.value.categoryId ? categoryPathMap.value.get(detail.value.categoryId) : undefined
+  ].filter((value): value is string => !!value)
+  return parts.join(' ')
+})
+
+const openCoverSuggestionDialog = () => {
+  if (!detail.value) return
+  coverSuggestionDialogVisible.value = true
+}
+
+const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
+  if (!detail.value) return
+  try {
+    const result = await setCoverFromUrl(detail.value.id, { sourceUrl: suggestion.sourceUrl })
+    detail.value.coverImageUrl = extractObjectKey(result.url)
+    ElMessage.success('封面设置成功')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '设置封面失败')
+  } finally {
+    coverSuggestionDialogVisible.value = false
+  }
+}
+
+const handleRemoveBackground = async () => {
+  if (!detail.value || !detail.value.coverImageUrl) return
+  removingBackground.value = true
+  try {
+    const result = await removeCoverBackground({
+      assetId: detail.value.id,
+      coverUrl: detail.value.coverImageUrl
+    })
+    detail.value.coverImageUrl = extractObjectKey(result.url)
+    ElMessage.success('抠图完成')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '抠图服务暂时不可用')
+  } finally {
+    removingBackground.value = false
+  }
+}
 
 const isImageAttachment = (value: string) => {
   const text = (value || '').toLowerCase()
@@ -507,6 +586,36 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
 }
+.cover-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.cover-preview {
+  width: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #0f172a;
+}
+
+.cover-placeholder {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.cover-buttons {
+  display: flex;
+  gap: 8px;
+  align-self: flex-end;
+}
+
 
 .title-row {
   display: flex;
@@ -635,3 +744,4 @@ onMounted(async () => {
   }
 }
 </style>
+
