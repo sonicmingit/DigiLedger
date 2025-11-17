@@ -1,6 +1,7 @@
 package com.digiledger.backend.controller;
 
 import com.digiledger.backend.common.ApiResponse;
+import com.digiledger.backend.model.cover.CoverCandidate;
 import com.digiledger.backend.model.dto.asset.CoverApplyResponse;
 import com.digiledger.backend.model.dto.asset.CoverFromUrlRequest;
 import com.digiledger.backend.model.dto.asset.CoverSuggestionDTO;
@@ -30,7 +31,8 @@ public class AssetCoverController {
     @GetMapping("/suggestions")
     public ApiResponse<List<CoverSuggestionDTO>> suggestions(@PathVariable("assetId") Long assetId,
                                                              @RequestParam(name = "query", required = false) String query) {
-        return ApiResponse.success(suggestionService.suggest(assetId, query));
+        List<CoverCandidate> candidates = suggestionService.getCoverCandidatesForAsset(assetId, query);
+        return ApiResponse.success(candidates.stream().map(CoverSuggestionDTO::fromCandidate).toList());
     }
 
     @PostMapping("/from-url")
