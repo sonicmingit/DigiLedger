@@ -13,7 +13,7 @@
     <div class="cover" @click.stop="handleCoverClick">
       <img :src="coverUrl || fallback" alt="缩略图" />
       <div v-if="!coverUrl" class="cover-empty">
-        <el-button type="text" size="mini" @click.stop="suggestCover">智能找图设封面</el-button>
+        <el-button type="text" size="mini" @click.stop="suggestCover">设置封面</el-button>
       </div>
     </div>
     <div class="info">
