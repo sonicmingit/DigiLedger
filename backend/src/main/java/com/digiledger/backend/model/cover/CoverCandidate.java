@@ -18,6 +18,6 @@ public record CoverCandidate(
     public CoverCandidate {
         Map<String, Object> safeExtra = extra == null ? Map.of() : new LinkedHashMap<>(extra);
         safeExtra.values().removeIf(value -> value == null || (value instanceof String s && s.isBlank()));
-        this.extra = Collections.unmodifiableMap(safeExtra);
+        extra = Collections.unmodifiableMap(safeExtra);
     }
 }
