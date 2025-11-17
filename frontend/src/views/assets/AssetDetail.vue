@@ -44,7 +44,7 @@
                   <template #dropdown>
                     <el-dropdown-item command="modify">修改图片</el-dropdown-item>
                     <el-dropdown-item command="smart">智能找图</el-dropdown-item>
-                    <el-dropdown-item command="remove" :disabled="!coverPreviewUrl || removingBackground">一键抠图</el-dropdown-item>
+                    <el-dropdown-item command="remove" :disabled="!coverPreviewUrl || previewLoading">一键抠图</el-dropdown-item>
                   </template>
                 </el-dropdown>
               </div>
@@ -246,13 +246,29 @@
       </div>
       <el-empty v-else description="暂无附件" />
     </el-dialog>
-      <cover-suggestion-dialog
+    <cover-suggestion-dialog
       v-model="coverSuggestionDialogVisible"
       :asset-id="detail?.id"
       :query="coverSuggestionQuery"
       @select="handleCoverSuggestionSelected"
     />
-</div>
+    <el-dialog
+      v-model="previewDialogVisible"
+      width="440px"
+      :before-close="cancelRemovePreview"
+      title="抠图预览"
+    >
+      <div v-if="removePreviewResult" class="preview-body">
+        <img :src="removePreviewResult.url" alt="抠图结果" class="preview-img" />
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="cancelRemovePreview">取消</el-button>
+        <el-button type="primary" :loading="previewLoading" @click="confirmRemovePreview">
+          保存为封面
+        </el-button>
+      </span>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -262,11 +278,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   deleteSale,
   fetchAssetDetail,
-  removeCoverBackground,
+  previewCoverBackground,
   setCoverFromUrl,
   updateAsset
 } from '@/api/asset'
-import type { AssetDetail, PurchaseRecord, AssetStatus, SaleRecord } from '@/types'
+import type { AssetDetail, PurchaseRecord, AssetStatus, RemoveBgResult, SaleRecord } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import PurchaseEditorDialog from './components/PurchaseEditorDialog.vue'
@@ -397,7 +413,9 @@ const resolveOssUrl = (value?: string | null) => buildOssUrl(value)
 
 const coverPreviewUrl = computed(() => (detail.value ? resolveOssUrl(detail.value.coverImageUrl) : ''))
 const coverSuggestionDialogVisible = ref(false)
-const removingBackground = ref(false)
+const previewDialogVisible = ref(false)
+const previewLoading = ref(false)
+const removePreviewResult = ref<RemoveBgResult | null>(null)
 const coverSuggestionQuery = computed(() => {
   if (!detail.value) return ''
   const parts = [
@@ -428,18 +446,18 @@ const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
 
 const handleRemoveBackground = async () => {
   if (!detail.value || !detail.value.coverImageUrl) return
-  removingBackground.value = true
+  previewLoading.value = true
   try {
-    const result = await removeCoverBackground({
+    const result = await previewCoverBackground({
       assetId: detail.value.id,
       coverUrl: detail.value.coverImageUrl
     })
-    detail.value.coverImageUrl = extractObjectKey(result.url)
-    ElMessage.success('抠图完成')
+    removePreviewResult.value = result
+    previewDialogVisible.value = true
   } catch (error: any) {
     ElMessage.error(error?.message || '抠图服务暂时不可用')
   } finally {
-    removingBackground.value = false
+    previewLoading.value = false
   }
 }
 
@@ -447,7 +465,6 @@ const handleCoverMenuCommand = async (command: string) => {
   if (!detail.value) return
   switch (command) {
     case 'modify':
-      // 打开编辑面板
       edit()
       break
     case 'smart':
@@ -460,6 +477,26 @@ const handleCoverMenuCommand = async (command: string) => {
       break
   }
 }
+
+const confirmRemovePreview = async () => {
+  if (!detail.value || !removePreviewResult.value) return
+  try {
+    const result = await setCoverFromUrl(detail.value.id, { sourceUrl: removePreviewResult.value.url })
+    detail.value.coverImageUrl = extractObjectKey(result.url)
+    ElMessage.success('封面设置成功')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '保存封面失败')
+  } finally {
+    previewDialogVisible.value = false
+    removePreviewResult.value = null
+  }
+}
+
+const cancelRemovePreview = () => {
+  previewDialogVisible.value = false
+  removePreviewResult.value = null
+}
+
 
 const isImageAttachment = (value: string) => {
   const text = (value || '').toLowerCase()
@@ -764,6 +801,21 @@ onMounted(async () => {
   border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
+.preview-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.preview-img {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  object-fit: contain;
+}
+
 .loss-loss {
   color: #ef4444;
 }
@@ -787,4 +839,5 @@ onMounted(async () => {
   }
 }
 </style>
+
 

@@ -138,36 +138,40 @@
         </el-table-column>
         <el-table-column label="操作" width="260">
           <template #default="{ row }">
-            <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
-            <el-button link @click="openEdit(row.id)">编辑</el-button>
-            <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
-            <el-dropdown
-              v-if="row.status !== '已出售'"
-              trigger="click"
-              :hide-on-click="true"
-              @command="(value) => handleStatusCommand(row, value as AssetStatus)"
-            >
-              <span class="status-action">
-                <el-button link type="warning">修改状态</el-button>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item
-                    v-for="status in editableStatuses"
-                    :key="status"
-                    :command="status"
-                    :disabled="row.status === status"
-                  >
-                    {{ status }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="row-actions">
+              <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
+              <el-button link @click="openEdit(row.id)">编辑</el-button>
+              <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
+
+              <el-dropdown
+                v-if="row.status !== '已出售'"
+                trigger="click"
+                :hide-on-click="true"
+                @command="(value) => handleStatusCommand(row, value as AssetStatus)"
+              >
+                <span class="status-action">
+                  <el-button link type="warning">修改状态</el-button>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      v-for="status in editableStatuses"
+                      :key="status"
+                      :command="status"
+                      :disabled="row.status === status"
+                    >
+                      {{ status }}
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+
+              <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -754,6 +758,17 @@ onMounted(async () => {
 .status-action {
   display: inline-flex;
   align-items: center;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.row-actions :deep(.el-button) {
+  padding: 0 8px;
+  height: auto;
 }
 
 .tag-item {
