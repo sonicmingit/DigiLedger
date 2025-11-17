@@ -32,6 +32,8 @@ public interface AssetMapper {
                           @Param("purchaseId") Long purchaseId,
                           @Param("purchaseDate") java.time.LocalDate purchaseDate);
 
+    int updateCoverImage(@Param("id") Long id, @Param("coverImageUrl") String coverImageUrl);
+
     List<DeviceAsset> findByIds(@Param("ids") List<Long> ids);
 
     int updateStatusAndRetiredDate(@Param("id") Long id,

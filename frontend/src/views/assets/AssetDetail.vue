@@ -29,20 +29,25 @@
           </div>
           <div class="cover-panel">
             <div class="cover-preview">
-              <img v-if="coverPreviewUrl" :src="coverPreviewUrl" class="cover" />
-              <div v-else class="cover-placeholder">暂无封面</div>
-            </div>
-            <div class="cover-buttons">
-              <el-button type="text" size="small" @click="openCoverSuggestionDialog">智能找图设封面</el-button>
-              <el-button
+              <el-image
                 v-if="coverPreviewUrl"
-                type="text"
-                size="small"
-                :loading="removingBackground"
-                @click="handleRemoveBackground"
-              >
-                一键抠图
-              </el-button>
+                :src="coverPreviewUrl"
+                fit="cover"
+                :preview-src-list="[coverPreviewUrl]"
+                class="cover"
+              />
+              <div v-else class="cover-placeholder">暂无封面</div>
+
+              <div class="cover-dropdown">
+                <el-dropdown @command="handleCoverMenuCommand">
+                  <el-button class="cover-dropdown-button" type="text">⋯</el-button>
+                  <template #dropdown>
+                    <el-dropdown-item command="modify">修改图片</el-dropdown-item>
+                    <el-dropdown-item command="smart">智能找图</el-dropdown-item>
+                    <el-dropdown-item command="remove" :disabled="!coverPreviewUrl || removingBackground">一键抠图</el-dropdown-item>
+                  </template>
+                </el-dropdown>
+              </div>
             </div>
           </div>
         </div>
@@ -438,6 +443,24 @@ const handleRemoveBackground = async () => {
   }
 }
 
+const handleCoverMenuCommand = async (command: string) => {
+  if (!detail.value) return
+  switch (command) {
+    case 'modify':
+      // 打开编辑面板
+      edit()
+      break
+    case 'smart':
+      openCoverSuggestionDialog()
+      break
+    case 'remove':
+      await handleRemoveBackground()
+      break
+    default:
+      break
+  }
+}
+
 const isImageAttachment = (value: string) => {
   const text = (value || '').toLowerCase()
   const pure = text.split('?')[0]
@@ -601,6 +624,10 @@ onMounted(async () => {
   background: #0f172a;
 }
 
+.cover-preview {
+  position: relative;
+}
+
 .cover-placeholder {
   height: 180px;
   display: flex;
@@ -624,10 +651,26 @@ onMounted(async () => {
 }
 
 .cover {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 180px;
   object-fit: cover;
   border-radius: 12px;
+  display: block;
+}
+
+.cover-dropdown {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 10;
+}
+.cover-dropdown-button {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  min-width: 32px;
+  height: 32px;
 }
 
 .metrics {

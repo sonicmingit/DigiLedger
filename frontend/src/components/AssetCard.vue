@@ -12,6 +12,9 @@
     </div>
     <div class="cover" @click.stop="handleCoverClick">
       <img :src="coverUrl || fallback" alt="缩略图" />
+      <div v-if="!coverUrl" class="cover-empty">
+        <el-button type="text" size="mini" @click.stop="suggestCover">智能找图设封面</el-button>
+      </div>
     </div>
     <div class="info">
       <div class="title" :title="asset.name">{{ asset.name }}</div>
@@ -69,6 +72,7 @@ const emit = defineEmits<{
   (e: 'edit', id: number): void
   (e: 'toggle-select', value: boolean): void
   (e: 'card-click', id: number): void
+  (e: 'suggest-cover', asset: AssetSummary): void
 }>()
 
 const fallback = computed(
@@ -93,6 +97,10 @@ const toggleSelect = (value: boolean) => {
 
 const handleCardClick = () => {
   emit('card-click', props.asset.id)
+}
+
+const suggestCover = () => {
+  emit('suggest-cover', props.asset)
 }
 
 const handleCoverClick = () => {
@@ -169,12 +177,23 @@ const handleCoverClick = () => {
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(148, 163, 184, 0.2);
   cursor: pointer;
+  position: relative;
 }
 
 .cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.cover-empty {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
 }
 
 .info {

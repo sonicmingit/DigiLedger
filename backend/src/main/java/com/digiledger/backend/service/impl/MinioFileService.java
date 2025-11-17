@@ -6,6 +6,9 @@ import com.digiledger.backend.config.StorageProperties;
 import com.digiledger.backend.config.UploadProperties;
 import com.digiledger.backend.service.FileService;
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
+import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -13,6 +16,7 @@ import io.minio.RemoveObjectArgs;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -65,6 +69,27 @@ public class MinioFileService implements FileService {
                     .build());
         } catch (Exception e) {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "删除失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public byte[] download(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return new byte[0];
+        }
+        try (GetObjectResponse response = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(storageProperties.getBucket())
+                .object(objectKey)
+                .build())) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int read;
+            while ((read = response.read(chunk)) != -1) {
+                buffer.write(chunk, 0, read);
+            }
+            return buffer.toByteArray();
+        } catch (Exception e) {
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "读取文件失败: " + e.getMessage());
         }
     }
 

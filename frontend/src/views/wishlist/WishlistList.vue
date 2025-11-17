@@ -157,9 +157,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="图片">
-          <el-upload :http-request="handleUpload" :show-file-list="false" accept="image/*" capture="environment">
-            <el-button type="primary">上传图片</el-button>
-          </el-upload>
+            <UnifiedUploader :http-request="handleUpload" accept="image/*" capture="environment" :show-file-list="false" />
           <img v-if="imagePreview" :src="imagePreview" class="preview" />
         </el-form-item>
         <el-form-item label="备注">
@@ -184,6 +182,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { FormInstance } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
