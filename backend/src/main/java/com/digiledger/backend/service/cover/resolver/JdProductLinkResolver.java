@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public class JdProductLinkResolver implements ProductLinkResolver {
 
     private static final Logger log = LoggerFactory.getLogger(JdProductLinkResolver.class);
-    private static final Pattern IMAGE_PATTERN = Pattern.compile("(https?:)?//img\\d+\\.360buyimg\\.com/[^"]+?(?:jpg|png|jpeg)", Pattern.CASE_INSENSITIVE);
+private static final Pattern IMAGE_PATTERN = Pattern.compile("(https?:)?//img\\d+\\.360buyimg\\.com/[^\"']+?(?:jpg|png|jpeg)", Pattern.CASE_INSENSITIVE);
 
     private final RestTemplate restTemplate;
 

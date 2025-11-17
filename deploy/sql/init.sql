@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS purchase (
   warranty_months INT COMMENT '保修月数',
   warranty_expire_date DATE COMMENT '保修到期日',
   attachments JSON COMMENT '附件（JSON）',
+  product_link VARCHAR(5000) COMMENT '商品链接',
   notes TEXT COMMENT '备注',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

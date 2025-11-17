@@ -72,6 +72,10 @@
           <el-form-item label="型号">
             <el-input v-model="form.model" placeholder="型号/配置" />
           </el-form-item>
+
+          <el-form-item label="商品链接">
+            <el-input v-model="form.productLink" placeholder="商品购买/详情链接（可选）" />
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="16">
@@ -341,6 +345,7 @@ const form = reactive({
   brandId: null as number | null,
   brandName: '',
   model: '',
+  productLink: '',
   serialNo: '',
   status: '使用中',
   purchaseDate: today(),
@@ -520,7 +525,8 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
       (asset.brand?.alias && asset.brand.alias.trim()) ||
       (asset.brand?.name && asset.brand.name.trim()) ||
       ''
-    normalizeBrandName()
+    // 支持多种后端字段命名：productLink / product_link / link
+    form.productLink = (asset as any).productLink ?? (asset as any).product_link ?? (asset as any).link ?? ''
     form.model = asset.model || ''
     form.serialNo = asset.serialNo || ''
     form.status = asset.status
@@ -563,6 +569,7 @@ const reset = () => {
   form.brandId = null
   form.brandName = ''
   form.model = ''
+  form.productLink = ''
   form.serialNo = ''
   form.status = '使用中'
   form.purchaseDate = today()
@@ -578,6 +585,7 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
   if (prefill.categoryId !== undefined) form.categoryId = prefill.categoryId
   if (prefill.brandId !== undefined) form.brandId = prefill.brandId
   if (prefill.brandName !== undefined) form.brandName = prefill.brandName
+  if (prefill.productLink !== undefined) form.productLink = prefill.productLink
   if (prefill.model !== undefined) form.model = prefill.model
   if (prefill.serialNo !== undefined) form.serialNo = prefill.serialNo
   if (prefill.status !== undefined) form.status = prefill.status
@@ -734,6 +742,7 @@ const submit = () => {
           name: form.name,
           categoryId: form.categoryId!,
           brandId: form.brandId || undefined,
+          product_link: form.productLink || undefined,
           brand: brandText || undefined,
           model: form.model || undefined,
           serialNo: form.serialNo || undefined,
@@ -742,6 +751,7 @@ const submit = () => {
           coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
           notes: form.notes || undefined,
           tagIds: form.tagIds,
+          productLink: form.productLink || undefined,
           purchases: form.purchases.map((p) => ({
             type: p.type,
             platformId: p.platformId,
