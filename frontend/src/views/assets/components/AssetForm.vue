@@ -119,15 +119,13 @@
       </el-row>
       <el-form-item label="封面图">
         <div class="cover-upload">
-          <el-upload
+          <UnifiedUploader
             :http-request="handleUpload"
             :show-file-list="false"
             accept="image/*"
             capture="environment"
             @progress="coverProgress = $event.percent"
-          >
-            <el-button type="primary">上传封面</el-button>
-          </el-upload>
+          />
           <el-progress
             v-if="coverProgress && coverProgress < 100"
             :percentage="Math.round(coverProgress)"
@@ -237,14 +235,7 @@
             </el-col>
           </el-row>
           <div class="attachments">
-            <el-upload
-              :http-request="(options) => uploadAttachment(options, purchase)"
-              :show-file-list="false"
-              accept="image/*"
-              capture="environment"
-            >
-              <el-button text>上传附件</el-button>
-            </el-upload>
+            <UnifiedUploader :http-request="(options) => uploadAttachment(options, purchase)" :show-file-list="false" accept="image/*" capture="environment" />
             <div
               v-for="(url, idx) in purchase.attachments"
               :key="`${idx}-${url}`"
@@ -297,6 +288,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { uploadFile } from '@/api/file'
