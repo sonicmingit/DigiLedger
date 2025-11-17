@@ -112,3 +112,6 @@ export type RemoveBgPayload = {
 
 export const removeCoverBackground = (payload: RemoveBgPayload) =>
   http.post<RemoveBgResult>('/files/remove-bg', payload)
+
+export const previewCoverBackground = (payload: RemoveBgPayload) =>
+  http.post<RemoveBgResult>('/files/remove-bg-preview', payload)

@@ -125,7 +125,7 @@ public class AssetCoverService {
         return "cover-image";
     }
 
-    private String toExtra(Map<String, Object> payload) {
+    public String toExtra(Map<String, Object> payload) {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {
