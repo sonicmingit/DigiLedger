@@ -380,7 +380,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Sony A7C II\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-7CM2\",\n  \"enabledDate\": \"2025-01-10\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"coverImageUrl\": \"https://cdn.example.com/items/a7c2.png\",\n  \"notes\": \"随身备机\",\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Sony A7C II 机身\",\n      \"platformId\": 1,\n      \"seller\": \"索尼直营店\",\n      \"price\": 12345.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-01-05\",\n      \"invoiceNo\": \"SN20250105\",\n      \"attachments\": [],\n      \"notes\": \"年货节活动\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"Sony A7C II\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-7CM2\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"coverImageUrl\": \"https://cdn.example.com/items/a7c2.png\",\n  \"notes\": \"随身备机\",\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Sony A7C II 机身\",\n      \"platformId\": 1,\n      \"seller\": \"索尼直营店\",\n      \"price\": 12345.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-01-05\",\n      \"invoiceNo\": \"SN20250105\",\n      \"attachments\": [],\n      \"notes\": \"年货节活动\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/assets",
@@ -659,7 +659,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2025-02-02\",\n  \"tagIds\": [\n    5\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"DJI Mic 2 套装\",\n      \"platformId\": 1,\n      \"price\": 1899,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-02-01\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"DJI Mic 2\",\n  \"categoryId\": 4,\n  \"brandId\": 6,\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    5\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"DJI Mic 2 套装\",\n      \"platformId\": 1,\n      \"price\": 1899,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2025-02-01\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/wishlist/3/convert",
@@ -720,7 +720,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/assets",
@@ -797,7 +797,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/assets/{{smoke_asset_id}}",
@@ -836,7 +836,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"enabledDate\": \"2024-12-12\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    },\n    {\n      \"type\": \"ACCESSORY\",\n      \"name\": \"烟雾快门线\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 199.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-20\",\n      \"notes\": \"附属品示例\"\n    }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"Smoke 测试相机\",\n  \"categoryId\": 5,\n  \"brandId\": 1,\n  \"model\": \"ILCE-SMOKE\",\n  \"status\": \"使用中\",\n  \"tagIds\": [\n    1,\n    3\n  ],\n  \"purchases\": [\n    {\n      \"type\": \"PRIMARY\",\n      \"name\": \"Smoke 机身\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 8888.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-10\",\n      \"notes\": \"烟囱节专享\"\n    },\n    {\n      \"type\": \"ACCESSORY\",\n      \"name\": \"烟雾快门线\",\n      \"platformId\": 2,\n      \"seller\": \"京东自营\",\n      \"price\": 199.0,\n      \"shippingCost\": 0,\n      \"currency\": \"CNY\",\n      \"quantity\": 1,\n      \"purchaseDate\": \"2024-12-20\",\n      \"notes\": \"附属品示例\"\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/assets/{{smoke_asset_id}}",

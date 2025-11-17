@@ -1,5 +1,7 @@
 package com.digiledger.backend.model.dto.attachment;
 
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
 /**

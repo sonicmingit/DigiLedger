@@ -35,3 +35,7 @@ app:
     access-key: ${DL_STORAGE_ACCESS_KEY:minioadmin}
     secret-key: ${DL_STORAGE_SECRET_KEY:minioadmin}
     base-url: ${DL_STORAGE_BASE_URL:http://localhost:9000}
+  remove-bg:
+    api-key: ${DL_REMOVE_BG_API_KEY:}
+    endpoint: ${DL_REMOVE_BG_ENDPOINT:https://api.remove.bg/v1.0/removebg}
+    timeout-ms: ${DL_REMOVE_BG_TIMEOUT_MS:120000}

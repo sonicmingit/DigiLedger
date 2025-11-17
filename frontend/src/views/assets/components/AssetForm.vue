@@ -90,7 +90,6 @@
               value-format="YYYY-MM-DD"
               :shortcuts="dateShortcuts"
               placeholder="选择购买日期"
-              @change="syncEnabledDate"
             />
           </el-form-item>
         </el-col>
@@ -120,15 +119,13 @@
       </el-row>
       <el-form-item label="封面图">
         <div class="cover-upload">
-          <el-upload
+          <UnifiedUploader
             :http-request="handleUpload"
             :show-file-list="false"
             accept="image/*"
             capture="environment"
             @progress="coverProgress = $event.percent"
-          >
-            <el-button type="primary">上传封面</el-button>
-          </el-upload>
+          />
           <el-progress
             v-if="coverProgress && coverProgress < 100"
             :percentage="Math.round(coverProgress)"
@@ -136,6 +133,11 @@
             status="success"
           />
           <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
+          <div class="cover-actions">
+            <el-button type="text" size="small" :disabled="!form.id" @click="openCoverSuggestionDialog">
+              智能找图设封面
+            </el-button>
+          </div>
         </div>
       </el-form-item>
       <el-form-item label="备注">
@@ -233,14 +235,7 @@
             </el-col>
           </el-row>
           <div class="attachments">
-            <el-upload
-              :http-request="(options) => uploadAttachment(options, purchase)"
-              :show-file-list="false"
-              accept="image/*"
-              capture="environment"
-            >
-              <el-button text>上传附件</el-button>
-            </el-upload>
+            <UnifiedUploader :http-request="(options) => uploadAttachment(options, purchase)" :show-file-list="false" accept="image/*" capture="environment" />
             <div
               v-for="(url, idx) in purchase.attachments"
               :key="`${idx}-${url}`"
@@ -282,11 +277,18 @@
       :default-parent-id="categoryDialogParentId"
       @success="handleCategoryCreated"
     />
+    <cover-suggestion-dialog
+      v-model="suggestionDialogVisible"
+      :asset-id="form.id || undefined"
+      :query="coverSuggestionQuery"
+      @select="handleCoverSuggestionSelected"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { uploadFile } from '@/api/file'
@@ -299,6 +301,9 @@ import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 import { calcWarrantyExpireDate } from '@/utils/date'
+import { setCoverFromUrl } from '@/api/asset'
+import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
+import type { CoverSuggestion } from '@/types'
 
 const emit = defineEmits<{ (e: 'success', assetId?: number): void }>()
 
@@ -339,7 +344,6 @@ const form = reactive({
   serialNo: '',
   status: '使用中',
   purchaseDate: today(),
-  enabledDate: today(),
   coverImageKey: '',
   tagIds: [] as number[],
   notes: '',
@@ -372,7 +376,6 @@ type AssetFormPrefill = Partial<
     | 'serialNo'
     | 'status'
     | 'purchaseDate'
-    | 'enabledDate'
     | 'coverImageKey'
     | 'tagIds'
     | 'notes'
@@ -395,6 +398,56 @@ const rules = {
   categoryId: [{ required: true, message: '请选择类别', trigger: 'change' }],
   purchaseDate: [{ required: true, message: '请选择购买日期', trigger: 'change' }]
 }
+
+const suggestionDialogVisible = ref(false)
+
+const coverSuggestionQuery = computed(() => {
+  const parts = [
+    form.name?.trim(),
+    form.brandName?.trim(),
+    resolveCategoryName(form.categoryId)
+  ].filter((value): value is string => !!value)
+  return parts.join(' ') || '物品封面'
+})
+
+const openCoverSuggestionDialog = () => {
+  if (!form.id) {
+    ElMessage.warning('请先保存物品后再使用智能找图')
+    return
+  }
+  suggestionDialogVisible.value = true
+}
+
+const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
+  if (!form.id) return
+  try {
+    const result = await setCoverFromUrl(form.id, { sourceUrl: suggestion.sourceUrl })
+    form.coverImageKey = extractObjectKey(result.url)
+    coverProgress.value = 100
+    ElMessage.success('封面设置成功')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '设置封面失败')
+  }
+}
+
+const resolveCategoryName = (categoryId: number | null) => {
+  if (categoryId == null) return null
+  let name: string | null = null
+  const stack: CategoryNode[] = [...categoryTree.value]
+  while (stack.length) {
+    const node = stack.pop()
+    if (!node) continue
+    if (node.id === categoryId) {
+      name = node.name
+      break
+    }
+    if (node.children?.length) {
+      stack.push(...node.children)
+    }
+  }
+  return name
+}
+
 
 const { load: loadDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
 const { promptPlatformCreation, promptBrandCreation, promptTagCreation } = useDictionaryCreator()
@@ -472,7 +525,6 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
     form.serialNo = asset.serialNo || ''
     form.status = asset.status
     form.purchaseDate = asset.purchaseDate || today()
-    form.enabledDate = form.purchaseDate
     form.coverImageKey = asset.coverImageUrl || ''
     form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = asset.notes || ''
@@ -498,7 +550,6 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
   } else {
     reset()
     form.purchaseDate = today()
-    form.enabledDate = today()
     if (options?.prefill) {
       applyPrefill(options.prefill)
     }
@@ -515,7 +566,6 @@ const reset = () => {
   form.serialNo = ''
   form.status = '使用中'
   form.purchaseDate = today()
-  form.enabledDate = today()
   form.coverImageKey = ''
   form.tagIds = []
   form.notes = ''
@@ -532,7 +582,6 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
   if (prefill.serialNo !== undefined) form.serialNo = prefill.serialNo
   if (prefill.status !== undefined) form.status = prefill.status
   if (prefill.purchaseDate !== undefined) form.purchaseDate = prefill.purchaseDate
-  if (prefill.enabledDate !== undefined) form.enabledDate = prefill.enabledDate
   if (prefill.coverImageKey !== undefined) form.coverImageKey = prefill.coverImageKey
   if (prefill.tagIds !== undefined) form.tagIds = Array.isArray(prefill.tagIds) ? [...prefill.tagIds] : []
   if (prefill.notes !== undefined) form.notes = prefill.notes
@@ -543,10 +592,6 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
     })) as AssetFormState['purchases']
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   }
-}
-
-const syncEnabledDate = () => {
-  form.enabledDate = form.purchaseDate || today()
 }
 
 const syncPurchaseWarranty = (purchase: AssetFormState['purchases'][number]) => {
@@ -685,34 +730,33 @@ const submit = () => {
     try {
       normalizeBrandName()
       const brandText = form.brandName.trim()
-      const payload = {
-        name: form.name,
-        categoryId: form.categoryId!,
-        brandId: form.brandId || undefined,
-        brand: brandText || undefined,
-        model: form.model || undefined,
-        serialNo: form.serialNo || undefined,
-        status: form.status,
-        purchaseDate: form.purchaseDate || undefined,
-        enabledDate: form.purchaseDate || undefined,
-        coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
-        notes: form.notes || undefined,
-        tagIds: form.tagIds,
-        purchases: form.purchases.map((p) => ({
-          type: p.type,
-          platformId: p.platformId,
-          seller: p.seller || undefined,
-          price: p.price,
-          shippingCost: p.shippingCost,
-          quantity: p.quantity,
-          purchaseDate: p.purchaseDate,
-          warrantyMonths: p.warrantyMonths ?? undefined,
-          warrantyExpireDate: p.warrantyExpireDate || undefined,
-          notes: p.notes || undefined,
-          name: p.type === 'PRIMARY' ? undefined : p.name,
-          attachments: extractObjectKeys(p.attachments)
-        }))
-      }
+        const payload = {
+          name: form.name,
+          categoryId: form.categoryId!,
+          brandId: form.brandId || undefined,
+          brand: brandText || undefined,
+          model: form.model || undefined,
+          serialNo: form.serialNo || undefined,
+          status: form.status,
+          purchaseDate: form.purchaseDate || undefined,
+          coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
+          notes: form.notes || undefined,
+          tagIds: form.tagIds,
+          purchases: form.purchases.map((p) => ({
+            type: p.type,
+            platformId: p.platformId,
+            seller: p.seller || undefined,
+            price: p.price,
+            shippingCost: p.shippingCost,
+            quantity: p.quantity,
+            purchaseDate: p.purchaseDate,
+            warrantyMonths: p.warrantyMonths ?? undefined,
+            warrantyExpireDate: p.warrantyExpireDate || undefined,
+            notes: p.notes || undefined,
+            name: p.type === 'PRIMARY' ? undefined : p.name,
+            attachments: extractObjectKeys(p.attachments)
+          }))
+        }
       let result: any
       if (customSubmit.value) {
         result = await customSubmit.value(payload)

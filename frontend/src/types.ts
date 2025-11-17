@@ -1,7 +1,23 @@
-// 物品状态枚举（中文）
+// 资产状态字典
 export type AssetStatus = '使用中' | '已闲置' | '待出售' | '已出售' | '已丢弃'
 
 export type SaleScope = 'ASSET' | 'ACCESSORY'
+
+export interface CoverSuggestion {
+  thumbUrl: string
+  sourceUrl: string
+}
+
+export interface CoverApplyResult {
+  attachmentId: number
+  url: string
+  objectKey: string
+}
+
+export interface RemoveBgResult {
+  attachmentId: number
+  url: string
+}
 
 export interface TagItem {
   id: number
@@ -18,7 +34,6 @@ export interface BrandInfo {
   sort?: number | null
 }
 
-// 物品列表摘要
 export interface AssetSummary {
   id: number
   name: string
@@ -30,14 +45,12 @@ export interface AssetSummary {
   avgCostPerDay: number
   useDays: number
   lastNetIncome: number
-  enabledDate: string
   purchaseDate?: string
   primaryPrice?: number
   primaryPurchaseDate?: string
   tags: TagItem[]
 }
 
-// 购买记录
 export interface PurchaseRecord {
   id: number
   type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
@@ -56,7 +69,6 @@ export interface PurchaseRecord {
   notes?: string
 }
 
-// 售出记录
 export interface SaleRecord {
   id: number
   saleScope: SaleScope
@@ -84,7 +96,6 @@ export interface WishlistAssetRef {
   available: boolean
 }
 
-// 物品详情
 export interface AssetDetail extends AssetSummary {
   brand?: BrandInfo | null
   model?: string
@@ -95,7 +106,6 @@ export interface AssetDetail extends AssetSummary {
   sales: SaleRecord[]
 }
 
-// 心愿单
 export interface WishlistItem {
   id: number
   name: string
@@ -109,7 +119,7 @@ export interface WishlistItem {
   link?: string
   notes?: string
   priority?: number
-  status: '未购买' | '已购买'
+  status: '待购买' | '已完成'
   imageUrl?: string
   tags?: TagItem[]
   convertedAssetId?: number

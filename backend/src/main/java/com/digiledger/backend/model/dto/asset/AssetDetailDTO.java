@@ -19,7 +19,6 @@ public record AssetDetailDTO(
         String serialNo,
         String status,
         LocalDate purchaseDate,
-        LocalDate enabledDate,
         LocalDate retiredDate,
         String coverImageUrl,
         String notes,
