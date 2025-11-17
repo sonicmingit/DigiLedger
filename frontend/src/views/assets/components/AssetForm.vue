@@ -135,6 +135,11 @@
             status="success"
           />
           <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
+          <div class="cover-actions">
+            <el-button type="text" size="small" :disabled="!form.id" @click="openCoverSuggestionDialog">
+              智能找图设封面
+            </el-button>
+          </div>
         </div>
       </el-form-item>
       <el-form-item label="备注">
@@ -281,6 +286,12 @@
       :default-parent-id="categoryDialogParentId"
       @success="handleCategoryCreated"
     />
+    <cover-suggestion-dialog
+      v-model="suggestionDialogVisible"
+      :asset-id="form.id || undefined"
+      :query="coverSuggestionQuery"
+      @select="handleCoverSuggestionSelected"
+    />
   </div>
 </template>
 
@@ -298,6 +309,9 @@ import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
 import { calcWarrantyExpireDate } from '@/utils/date'
+import { setCoverFromUrl } from '@/api/asset'
+import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
+import type { CoverSuggestion } from '@/types'
 
 const emit = defineEmits<{ (e: 'success', assetId?: number): void }>()
 
@@ -392,6 +406,56 @@ const rules = {
   categoryId: [{ required: true, message: '请选择类别', trigger: 'change' }],
   purchaseDate: [{ required: true, message: '请选择购买日期', trigger: 'change' }]
 }
+
+const suggestionDialogVisible = ref(false)
+
+const coverSuggestionQuery = computed(() => {
+  const parts = [
+    form.name?.trim(),
+    form.brandName?.trim(),
+    resolveCategoryName(form.categoryId)
+  ].filter((value): value is string => !!value)
+  return parts.join(' ') || '物品封面'
+})
+
+const openCoverSuggestionDialog = () => {
+  if (!form.id) {
+    ElMessage.warning('请先保存物品后再使用智能找图')
+    return
+  }
+  suggestionDialogVisible.value = true
+}
+
+const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
+  if (!form.id) return
+  try {
+    const result = await setCoverFromUrl(form.id, { sourceUrl: suggestion.sourceUrl })
+    form.coverImageKey = extractObjectKey(result.url)
+    coverProgress.value = 100
+    ElMessage.success('封面设置成功')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '设置封面失败')
+  }
+}
+
+const resolveCategoryName = (categoryId: number | null) => {
+  if (categoryId == null) return null
+  let name: string | null = null
+  const stack: CategoryNode[] = [...categoryTree.value]
+  while (stack.length) {
+    const node = stack.pop()
+    if (!node) continue
+    if (node.id === categoryId) {
+      name = node.name
+      break
+    }
+    if (node.children?.length) {
+      stack.push(...node.children)
+    }
+  }
+  return name
+}
+
 
 const { load: loadDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
 const { promptPlatformCreation, promptBrandCreation, promptTagCreation } = useDictionaryCreator()

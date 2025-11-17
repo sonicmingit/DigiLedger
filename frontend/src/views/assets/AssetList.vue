@@ -183,6 +183,7 @@
           @toggle-select="(value) => toggleSelection(item.id, value)"
           @view="viewDetail"
           @edit="openEdit"
+          @suggest-cover="openCoverSuggestionDialog"
         >
           <template #actions>
             <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
@@ -226,6 +227,13 @@
     <sell-dialog ref="sellDialog" @success="refresh" />
     <batch-tag-dialog ref="batchDialog" @confirm="handleBatchConfirm" />
   </div>
+  <cover-suggestion-dialog
+    v-model="coverSuggestionDialogVisible"
+    :asset-id="coverSuggestionAsset?.id"
+    :query="coverSuggestionQuery"
+    @select="handleCoverSuggestionSelected"
+    @update:modelValue="(value) => !value && (coverSuggestionAsset = null)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -237,13 +245,15 @@ import {
   fetchAssets,
   deleteAsset,
   fetchAssetDetail,
-  updateAsset
+  updateAsset,
+  setCoverFromUrl
 } from '@/api/asset'
-import type { AssetSummary, AssetStatus, BrandInfo } from '@/types'
+import type { AssetSummary, AssetStatus, BrandInfo, CoverSuggestion } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import BatchTagDialog from './components/BatchTagDialog.vue'
 import AssetCard from '@/components/AssetCard.vue'
+import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { extractObjectKey, extractObjectKeys } from '@/utils/storage'
@@ -319,6 +329,47 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
+
+const coverSuggestionDialogVisible = ref(false)
+const coverSuggestionAsset = ref<AssetSummary | null>(null)
+
+const coverSuggestionQuery = computed(() => buildCoverSuggestionQuery(coverSuggestionAsset.value))
+
+const buildCoverSuggestionQuery = (asset: AssetSummary | null) => {
+  if (!asset) return ''
+  const parts = [
+    asset.name,
+    asset.brandName,
+    asset.categoryId ? categoryPathMap.value.get(asset.categoryId) : undefined
+  ].filter((value): value is string => !!value)
+  return parts.join(' ')
+}
+
+const openCoverSuggestionDialog = (asset: AssetSummary) => {
+  coverSuggestionAsset.value = asset
+  coverSuggestionDialogVisible.value = true
+}
+
+const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
+  const asset = coverSuggestionAsset.value
+  if (!asset) return
+  try {
+    await setCoverFromUrl(asset.id, { sourceUrl: suggestion.sourceUrl })
+    ElMessage.success('封面更新成功')
+    await refresh()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '设置封面失败')
+  } finally {
+    coverSuggestionDialogVisible.value = false
+    coverSuggestionAsset.value = null
+  }
+}
+
+watch(coverSuggestionDialogVisible, (value) => {
+  if (!value) {
+    coverSuggestionAsset.value = null
+  }
+})
 
 const buildQuerySignature = (query: Record<string, any>) =>
   Object.entries(query)

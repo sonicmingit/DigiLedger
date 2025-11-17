@@ -5,15 +5,14 @@
       <p class="description">
         通过该工具可以验证上传配置是否正确。点击下方按钮选择文件，系统会调用后端上传接口并返回存储路径。
       </p>
-      <el-upload
+      <UnifiedUploader
         class="upload-block"
         :http-request="handleUpload"
-        :show-file-list="false"
         accept="image/*"
         :disabled="uploading"
-      >
-        <el-button type="primary" :loading="uploading">选择文件上传</el-button>
-      </el-upload>
+        :show-file-list="false"
+        @success="() => {}"
+      />
       <el-alert v-if="error" type="error" :title="error" show-icon class="mt" />
       <div v-if="result" class="result mt">
         <el-alert type="success" title="上传成功" show-icon />
@@ -31,6 +30,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { uploadFile } from '@/api/file'

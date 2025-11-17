@@ -27,6 +27,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseFile'
+  /api/files/remove-bg:
+    post:
+      summary: 一键抠图封面
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveBgReq'
+      responses:
+        '200':
+          description: 抠图完成后的封面信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRemoveBg'
   /api/attachments/upload:
     post:
       summary: 上传并保存附件
@@ -304,6 +320,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseSale'
+  /api/assets/{assetId}/cover/suggestions:
+    get:
+      summary: 智能找图设封面建议
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: 搜索关键字，默认使用物品名称+品牌+类别
+      responses:
+        '200':
+          description: 获取候选图
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCoverSuggestions'
+  /api/assets/{assetId}/cover/from-url:
+    post:
+      summary: 通过远程图片设置封面
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoverFromUrlReq'
+      responses:
+        '200':
+          description: 封面设置结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCoverApply'
   /api/purchases:
     post:
       summary: 新增购买记录（含附属品/服务）
@@ -577,6 +628,75 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/AssetDetail'
+    CoverSuggestion:
+      type: object
+      properties:
+        thumb_url:
+          type: string
+          nullable: true
+          description: 缩略图地址
+        source_url:
+          type: string
+          description: 原图地址
+    ApiResponseCoverSuggestions:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverSuggestion'
+    CoverApplyResponse:
+      type: object
+      properties:
+        attachment_id:
+          type: integer
+          format: int64
+        url:
+          type: string
+        object_key:
+          type: string
+    ApiResponseCoverApply:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          $ref: '#/components/schemas/CoverApplyResponse'
+    CoverFromUrlReq:
+      type: object
+      required: [source_url]
+      properties:
+        source_url:
+          type: string
+          description: 原图 URL
+    RemoveBgReq:
+      type: object
+      required: [asset_id]
+      properties:
+        asset_id:
+          type: integer
+          format: int64
+        attachment_id:
+          type: integer
+          format: int64
+          nullable: true
+        cover_url:
+          type: string
+          nullable: true
+    RemoveBgResp:
+      type: object
+      properties:
+        attachment_id:
+          type: integer
+          format: int64
+        url:
+          type: string
+    ApiResponseRemoveBg:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          $ref: '#/components/schemas/RemoveBgResp'
     ApiResponseSale:
       allOf:
         - $ref: '#/components/schemas/ApiResponseVoid'
