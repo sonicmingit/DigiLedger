@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -188,9 +187,6 @@ public class WishlistServiceImpl implements WishlistService {
         }
         if (request.getStatus() == null || request.getStatus().isBlank()) {
             request.setStatus("使用中");
-        }
-        if (request.getEnabledDate() == null) {
-            request.setEnabledDate(LocalDate.now());
         }
         Long assetId = assetService.createAsset(request);
         wishlistMapper.markConverted(id, assetId);

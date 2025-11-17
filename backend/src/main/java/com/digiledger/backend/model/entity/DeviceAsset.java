@@ -29,8 +29,6 @@ public class DeviceAsset {
     private Long purchaseId;
     /** 首次购买日期（冗余） */
     private LocalDate purchaseDate;
-    /** 启用日期 */
-    private LocalDate enabledDate;
     /** 报废日期 */
     private LocalDate retiredDate;
     /** 封面图 URL */

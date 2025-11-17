@@ -18,7 +18,6 @@ public record AssetSummaryDTO(
         BigDecimal avgCostPerDay,
         long useDays,
         BigDecimal lastNetIncome,
-        LocalDate enabledDate,
         LocalDate purchaseDate,
         List<TagDTO> tags
 ) {

@@ -225,7 +225,7 @@ const loadEditingData = async () => {
     const data = await fetchAssetDetail(editingId.value)
     assetForm.name = data.name
     assetForm.price = data.totalInvest
-    assetForm.purchaseDate = data.purchaseDate || data.enabledDate
+    assetForm.purchaseDate = data.purchaseDate || ''
     assetForm.categoryId = data.categoryId ?? ''
     assetForm.tagIds = data.tags?.map((tag) => tag.id) || []
     assetForm.notes = data.notes || ''
@@ -289,7 +289,6 @@ const submit = async () => {
         categoryId: typeof assetForm.categoryId === 'number' ? assetForm.categoryId : 0,
         status: '使用中',
         purchaseDate: assetForm.purchaseDate || undefined,
-        enabledDate: assetForm.purchaseDate || new Date().toISOString().slice(0, 10),
         notes: assetForm.notes,
         tagIds: assetForm.tagIds,
         coverImageUrl: assetForm.attachments[0]?.url,

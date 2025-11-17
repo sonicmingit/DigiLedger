@@ -90,7 +90,6 @@
               value-format="YYYY-MM-DD"
               :shortcuts="dateShortcuts"
               placeholder="选择购买日期"
-              @change="syncEnabledDate"
             />
           </el-form-item>
         </el-col>
@@ -339,7 +338,6 @@ const form = reactive({
   serialNo: '',
   status: '使用中',
   purchaseDate: today(),
-  enabledDate: today(),
   coverImageKey: '',
   tagIds: [] as number[],
   notes: '',
@@ -372,7 +370,6 @@ type AssetFormPrefill = Partial<
     | 'serialNo'
     | 'status'
     | 'purchaseDate'
-    | 'enabledDate'
     | 'coverImageKey'
     | 'tagIds'
     | 'notes'
@@ -472,7 +469,6 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
     form.serialNo = asset.serialNo || ''
     form.status = asset.status
     form.purchaseDate = asset.purchaseDate || today()
-    form.enabledDate = form.purchaseDate
     form.coverImageKey = asset.coverImageUrl || ''
     form.tagIds = asset.tags ? asset.tags.map((tag) => tag.id) : []
     form.notes = asset.notes || ''
@@ -498,7 +494,6 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
   } else {
     reset()
     form.purchaseDate = today()
-    form.enabledDate = today()
     if (options?.prefill) {
       applyPrefill(options.prefill)
     }
@@ -515,7 +510,6 @@ const reset = () => {
   form.serialNo = ''
   form.status = '使用中'
   form.purchaseDate = today()
-  form.enabledDate = today()
   form.coverImageKey = ''
   form.tagIds = []
   form.notes = ''
@@ -532,7 +526,6 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
   if (prefill.serialNo !== undefined) form.serialNo = prefill.serialNo
   if (prefill.status !== undefined) form.status = prefill.status
   if (prefill.purchaseDate !== undefined) form.purchaseDate = prefill.purchaseDate
-  if (prefill.enabledDate !== undefined) form.enabledDate = prefill.enabledDate
   if (prefill.coverImageKey !== undefined) form.coverImageKey = prefill.coverImageKey
   if (prefill.tagIds !== undefined) form.tagIds = Array.isArray(prefill.tagIds) ? [...prefill.tagIds] : []
   if (prefill.notes !== undefined) form.notes = prefill.notes
@@ -543,10 +536,6 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
     })) as AssetFormState['purchases']
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   }
-}
-
-const syncEnabledDate = () => {
-  form.enabledDate = form.purchaseDate || today()
 }
 
 const syncPurchaseWarranty = (purchase: AssetFormState['purchases'][number]) => {
@@ -685,34 +674,33 @@ const submit = () => {
     try {
       normalizeBrandName()
       const brandText = form.brandName.trim()
-      const payload = {
-        name: form.name,
-        categoryId: form.categoryId!,
-        brandId: form.brandId || undefined,
-        brand: brandText || undefined,
-        model: form.model || undefined,
-        serialNo: form.serialNo || undefined,
-        status: form.status,
-        purchaseDate: form.purchaseDate || undefined,
-        enabledDate: form.purchaseDate || undefined,
-        coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
-        notes: form.notes || undefined,
-        tagIds: form.tagIds,
-        purchases: form.purchases.map((p) => ({
-          type: p.type,
-          platformId: p.platformId,
-          seller: p.seller || undefined,
-          price: p.price,
-          shippingCost: p.shippingCost,
-          quantity: p.quantity,
-          purchaseDate: p.purchaseDate,
-          warrantyMonths: p.warrantyMonths ?? undefined,
-          warrantyExpireDate: p.warrantyExpireDate || undefined,
-          notes: p.notes || undefined,
-          name: p.type === 'PRIMARY' ? undefined : p.name,
-          attachments: extractObjectKeys(p.attachments)
-        }))
-      }
+        const payload = {
+          name: form.name,
+          categoryId: form.categoryId!,
+          brandId: form.brandId || undefined,
+          brand: brandText || undefined,
+          model: form.model || undefined,
+          serialNo: form.serialNo || undefined,
+          status: form.status,
+          purchaseDate: form.purchaseDate || undefined,
+          coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
+          notes: form.notes || undefined,
+          tagIds: form.tagIds,
+          purchases: form.purchases.map((p) => ({
+            type: p.type,
+            platformId: p.platformId,
+            seller: p.seller || undefined,
+            price: p.price,
+            shippingCost: p.shippingCost,
+            quantity: p.quantity,
+            purchaseDate: p.purchaseDate,
+            warrantyMonths: p.warrantyMonths ?? undefined,
+            warrantyExpireDate: p.warrantyExpireDate || undefined,
+            notes: p.notes || undefined,
+            name: p.type === 'PRIMARY' ? undefined : p.name,
+            attachments: extractObjectKeys(p.attachments)
+          }))
+        }
       let result: any
       if (customSubmit.value) {
         result = await customSubmit.value(payload)

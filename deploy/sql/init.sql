@@ -73,7 +73,6 @@ CREATE TABLE IF NOT EXISTS device_asset (
   status ENUM('使用中','已闲置','待出售','已出售','已丢弃') NOT NULL DEFAULT '使用中' COMMENT '状态',
   purchase_id BIGINT COMMENT '关联采购记录ID',
   purchase_date DATE COMMENT '采购日期',
-  enabled_date DATE NOT NULL COMMENT '启用日期',
   retired_date DATE COMMENT '退役日期',
   cover_image_url VARCHAR(500) COMMENT '封面图片地址',
   notes TEXT COMMENT '备注',

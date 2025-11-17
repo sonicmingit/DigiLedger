@@ -11,7 +11,6 @@ export type AssetPayload = {
   serialNo?: string
   status: string
   purchaseDate?: string
-  enabledDate: string
   retiredDate?: string
   coverImageUrl?: string
   notes?: string
