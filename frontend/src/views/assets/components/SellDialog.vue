@@ -56,9 +56,7 @@
       </el-form-item>
       <el-form-item label="附件">
         <div class="attachments">
-          <el-upload :http-request="uploadAttachment" :show-file-list="false" multiple>
-            <el-button text type="primary">上传附件</el-button>
-          </el-upload>
+          <UnifiedUploader :http-request="uploadAttachment" :show-file-list="false" multiple />
           <div v-for="(item, index) in form.attachments" :key="`${item}-${index}`" class="attachment">
             <el-image
               v-if="isImage(item)"
@@ -84,6 +82,7 @@
 
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted, watch } from 'vue'
+import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { fetchAssetDetail, sellAsset, updateSale } from '@/api/asset'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'

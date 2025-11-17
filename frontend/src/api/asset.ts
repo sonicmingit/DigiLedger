@@ -1,5 +1,12 @@
 import http from './http'
-import type { AssetDetail, AssetSummary, SaleRecord } from '../types'
+import type {
+  AssetDetail,
+  AssetSummary,
+  SaleRecord,
+  CoverSuggestion,
+  CoverApplyResult,
+  RemoveBgResult
+} from '../types'
 
 // 物品表单载荷，涵盖基础信息与购买记录
 export type AssetPayload = {
@@ -11,7 +18,6 @@ export type AssetPayload = {
   serialNo?: string
   status: string
   purchaseDate?: string
-  enabledDate: string
   retiredDate?: string
   coverImageUrl?: string
   notes?: string
@@ -89,3 +95,23 @@ export const updateSale = (assetId: number, saleId: number, payload: SellPayload
 
 export const deleteSale = (assetId: number, saleId: number) =>
   http.delete<void>(`/assets/${assetId}/sales/${saleId}`)
+
+export const fetchCoverSuggestions = (assetId: number, query?: string) =>
+  http.get<CoverSuggestion[]>(`/assets/${assetId}/cover/suggestions`, {
+    params: { query }
+  })
+
+export const setCoverFromUrl = (assetId: number, payload: { sourceUrl: string }) =>
+  http.post<CoverApplyResult>(`/assets/${assetId}/cover/from-url`, payload)
+
+export type RemoveBgPayload = {
+  assetId: number
+  attachmentId?: number
+  coverUrl?: string
+}
+
+export const removeCoverBackground = (payload: RemoveBgPayload) =>
+  http.post<RemoveBgResult>('/files/remove-bg', payload)
+
+export const previewCoverBackground = (payload: RemoveBgPayload) =>
+  http.post<RemoveBgResult>('/files/remove-bg-preview', payload)

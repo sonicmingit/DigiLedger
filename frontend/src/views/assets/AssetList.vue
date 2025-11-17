@@ -138,36 +138,40 @@
         </el-table-column>
         <el-table-column label="操作" width="260">
           <template #default="{ row }">
-            <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
-            <el-button link @click="openEdit(row.id)">编辑</el-button>
-            <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
-            <el-dropdown
-              v-if="row.status !== '已出售'"
-              trigger="click"
-              :hide-on-click="true"
-              @command="(value) => handleStatusCommand(row, value as AssetStatus)"
-            >
-              <span class="status-action">
-                <el-button link type="warning">修改状态</el-button>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item
-                    v-for="status in editableStatuses"
-                    :key="status"
-                    :command="status"
-                    :disabled="row.status === status"
-                  >
-                    {{ status }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="row-actions">
+              <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
+              <el-button link @click="openEdit(row.id)">编辑</el-button>
+              <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
+
+              <el-dropdown
+                v-if="row.status !== '已出售'"
+                trigger="click"
+                :hide-on-click="true"
+                @command="(value) => handleStatusCommand(row, value as AssetStatus)"
+              >
+                <span class="status-action">
+                  <el-button link type="warning">修改状态</el-button>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      v-for="status in editableStatuses"
+                      :key="status"
+                      :command="status"
+                      :disabled="row.status === status"
+                    >
+                      {{ status }}
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+
+              <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -183,6 +187,7 @@
           @toggle-select="(value) => toggleSelection(item.id, value)"
           @view="viewDetail"
           @edit="openEdit"
+          @suggest-cover="openCoverSuggestionDialog"
         >
           <template #actions>
             <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
@@ -226,6 +231,13 @@
     <sell-dialog ref="sellDialog" @success="refresh" />
     <batch-tag-dialog ref="batchDialog" @confirm="handleBatchConfirm" />
   </div>
+  <cover-suggestion-dialog
+    v-model="coverSuggestionDialogVisible"
+    :asset-id="coverSuggestionAsset?.id"
+    :query="coverSuggestionQuery"
+    @select="handleCoverSuggestionSelected"
+    @update:modelValue="(value) => !value && (coverSuggestionAsset = null)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -237,13 +249,15 @@ import {
   fetchAssets,
   deleteAsset,
   fetchAssetDetail,
-  updateAsset
+  updateAsset,
+  setCoverFromUrl
 } from '@/api/asset'
-import type { AssetSummary, AssetStatus, BrandInfo } from '@/types'
+import type { AssetSummary, AssetStatus, BrandInfo, CoverSuggestion } from '@/types'
 import AssetForm from './components/AssetForm.vue'
 import SellDialog from './components/SellDialog.vue'
 import BatchTagDialog from './components/BatchTagDialog.vue'
 import AssetCard from '@/components/AssetCard.vue'
+import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 import type { CategoryNode, TagNode } from '@/api/dict'
 import { extractObjectKey, extractObjectKeys } from '@/utils/storage'
@@ -319,6 +333,47 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
+
+const coverSuggestionDialogVisible = ref(false)
+const coverSuggestionAsset = ref<AssetSummary | null>(null)
+
+const coverSuggestionQuery = computed(() => buildCoverSuggestionQuery(coverSuggestionAsset.value))
+
+const buildCoverSuggestionQuery = (asset: AssetSummary | null) => {
+  if (!asset) return ''
+  const parts = [
+    asset.name,
+    asset.brandName,
+    asset.categoryId ? categoryPathMap.value.get(asset.categoryId) : undefined
+  ].filter((value): value is string => !!value)
+  return parts.join(' ')
+}
+
+const openCoverSuggestionDialog = (asset: AssetSummary) => {
+  coverSuggestionAsset.value = asset
+  coverSuggestionDialogVisible.value = true
+}
+
+const handleCoverSuggestionSelected = async (suggestion: CoverSuggestion) => {
+  const asset = coverSuggestionAsset.value
+  if (!asset) return
+  try {
+    await setCoverFromUrl(asset.id, { sourceUrl: suggestion.sourceUrl })
+    ElMessage.success('封面更新成功')
+    await refresh()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '设置封面失败')
+  } finally {
+    coverSuggestionDialogVisible.value = false
+    coverSuggestionAsset.value = null
+  }
+}
+
+watch(coverSuggestionDialogVisible, (value) => {
+  if (!value) {
+    coverSuggestionAsset.value = null
+  }
+})
 
 const buildQuerySignature = (query: Record<string, any>) =>
   Object.entries(query)
@@ -525,7 +580,6 @@ const changeStatus = async (asset: AssetSummary, status: AssetStatus) => {
       serialNo: detail.serialNo || undefined,
       status,
       purchaseDate: detail.purchaseDate || undefined,
-      enabledDate: detail.purchaseDate || detail.enabledDate,
       coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
       notes: detail.notes || undefined,
       tagIds: detail.tags?.map((tag) => tag.id) || [],
@@ -577,7 +631,6 @@ const handleBatchConfirm = async (tags: number[]) => {
           serialNo: detail.serialNo || undefined,
           status: detail.status,
           purchaseDate: detail.purchaseDate || undefined,
-          enabledDate: detail.purchaseDate || detail.enabledDate,
           coverImageUrl: extractObjectKey(detail.coverImageUrl) || undefined,
           notes: detail.notes || undefined,
           tagIds: tags,
@@ -705,6 +758,17 @@ onMounted(async () => {
 .status-action {
   display: inline-flex;
   align-items: center;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.row-actions :deep(.el-button) {
+  padding: 0 8px;
+  height: auto;
 }
 
 .tag-item {

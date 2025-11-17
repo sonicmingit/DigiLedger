@@ -15,7 +15,6 @@
         <result column="status" property="status" />
         <result column="purchase_id" property="purchaseId" />
         <result column="purchase_date" property="purchaseDate" />
-        <result column="enabled_date" property="enabledDate" />
         <result column="retired_date" property="retiredDate" />
         <result column="cover_image_url" property="coverImageUrl" />
         <result column="notes" property="notes" />
@@ -25,7 +24,7 @@
 
     <sql id="baseColumns">
         id, name, category_id, category_path, brand_id, brand, model, serial_no, status,
-        purchase_id, purchase_date, enabled_date, retired_date,
+        purchase_id, purchase_date, retired_date,
         cover_image_url, notes, created_at, updated_at
     </sql>
 
@@ -79,11 +78,11 @@
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_asset (
             name, category_id, category_path, brand_id, brand, model, serial_no, status,
-            purchase_id, purchase_date, enabled_date, retired_date,
+            purchase_id, purchase_date, retired_date,
             cover_image_url, notes
         ) VALUES (
             #{name}, #{categoryId}, #{categoryPath}, #{brandId}, #{brand}, #{model}, #{serialNo}, #{status},
-            #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
+            #{purchaseId}, #{purchaseDate}, #{retiredDate},
             #{coverImageUrl}, #{notes}
         )
     </insert>
@@ -101,7 +100,6 @@
             <if test="status != null">status = #{status},</if>
             <if test="purchaseId != null">purchase_id = #{purchaseId},</if>
             <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
-            <if test="enabledDate != null">enabled_date = #{enabledDate},</if>
             <if test="retiredDate != null">retired_date = #{retiredDate},</if>
             <if test="coverImageUrl != null">cover_image_url = #{coverImageUrl},</if>
             <if test="notes != null">notes = #{notes},</if>
@@ -125,6 +123,13 @@
         UPDATE device_asset
         SET purchase_id = #{purchaseId},
             purchase_date = #{purchaseDate},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateCoverImage">
+        UPDATE device_asset
+        SET cover_image_url = #{coverImageUrl},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
