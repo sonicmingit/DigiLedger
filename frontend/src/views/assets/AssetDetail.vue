@@ -191,7 +191,6 @@
           <el-descriptions-item label="序列号">{{ detail.serialNo || '-' }}</el-descriptions-item>
           <el-descriptions-item label="类别路径">{{ categoryName }}</el-descriptions-item>
           <el-descriptions-item label="购买日期">{{ detail.purchaseDate || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="启用日期">{{ detail.enabledDate || '-' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ detail.notes || '暂无' }}</el-descriptions-item>
         </el-descriptions>
       </el-card>
@@ -415,7 +414,6 @@ const savePurchases = async (purchases: PurchaseRecord[] | Partial<PurchaseRecor
     serialNo: detail.value.serialNo || undefined,
     status: detail.value.status as AssetStatus,
     purchaseDate: detail.value.purchaseDate || undefined,
-    enabledDate: detail.value.purchaseDate || detail.value.enabledDate,
     coverImageUrl: extractObjectKey(detail.value.coverImageUrl) || undefined,
     notes: detail.value.notes || undefined,
     tagIds: detail.value.tags.map((tag) => tag.id),

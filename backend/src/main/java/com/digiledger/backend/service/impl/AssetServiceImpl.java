@@ -131,7 +131,6 @@ public class AssetServiceImpl implements AssetService {
                 asset.getSerialNo(),
                 asset.getStatus(),
                 asset.getPurchaseDate(),
-                asset.getEnabledDate(),
                 asset.getRetiredDate(),
                 storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
                 asset.getNotes(),
@@ -203,10 +202,9 @@ public class AssetServiceImpl implements AssetService {
         DeviceAsset asset = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
         SaleScope saleScope = Optional.ofNullable(request.getSaleScope()).orElse(SaleScope.ASSET);
-        LocalDate enabledDate = Optional.ofNullable(asset.getEnabledDate())
-                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate()));
-        if (request.getSaleDate().isBefore(enabledDate)) {
-            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于启用日期");
+        LocalDate purchaseDate = Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate());
+        if (request.getSaleDate().isBefore(purchaseDate)) {
+            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于购买日期");
         }
         if (saleScope == SaleScope.ASSET
                 && !List.of("待出售", "已闲置", "使用中").contains(asset.getStatus())) {
@@ -250,10 +248,9 @@ public class AssetServiceImpl implements AssetService {
         if (saleScope == SaleScope.ASSET && !allowedStatuses.contains(asset.getStatus())) {
             throw new BizException(ErrorCode.SALE_STATUS_CONFLICT, "当前状态不可编辑为整机售出");
         }
-        LocalDate enabledDate = Optional.ofNullable(asset.getEnabledDate())
-                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate()));
-        if (request.getSaleDate().isBefore(enabledDate)) {
-            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于启用日期");
+        LocalDate purchaseDate = Optional.ofNullable(asset.getPurchaseDate()).orElse(request.getSaleDate());
+        if (request.getSaleDate().isBefore(purchaseDate)) {
+            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "售出日期不能早于购买日期");
         }
         Map<Long, DictPlatform> platformCache = new HashMap<>();
         applySaleRequest(asset, request, platformCache, existing);
@@ -280,36 +277,23 @@ public class AssetServiceImpl implements AssetService {
         syncAssetStatusBySales(asset);
     }
 
-    private void validateDates(AssetCreateRequest request) {
+        private void validateDates(AssetCreateRequest request) {
         LocalDate purchaseDate = request.getPurchaseDate();
-        final LocalDate enabledDate;  // 声明为final
-        if (request.getEnabledDate() == null) {
-            enabledDate = purchaseDate;
-            request.setEnabledDate(enabledDate);
-        } else {
-            enabledDate = request.getEnabledDate();
+        if (purchaseDate != null && request.getRetiredDate() != null
+                && request.getRetiredDate().isBefore(purchaseDate)) {
+            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "报废日期不能早于购买日期");
         }
-        // 弃用启用日期
-        /*if (enabledDate == null) {
-            throw new BizException(ErrorCode.VALIDATION_ERROR, "启用日期不能为空");
-        }
-        if (purchaseDate != null && enabledDate.isBefore(purchaseDate)) {
-            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期不能早于购买日期");
-        }
-        if (request.getRetiredDate() != null && request.getRetiredDate().isBefore(enabledDate)) {
-            throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "报废日期不能早于启用日期");
-        }
-        if (request.getPurchases() != null) {
-            request.getPurchases().forEach(purchase -> {  // 这里使用final的enabledDate
-                if (purchase.getPurchaseDate() != null && enabledDate.isBefore(purchase.getPurchaseDate())) {
-                    throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "启用日期需晚于购买日期");
+        if (purchaseDate != null && request.getPurchases() != null) {
+            for (PurchaseRequest purchase : request.getPurchases()) {
+                LocalDate purchaseRecordDate = purchase.getPurchaseDate();
+                if (purchaseRecordDate != null && purchaseRecordDate.isBefore(purchaseDate)) {
+                    throw new BizException(ErrorCode.DATE_RANGE_CONFLICT, "采购记录日期不能早于购买日期");
                 }
-            });
-        }*/
+            }
+        }
     }
 
-
-    private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brand) {
+private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory category, String categoryPath, DictBrand brand) {
         if (!VALID_STATUSES.contains(request.getStatus())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "资产状态非法");
         }
@@ -323,7 +307,6 @@ public class AssetServiceImpl implements AssetService {
         asset.setSerialNo(request.getSerialNo());
         asset.setStatus(request.getStatus());
         asset.setPurchaseDate(request.getPurchaseDate());
-        asset.setEnabledDate(request.getEnabledDate());
         asset.setRetiredDate(request.getRetiredDate());
         asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
         asset.setNotes(request.getNotes());
@@ -388,7 +371,6 @@ public class AssetServiceImpl implements AssetService {
                 metrics.avgCostPerDay,
                 metrics.useDays,
                 metrics.lastNetIncome,
-                asset.getEnabledDate(),
                 asset.getPurchaseDate(),
                 tags
         );
@@ -422,8 +404,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     private LocalDate resolveUsageStart(DeviceAsset asset) {
-        return Optional.ofNullable(asset.getEnabledDate())
-                .orElse(Optional.ofNullable(asset.getPurchaseDate()).orElse(LocalDate.now()));
+        return Optional.ofNullable(asset.getPurchaseDate()).orElse(LocalDate.now());
     }
 
     private LocalDate resolveUsageEnd(DeviceAsset asset, List<Sale> sales) {

@@ -141,7 +141,8 @@ const filteredAssets = computed(() => {
   if (sortLabel.value === '按价值排序') {
     return list.sort((a, b) => b.totalInvest - a.totalInvest)
   }
-  return list.sort((a, b) => new Date(b.enabledDate).getTime() - new Date(a.enabledDate).getTime())
+  const toTimestamp = (value?: string) => (value ? new Date(value).getTime() : 0)
+  return list.sort((a, b) => toTimestamp(b.purchaseDate) - toTimestamp(a.purchaseDate))
 })
 
 const flattenCategories = (nodes: CategoryNode[]) => {

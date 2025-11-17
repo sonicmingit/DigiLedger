@@ -36,8 +36,6 @@ public class AssetCreateRequest {
 
     private LocalDate purchaseDate;
 
-    private LocalDate enabledDate;
-
     private LocalDate retiredDate;
 
     @Size(max = 500, message = "封面 URL 过长")

@@ -676,9 +676,6 @@ components:
           format: double
         use_days:
           type: integer
-        enabled_date:
-          type: string
-          format: date
         purchase_date:
           type: string
           format: date
@@ -738,12 +735,7 @@ components:
         purchase_date:
           type: string
           format: date
-          description: 购买日期，将用于计算启用日期默认值。
-        enabled_date:
-          type: string
-          format: date
-          nullable: true
-          description: 后端默认与 `purchase_date` 一致，无需传入时可省略。
+          description: 购买日期，作为日均成本、使用天数和质保的起算点，同时支持购买时间范围筛选
         retired_date:
           type: string
           format: date

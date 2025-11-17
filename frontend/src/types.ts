@@ -30,7 +30,6 @@ export interface AssetSummary {
   avgCostPerDay: number
   useDays: number
   lastNetIncome: number
-  enabledDate: string
   purchaseDate?: string
   primaryPrice?: number
   primaryPurchaseDate?: string
