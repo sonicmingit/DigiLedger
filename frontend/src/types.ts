@@ -6,6 +6,9 @@ export type SaleScope = 'ASSET' | 'ACCESSORY'
 export interface CoverSuggestion {
   thumbUrl: string
   sourceUrl: string
+  source?: string
+  title?: string
+  extra?: Record<string, any>
 }
 
 export interface CoverApplyResult {
@@ -39,6 +42,7 @@ export interface AssetSummary {
   name: string
   categoryId?: number
   categoryPath?: string
+  brandName?: string
   status: AssetStatus
   coverImageUrl?: string
   totalInvest: number
@@ -119,7 +123,7 @@ export interface WishlistItem {
   link?: string
   notes?: string
   priority?: number
-  status: '待购买' | '已完成'
+  status: '待购买' | '已完成' | '已购买'
   imageUrl?: string
   tags?: TagItem[]
   convertedAssetId?: number

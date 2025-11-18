@@ -145,6 +145,7 @@ docker run -d --name digiledger-frontend \
 | `DL_STORAGE_ACCESS_KEY` | minioadmin  | 存储 AccessKey                |
 | `DL_STORAGE_SECRET_KEY` | minioadmin  | 存储 SecretKey                |
 | `DL_STORAGE_BASE_URL` | http://localhost:9000 | 文件访问基础 URL   |
+| `DL_BING_IMAGE_API_KEY` | (空)        | Bing 图片搜索 API Key，用于智能找图 |
 | `VITE_API_BASE`       | /api          | 前端访问后端的基础路径         |
 
 ## 下一步计划
