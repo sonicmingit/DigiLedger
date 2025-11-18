@@ -16,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,15 +49,17 @@ public class GoogleCustomSearchClient {
 
     public List<GoogleImageResult> searchImages(String query, int limit) {
         int finalCount = Math.min(Math.max(limit, 1), Math.max(1, properties.getMaxResults()));
+        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         URI uri = UriComponentsBuilder.fromHttpUrl(properties.getEndpoint())
                 .queryParam("key", properties.getApiKey())
                 .queryParam("cx", properties.getCseId())
-                .queryParam("q", query)
+                .queryParam("q", encodedQuery)
                 .queryParam("searchType", "image")
                 .queryParam("num", finalCount)
                 .queryParam("safe", properties.getSafe())
-                .build(true)
+                .build(false)
                 .toUri();
+        log.debug("Google 图片搜索请求：{}", uri);
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(uri, String.class);
             return parseResponse(query, response.getBody());

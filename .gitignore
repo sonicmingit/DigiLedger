@@ -10,3 +10,5 @@ frontend/dist/
 # General
 .DS_Store
 /参考/
+/backend/src/main/resources/application-home.yml
+/.vscode/settings.json

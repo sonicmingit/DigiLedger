@@ -184,7 +184,7 @@
               </el-button>
             </el-col>
             <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
-              <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
+              金额: <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
             </el-col>
           </el-row>
           
@@ -231,7 +231,12 @@
           </el-row>
           <el-row :gutter="12" class="mt">
             <el-col :xs="24">
-              <el-input v-model="purchase.notes" placeholder="备注" />
+              购买链接: <el-input v-model="purchase.productLink" placeholder="购买链接" />
+            </el-col>
+          </el-row>
+          <el-row :gutter="12" class="mt">
+            <el-col :xs="24">
+              备注: <el-input v-model="purchase.notes" placeholder="备注" />
             </el-col>
           </el-row>
           <div class="attachments">
@@ -358,6 +363,7 @@ const form = reactive({
     warrantyMonths?: number
     warrantyExpireDate?: string
     notes?: string
+    productLink?:string
     name?: string
     attachments: string[]
   }>
@@ -540,6 +546,7 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
           warrantyMonths: p.warrantyMonths ?? undefined,
           warrantyExpireDate: p.warrantyExpireDate || '',
           notes: p.notes || '',
+          productLink: p.productLink || '',
           name: p.type === 'PRIMARY' ? undefined : p.name || '',
           attachments: Array.isArray(p.attachments)
             ? p.attachments.filter((item): item is string => !!item)
@@ -752,6 +759,7 @@ const submit = () => {
             purchaseDate: p.purchaseDate,
             warrantyMonths: p.warrantyMonths ?? undefined,
             warrantyExpireDate: p.warrantyExpireDate || undefined,
+            productLink: p.productLink || undefined,
             notes: p.notes || undefined,
             name: p.type === 'PRIMARY' ? undefined : p.name,
             attachments: extractObjectKeys(p.attachments)

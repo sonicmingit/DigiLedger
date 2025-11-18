@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * 封装 Bing 图片搜索 API 调用。
  */
-@Component
+/*@Component*/
 public class BingImageSearchClient {
 
     private static final Logger log = LoggerFactory.getLogger(BingImageSearchClient.class);

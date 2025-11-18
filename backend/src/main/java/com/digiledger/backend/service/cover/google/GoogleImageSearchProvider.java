@@ -19,7 +19,7 @@ import java.util.Map;
  * Google 图片搜索实现，作为主要图片来源。
  */
 @Component
-@Order(10)
+@Order(20)
 public class GoogleImageSearchProvider implements ImageSearchProvider {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleImageSearchProvider.class);

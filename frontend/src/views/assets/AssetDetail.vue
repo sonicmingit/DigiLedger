@@ -420,8 +420,10 @@ const coverSuggestionQuery = computed(() => {
   if (!detail.value) return ''
   const parts = [
     detail.value.name,
-    resolveBrandName(detail.value.brand),
-    detail.value.categoryId ? categoryPathMap.value.get(detail.value.categoryId) : undefined
+    // 品牌
+    //resolveBrandName(detail.value.brand),
+    // 标签
+    //detail.value.categoryId ? categoryPathMap.value.get(detail.value.categoryId) : undefined
   ].filter((value): value is string => !!value)
   return parts.join(' ')
 })

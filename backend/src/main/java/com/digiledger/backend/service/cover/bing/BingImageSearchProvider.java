@@ -15,8 +15,8 @@ import java.util.Map;
 /**
  * 基于 Bing 的图片搜索实现。
  */
-@Component
-@Order(100)
+/*@Component
+@Order(100)*/
 public class BingImageSearchProvider implements ImageSearchProvider {
 
     private final BingImageSearchClient client;
