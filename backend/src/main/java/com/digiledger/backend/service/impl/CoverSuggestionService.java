@@ -65,10 +65,12 @@ public class CoverSuggestionService {
         List<CoverCandidate> candidates = new ArrayList<>();
         Set<String> unique = new LinkedHashSet<>();
 
+        // 购买链接解析得到的主图最高优先级
         resolveFromPurchase(purchases).ifPresent(candidate -> addCandidate(candidates, unique, candidate));
 
         String keyword = buildKeyword(asset, manualQuery);
         if (StringUtils.hasText(keyword) && !CollectionUtils.isEmpty(imageSearchProviders)) {
+            // Google 图片搜索为主要来源，Bing 等其他实现作为备用，按照 @Order 顺序依次查询
             for (ImageSearchProvider provider : imageSearchProviders) {
                 try {
                     List<CoverCandidate> results = provider.search(keyword, MAX_RESULTS);
