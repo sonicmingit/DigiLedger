@@ -93,12 +93,10 @@
         </el-form-item>
         <el-form-item label="类别">
           <div class="selector-with-action">
-            <el-tree-select
+            <el-cascader
               v-model="form.categoryId"
-              :data="categoryOptions"
-              :props="treeProps"
-              filterable
-              check-strictly
+              :options="categoryOptions"
+              :props="cascaderProps"
               clearable
               placeholder="选择类别"
               class="w-full"
@@ -135,14 +133,13 @@
         </el-form-item>
         <el-form-item label="标签">
           <div class="selector-with-action">
-            <el-tree-select
+            <el-cascader
               v-model="form.tagIds"
-              :data="tagOptions"
-              :props="treeProps"
+              :options="tagOptions"
+              :props="cascaderProps"
               multiple
-              show-checkbox
-              filterable
               clearable
+              filterable
               placeholder="选择标签"
               class="w-full"
             />
@@ -299,6 +296,14 @@ const treeProps = {
   value: 'value',
   label: 'label',
   children: 'children'
+}
+
+// cascader props: 返回最终节点的值而非路径数组
+const cascaderProps = {
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: false
 }
 
 const buildCategoryOptions = (nodes: CategoryNode[]): any[] =>

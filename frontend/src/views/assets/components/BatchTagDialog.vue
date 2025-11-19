@@ -3,12 +3,12 @@
     <el-form label-width="0">
       <el-form-item>
         <div class="tag-selector">
-          <el-tree-select
+          <el-cascader
             v-model="selected"
-            :data="tagOptions"
-            :props="treeProps"
+            :options="tagOptions"
+            :props="cascaderProps"
             multiple
-            show-checkbox
+            clearable
             filterable
             style="width: 100%"
             placeholder="选择应用到的标签"
@@ -48,6 +48,14 @@ const treeProps = {
   value: 'value',
   label: 'label',
   children: 'children'
+}
+
+// cascader props: 返回最终节点的值而非路径数组
+const cascaderProps = {
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: false
 }
 
 const buildOptions = (nodes: TagNode[]): any[] =>

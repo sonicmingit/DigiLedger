@@ -16,12 +16,11 @@
         </el-col>
         <el-col :xs="24" :md="12">
           <el-form-item label="物品类别" prop="categoryId" class="with-extra">
-            <el-tree-select
+            <el-cascader
               v-model="form.categoryId"
-              :data="categoryOptions"
-              :props="treeProps"
-              check-strictly
-              filterable
+              :options="categoryOptions"
+              :props="cascaderProps"
+              clearable
               placeholder="请选择类别"
               style="width: 80%"
             />
@@ -491,6 +490,14 @@ const treeProps = {
   label: 'label',
   children: 'children',
   disabled: 'disabled'
+}
+
+// cascader 使用以支持仅返回最终节点的值（categoryId），不返回完整路径数组
+const cascaderProps = {
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: false
 }
 
 const buildCategoryOptions = (nodes: CategoryNode[]): any[] =>
