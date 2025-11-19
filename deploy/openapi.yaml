@@ -330,6 +330,11 @@ paths:
           schema:
             type: string
           description: 搜索关键字，默认使用物品名称+品牌+类别
+        - name: provider
+          in: query
+          schema:
+            type: string
+          description: 指定智能找图服务编码，留空则按默认顺序依次尝试
       responses:
         '200':
           description: 获取候选图
@@ -490,7 +495,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponseLong'
+                $ref: '#/components/schemas/ApiResponseLong'  /api/image-search/providers:
+    get:
+      summary: 获取可用的智能找图服务
+      responses:
+        '200':
+          description: 服务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseImageSearchProviders'
+
+  /api/image-search/providers/default:
+    put:
+      summary: 更新默认智能找图服务
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDefaultImageSearchProviderRequest'
+      responses:
+        '200':
+          description: 设置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+
+
 components:
   parameters:
     AssetId:
@@ -572,6 +605,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Attachment'
+    ApiResponseImageSearchProviders:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data:
+          $ref: '#/components/schemas/ImageSearchProviderList'
+    ImageSearchProviderList:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageSearchProvider'
+        defaultProvider:
+          type: string
+          nullable: true
+    ImageSearchProvider:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+          nullable: true
+    UpdateDefaultImageSearchProviderRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          nullable: true
+
     Attachment:
       type: object
       properties:

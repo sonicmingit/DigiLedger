@@ -13,6 +13,7 @@
         <result column="storage_access_key" property="storageAccessKey" />
         <result column="storage_secret_key" property="storageSecretKey" />
         <result column="storage_base_url" property="storageBaseUrl" />
+        <result column="default_cover_provider" property="defaultCoverProvider" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
@@ -20,5 +21,16 @@
     <select id="findLatest" resultMap="settingResultMap">
         SELECT * FROM sys_setting ORDER BY updated_at DESC LIMIT 1
     </select>
+
+    <insert id="insertDefaultProvider">
+        INSERT INTO sys_setting (default_cover_provider)
+        VALUES (#{provider})
+    </insert>
+
+    <update id="updateDefaultProvider">
+        UPDATE sys_setting
+        SET default_cover_provider = #{provider}
+        WHERE id = #{id}
+    </update>
 
 </mapper>

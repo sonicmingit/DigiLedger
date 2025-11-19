@@ -96,10 +96,12 @@ export const updateSale = (assetId: number, saleId: number, payload: SellPayload
 export const deleteSale = (assetId: number, saleId: number) =>
   http.delete<void>(`/assets/${assetId}/sales/${saleId}`)
 
-export const fetchCoverSuggestions = (assetId: number, query?: string) =>
-  http.get<CoverSuggestion[]>(`/assets/${assetId}/cover/suggestions`, {
-    params: { query }
-  })
+export const fetchCoverSuggestions = (assetId: number, query?: string, provider?: string) => {
+  const params: Record<string, string> = {}
+  if (query) params.query = query
+  if (provider) params.provider = provider
+  return http.get<CoverSuggestion[]>(`/assets/${assetId}/cover/suggestions`, { params })
+}
 
 export const setCoverFromUrl = (assetId: number, payload: { sourceUrl: string }) =>
   http.post<CoverApplyResult>(`/assets/${assetId}/cover/from-url`, payload)

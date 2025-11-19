@@ -14,6 +14,16 @@ public interface ImageSearchProvider {
      */
     String getName();
 
+    /** ����չʾ���ƣ�Ĭ�Ϸ��� getName */
+    default String getDisplayName() {
+        return getName();
+    }
+
+    /** �����û����ʾ������ѡ */
+    default String getDescription() {
+        return null;
+    }
+
     /**
      * 按关键字搜索封面候选。
      */

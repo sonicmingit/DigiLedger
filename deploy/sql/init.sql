@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS sys_setting (
   storage_access_key VARCHAR(128) COMMENT '对象存储 AccessKey',
   storage_secret_key VARCHAR(128) COMMENT '对象存储 SecretKey',
   storage_base_url VARCHAR(255) COMMENT '对象存储基础访问 URL',
+  default_cover_provider VARCHAR(64) DEFAULT NULL COMMENT '默认智能找图服务',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) COMMENT='系统设置表';

@@ -9,12 +9,33 @@
     <div class="search-panel">
       <el-input
         v-model="keyword"
-        placeholder="请输入物品名称、品牌和类别，支持手动调整"
+        placeholder="请输入名称/品牌或商品链接，支持模糊搜索"
         clearable
         size="small"
         class="search-input"
         @keyup.enter="searchSuggestions"
       />
+      <el-select
+        v-model="selectedProvider"
+        class="provider-select"
+        size="small"
+        placeholder="选择图片来源"
+        clearable
+        :loading="providerLoading"
+      >
+        <el-option label="自动选择（推荐）" value="" />
+        <el-option
+          v-for="provider in providerOptions"
+          :key="provider.name"
+          :label="provider.displayName"
+          :value="provider.name"
+        >
+          <div class="provider-option">
+            <span class="provider-option-name">{{ provider.displayName }}</span>
+            <span class="provider-option-desc" v-if="provider.description">{{ provider.description }}</span>
+          </div>
+        </el-option>
+      </el-select>
       <el-button type="primary" size="small" :loading="loading" @click="searchSuggestions">
         搜索
       </el-button>
@@ -63,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
-import type { CoverSuggestion } from '@/types'
+import type { CoverSuggestion, ImageSearchProviderItem } from '@/types'
 import { fetchCoverSuggestions } from '@/api/asset'
+import { fetchImageSearchProviders } from '@/api/imageSearch'
 
 const props = withDefaults(
   defineProps<{
@@ -89,6 +111,10 @@ const keyword = ref(props.query || '')
 const suggestions = ref<CoverSuggestion[]>([])
 const loading = ref(false)
 const error = ref('')
+const providerOptions = ref<ImageSearchProviderItem[]>([])
+const selectedProvider = ref('')
+const providerLoading = ref(false)
+const providerInitialized = ref(false)
 
 const showEmpty = computed(() => !suggestions.value.length && !error.value && props.assetId && !loading.value)
 
@@ -98,6 +124,25 @@ const sourceLabelMap: Record<string, string> = {
   PURCHASE_LINK_PDD: '购买链接 · 拼多多',
   BING_IMAGE_SEARCH: 'Bing 图像搜索'
 }
+const loadProviders = async () => {
+  providerLoading.value = true
+  try {
+    const data = await fetchImageSearchProviders()
+    providerOptions.value = data.providers || []
+    if (!providerInitialized.value || !selectedProvider.value) {
+      selectedProvider.value = data.defaultProvider || ''
+    }
+    providerInitialized.value = true
+  } catch (err) {
+    console.error('failed to load image search providers', err)
+  } finally {
+    providerLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadProviders()
+})
 
 watch(
   () => props.modelValue,
@@ -130,7 +175,13 @@ const searchSuggestions = async () => {
   loading.value = true
   error.value = ''
   try {
-    suggestions.value = await fetchCoverSuggestions(props.assetId, keyword.value.trim())
+    const manualQuery = keyword.value.trim()
+    const provider = selectedProvider.value || undefined
+    suggestions.value = await fetchCoverSuggestions(
+      props.assetId,
+      manualQuery || undefined,
+      provider
+    )
   } catch (err: any) {
     error.value = err?.message || '暂时无法获取封面候选图片，请稍后重试或手动上传。'
   } finally {
@@ -166,6 +217,26 @@ const handleClose = () => {
 
 .search-input {
   flex: 1;
+}
+
+.provider-select {
+  min-width: 160px;
+  width: 160px;
+}
+
+.provider-option {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.provider-option-name {
+  font-weight: 500;
+}
+
+.provider-option-desc {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .suggestion-grid {
@@ -214,6 +285,7 @@ const handleClose = () => {
   color: #334155;
   line-height: 1.4;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

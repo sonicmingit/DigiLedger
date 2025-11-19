@@ -34,6 +34,16 @@ public class BingImageSearchProvider implements ImageSearchProvider {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Bing 图片搜索";
+    }
+
+    @Override
+    public String getDescription() {
+        return "微软 Bing 通用图片搜索";
+    }
+
+    @Override
     public List<CoverCandidate> search(String query, int limit) {
         int target = limit > 0 ? limit : properties.getDefaultCount();
         List<BingImageSearchClient.BingImageResult> results = client.searchImages(query, target);

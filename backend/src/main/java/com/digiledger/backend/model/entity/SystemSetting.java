@@ -24,6 +24,8 @@ public class SystemSetting {
     private String storageSecretKey;
     /** 对外访问基地址 */
     private String storageBaseUrl;
+    /** 默认智能找图服务 */
+    private String defaultCoverProvider;
     /** 创建时间 */
     private LocalDateTime createdAt;
     /** 更新时间 */

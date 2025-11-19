@@ -30,8 +30,9 @@ public class AssetCoverController {
 
     @GetMapping("/suggestions")
     public ApiResponse<List<CoverSuggestionDTO>> suggestions(@PathVariable("assetId") Long assetId,
-                                                             @RequestParam(name = "query", required = false) String query) {
-        List<CoverCandidate> candidates = suggestionService.getCoverCandidatesForAsset(assetId, query);
+                                                             @RequestParam(name = "query", required = false) String query,
+                                                             @RequestParam(name = "provider", required = false) String provider) {
+        List<CoverCandidate> candidates = suggestionService.getCoverCandidatesForAsset(assetId, query, provider);
         return ApiResponse.success(candidates.stream().map(CoverSuggestionDTO::fromCandidate).toList());
     }
 

@@ -53,7 +53,7 @@ public class CoverSuggestionService {
         this.imageSearchProviders = imageSearchProviders == null ? List.of() : imageSearchProviders;
     }
 
-    public List<CoverCandidate> getCoverCandidatesForAsset(Long assetId, String manualQuery) {
+    public List<CoverCandidate> getCoverCandidatesForAsset(Long assetId, String manualQuery, String providerName) {
         if (assetId == null) {
             return List.of();
         }
@@ -69,9 +69,10 @@ public class CoverSuggestionService {
         resolveFromPurchase(purchases).ifPresent(candidate -> addCandidate(candidates, unique, candidate));
 
         String keyword = buildKeyword(asset, manualQuery);
-        if (StringUtils.hasText(keyword) && !CollectionUtils.isEmpty(imageSearchProviders)) {
+        List<ImageSearchProvider> providersToUse = resolveProviders(providerName);
+        if (StringUtils.hasText(keyword) && !CollectionUtils.isEmpty(providersToUse)) {
             // Google 图片搜索为主要来源，Bing 等其他实现作为备用，按照 @Order 顺序依次查询
-            for (ImageSearchProvider provider : imageSearchProviders) {
+            for (ImageSearchProvider provider : providersToUse) {
                 try {
                     List<CoverCandidate> results = provider.search(keyword, MAX_RESULTS);
                     for (CoverCandidate candidate : results) {
@@ -91,10 +92,28 @@ public class CoverSuggestionService {
         return candidates;
     }
 
-    public List<CoverSuggestionDTO> suggest(Long assetId, String manualQuery) {
-        return getCoverCandidatesForAsset(assetId, manualQuery).stream()
+    public List<CoverSuggestionDTO> suggest(Long assetId, String manualQuery, String providerName) {
+        return getCoverCandidatesForAsset(assetId, manualQuery, providerName).stream()
                 .map(CoverSuggestionDTO::fromCandidate)
                 .toList();
+    }
+
+    private List<ImageSearchProvider> resolveProviders(String providerName) {
+        if (CollectionUtils.isEmpty(imageSearchProviders)) {
+            return List.of();
+        }
+        if (!StringUtils.hasText(providerName)) {
+            return imageSearchProviders;
+        }
+        String target = providerName.trim();
+        return imageSearchProviders.stream()
+                .filter(provider -> provider.getName().equalsIgnoreCase(target))
+                .findFirst()
+                .map(List::of)
+                .orElseGet(() -> {
+                    log.warn("指定的智能找图服务 {} 不存在，退回默认顺序", providerName);
+                    return imageSearchProviders;
+                });
     }
 
     private Optional<CoverCandidate> resolveFromPurchase(List<Purchase> purchases) {

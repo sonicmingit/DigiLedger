@@ -68,6 +68,16 @@ public class JdBingImageSearchProvider implements ImageSearchProvider {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Bing 京东搜图";
+    }
+
+    @Override
+    public String getDescription() {
+        return "搜索京东商城，适合国内电商封面";
+    }
+
+    @Override
     public List<CoverCandidate> search(String query, int limit) {
         if (!StringUtils.hasText(query)) {
             return List.of();
@@ -121,7 +131,7 @@ public class JdBingImageSearchProvider implements ImageSearchProvider {
                 String pageUrl = node.path("purl").asText(null);
                 String title = node.path("pt").asText("");
                 Map<String, Object> extra = new HashMap<>();
-                extra.put("sourceLabel", "Bing 淘宝站搜索");
+                extra.put("sourceLabel", "Bing 京东搜索");
                 if (StringUtils.hasText(pageUrl)) {
                     extra.put("pageUrl", pageUrl);
                 }

@@ -17,6 +17,9 @@
         <el-tab-pane label="上传测试" name="upload">
           <upload-tester />
         </el-tab-pane>
+        <el-tab-pane label="智能找图" name="image-search">
+          <image-search-settings />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -29,6 +32,7 @@ import PlatformManager from './components/PlatformManager.vue'
 import TagManager from './components/TagManager.vue'
 import BrandManager from './components/BrandManager.vue'
 import UploadTester from './components/UploadTester.vue'
+import ImageSearchSettings from './components/ImageSearchSettings.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const active = ref('categories')

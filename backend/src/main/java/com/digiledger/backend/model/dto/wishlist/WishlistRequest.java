@@ -49,4 +49,9 @@ public class WishlistRequest {
     private String status = "未购买";
 
     private List<@NotNull(message = "标签ID不能为空") Long> tagIds;
+
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.digiledger.backend.common.json.ListOrSingleDeserializer.class)
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds;
+    }
 }

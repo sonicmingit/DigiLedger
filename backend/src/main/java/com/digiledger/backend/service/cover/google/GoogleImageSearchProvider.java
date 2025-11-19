@@ -40,6 +40,16 @@ public class GoogleImageSearchProvider implements ImageSearchProvider {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Google 图片搜索";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Google CSE，覆盖更全面的图像结果";
+    }
+
+    @Override
     public List<CoverCandidate> search(String query, int limit) {
         if (!StringUtils.hasText(query)) {
             return List.of();

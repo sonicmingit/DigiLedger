@@ -68,6 +68,16 @@ public class TaobaoBingImageSearchProvider implements ImageSearchProvider {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Bing 淘宝搜图";
+    }
+
+    @Override
+    public String getDescription() {
+        return "搜索淘宝商品图片";
+    }
+
+    @Override
     public List<CoverCandidate> search(String query, int limit) {
         if (!StringUtils.hasText(query)) {
             return List.of();

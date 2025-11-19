@@ -22,6 +22,17 @@ export interface RemoveBgResult {
   url: string
 }
 
+export interface ImageSearchProviderItem {
+  name: string
+  displayName: string
+  description?: string
+}
+
+export interface ImageSearchProvidersResponse {
+  providers: ImageSearchProviderItem[]
+  defaultProvider?: string
+}
+
 export interface TagItem {
   id: number
   name: string
