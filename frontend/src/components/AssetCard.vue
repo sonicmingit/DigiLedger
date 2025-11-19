@@ -35,7 +35,7 @@
         class="tag"
         :style="tag.color ? { backgroundColor: tag.color, borderColor: tag.color, color: '#0f172a' } : undefined"
       >
-        <i v-if="tag.icon" :class="tag.icon" class="tag-icon" />
+        <IconRenderer :icon="tag.icon" />
         {{ tag.name }}
       </el-tag>
     </div>
@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import IconRenderer from '@/components/IconRenderer.vue'
 import type { AssetSummary } from '@/types'
 import { buildOssUrl } from '@/utils/storage'
 
@@ -236,6 +237,13 @@ const handleCoverClick = () => {
 
 .tag-icon {
   margin-right: 4px;
+}
+
+.tag-icon-svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: text-bottom;
+  margin-right: 6px;
 }
 
 .actions {

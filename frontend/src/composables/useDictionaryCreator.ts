@@ -71,7 +71,22 @@ export const useDictionaryCreator = () => {
   const promptTagCreation = async (parentId: number | null = null): Promise<CreatorResult | null> => {
     const name = await promptInput('新建标签', '例如：主力设备')
     if (!name) return null
-    const id = await createTag({ name, parentId })
+    // 询问是否选择颜色（使用简单对话框包含 color input）
+    let color: string | undefined = undefined
+    try {
+      const colorHtml = '<div style="display:flex;align-items:center;gap:12px"><div>选择颜色：</div><input id="__new_tag_color" type="color" value="#60a5fa" style="width:48px;height:32px;border:0;padding:0;margin:0"/></div>'
+      await ElMessageBox.confirm(colorHtml, '可选：选择标签颜色', {
+        confirmButtonText: '确定并创建',
+        cancelButtonText: '跳过',
+        dangerouslyUseHTMLString: true
+      })
+      // 读取用户在对话框中选择的颜色值
+      const inputEl = document.getElementById('__new_tag_color') as HTMLInputElement | null
+      if (inputEl && inputEl.value) color = inputEl.value
+    } catch (err) {
+      // 用户选择跳过或关闭对话框，保持 color undefined
+    }
+    const id = await createTag({ name, parentId, color })
     await refresh()
     ElMessage.success('标签已创建')
     return { id, name }

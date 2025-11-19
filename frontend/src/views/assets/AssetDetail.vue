@@ -21,7 +21,7 @@
                 class="tag"
                 :style="tag.color ? { backgroundColor: tag.color, borderColor: tag.color, color: '#0f172a' } : undefined"
               >
-                <i v-if="tag.icon" :class="tag.icon" class="tag-icon" />
+                <IconRenderer :icon="tag.icon" />
                 {{ tag.name }}
               </el-tag>
               <span v-if="!detail.tags.length">无标签</span>
@@ -290,6 +290,7 @@ import CoverSuggestionDialog from '@/components/CoverSuggestionDialog.vue'
 import type { CoverSuggestion } from '@/types'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { buildOssUrl, extractObjectKey, extractObjectKeys } from '@/utils/storage'
+import IconRenderer from '@/components/IconRenderer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -773,6 +774,13 @@ onMounted(async () => {
 
 .tag-icon {
   margin-right: 4px;
+}
+
+.tag-icon-svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: text-bottom;
+  margin-right: 6px;
 }
 
 .card-header {

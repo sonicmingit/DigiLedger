@@ -70,7 +70,7 @@ export const fetchAssets = (params?: {
   if (params?.keyword) query.q = params.keyword
   if (params?.categoryId) query.category_id = params.categoryId
   if (params?.platformId) query.platform_id = params.platformId
-  if (params?.tagIds && params.tagIds.length > 0) query.tag_ids = params.tagIds
+  if (params?.tagIds && params.tagIds.length > 0) query.tag_ids = params.tagIds.join(',')
   return http.get<AssetSummary[]>('/assets', { params: query })
 }
 

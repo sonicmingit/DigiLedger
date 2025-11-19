@@ -17,7 +17,7 @@
       <template #default="{ data }">
         <span class="tag-node">
           <span v-if="data.color" class="color-dot" :style="{ backgroundColor: data.color }"></span>
-          <i v-if="data.icon" :class="['tag-icon', data.icon]" />
+          <IconRenderer :icon="data.icon" />
           <span class="name">{{ data.name }}</span>
         </span>
         <span class="node-actions">
@@ -39,8 +39,26 @@
           <el-color-picker v-model="form.color" show-alpha />
         </el-form-item>
         <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="如 ri-star-fill" />
+          <el-input v-model="form.icon" placeholder="如 ri-star-fill (也可以点击下方选择)" />
+          <div class="icon-picker">
+            <div
+              v-for="icon in availableIcons"
+              :key="icon"
+              class="icon-tile"
+              :class="{ selected: form.icon === icon }"
+              @click="() => (form.icon = icon)"
+              role="button"
+              tabindex="0"
+            >
+              <IconRenderer :icon="icon" />
+              <div class="icon-label">{{ icon }}</div>
+            </div>
+          </div>
         </el-form-item>
+        <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+          <a href="https://materialdesignicons.com/cdn/1.6.50-dev/" target="_blank" rel="noreferrer">Icons</a>
+          <el-button size="small" type="primary" @click="downloadDialogVisible = true">从 MDI 下载图标</el-button>
+        </div>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" :step="5" />
         </el-form-item>
@@ -48,6 +66,18 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
+      </template>
+    </el-dialog>
+    <el-dialog v-model="downloadDialogVisible" title="从 MDI 下载图标" width="520px">
+      <div>
+        <p>输入 MDI 名称（用空格或逗号分隔），例如 <code>football</code> 或 <code>account star</code>。</p>
+        <el-input v-model="downloadNames" placeholder="例如: football star" clearable />
+        <p style="margin-top:8px">操作：在项目 `frontend` 目录运行以下命令将把 SVG 下载到 <code>public/mdi/</code>：</p>
+        <el-input type="textarea" :rows="2" :model-value="fetchCommand()" readonly />
+      </div>
+      <template #footer>
+        <el-button @click="downloadDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="copyFetchCommand">复制命令</el-button>
       </template>
     </el-dialog>
   </div>
@@ -59,6 +89,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { createTag, updateTag, deleteTag, type TagNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
+import IconRenderer from '@/components/IconRenderer.vue'
 
 const { tagTree, tagMap, refresh: refreshDicts, load: loadDicts } = useDictionaries()
 const loading = ref(false)
@@ -82,6 +113,26 @@ const rules = {
   name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }]
 }
 
+// 将可能的 rgb/rgba 颜色字符串转换为十六进制（#rrggbb）
+const normalizeColorToHex = (color?: string | null) => {
+  if (!color) return ''
+  const s = color.trim()
+  if (s.startsWith('#')) return s
+  // match rgb(...) or rgba(...)
+  const m = s.match(/rgba?\s*\(([^)]+)\)/i)
+  if (m) {
+    const parts = m[1].split(',').map((p) => p.trim())
+    const r = Number(parts[0]) || 0
+    const g = Number(parts[1]) || 0
+    const b = Number(parts[2]) || 0
+    // ignore alpha for hex representation
+    const toHex = (n: number) => (n < 16 ? '0' : '') + n.toString(16)
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toLowerCase()
+  }
+  // fallback: return original string
+  return s
+}
+
 const reset = () => {
   form.id = 0
   form.name = ''
@@ -91,6 +142,31 @@ const reset = () => {
   form.sort = nextSort(tagTree.value)
   parentLabel.value = '根标签'
 }
+
+const downloadDialogVisible = ref(false)
+const downloadNames = ref('')
+const fetchCommand = () => `npm run fetch-mdi -- ${downloadNames.value.trim()}`
+const copyFetchCommand = async () => {
+  try {
+    await navigator.clipboard.writeText(fetchCommand())
+    ElMessage.success('命令已复制到剪贴板')
+  } catch (e) {
+    ElMessage.error('复制失败，请手动复制')
+  }
+}
+
+const availableIcons = [
+  'mdi-account',
+  'mdi-star',
+  'mdi-heart',
+  'mdi-bookmark',
+  'mdi-tag',
+  'mdi-folder',
+  'mdi-cart',
+  'mdi-search',
+  'mdi-image',
+  'mdi-user',
+]
 
 const nextSort = (nodes: TagNode[] = []) => nodes.reduce((max, node) => Math.max(max, node.sort ?? 0), 0) + 10
 
@@ -114,7 +190,7 @@ const openEdit = (node: TagNode) => {
   form.id = node.id
   form.name = node.name
   form.parentId = node.parentId ?? null
-  form.color = node.color || ''
+  form.color = normalizeColorToHex(node.color || '')
   form.icon = node.icon || ''
   form.sort = node.sort ?? 0
   parentLabel.value = node.parentId ? tagMap.value.get(node.parentId)?.name || '根标签' : '根标签'
@@ -129,7 +205,7 @@ const submit = () => {
       const payload = {
         name: form.name,
         parentId: form.parentId ?? null,
-        color: form.color || undefined,
+        color: normalizeColorToHex(form.color) || undefined,
         icon: form.icon || undefined,
         sort: form.sort
       }
@@ -179,14 +255,14 @@ const handleDrop = async (_dragging: any, dropNode: any, dropType: string) => {
     : (dropNode.parent ? dropNode.parent.childNodes : tree?.root?.childNodes) || []
   loading.value = true
   try {
-    for (let index = 0; index < siblings.length; index += 1) {
+      for (let index = 0; index < siblings.length; index += 1) {
       const sibling = siblings[index]
       const data: TagNode = sibling.data
       const parentId = sibling.parent?.data?.id ?? null
       await updateTag(data.id, {
         name: data.name,
-        parentId,
-        color: data.color || undefined,
+          parentId,
+          color: normalizeColorToHex(data.color) || undefined,
         icon: data.icon || undefined,
         sort: index * 10
       })
@@ -239,5 +315,44 @@ reset()
   margin-left: 12px;
   display: inline-flex;
   gap: 8px;
+}
+
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.icon-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 56px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px;
+}
+.icon-tile .tag-icon {
+  font-size: 20px;
+}
+.tag-icon-svg {
+  width: 20px;
+  height: 20px;
+  color: #fcd34d;
+}
+.icon-tile .icon-label {
+  font-size: 11px;
+  margin-top: 6px;
+  color: rgba(255,255,255,0.65);
+  text-align: center;
+  word-break: break-all;
+}
+.icon-tile.selected {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.06);
 }
 </style>

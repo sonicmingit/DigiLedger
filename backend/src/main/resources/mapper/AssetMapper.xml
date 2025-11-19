@@ -40,7 +40,8 @@
                     #{tagId}
                 </foreach>
                 GROUP BY atm.asset_id
-                HAVING COUNT(DISTINCT atm.tag_id) = #{tagCount}
+               <!-- 任一标签即可
+               HAVING COUNT(DISTINCT atm.tag_id) = #{tagCount}-->
             ) tag_filter ON tag_filter.asset_id = da.id
         </if>
         <where>

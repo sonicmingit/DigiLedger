@@ -49,17 +49,18 @@
           </el-select>
         </el-form-item>
         <el-form-item label="标签">
-          <el-cascader
+          <el-select
             v-model="filters.tagIds"
-            :options="tagOptions"
-            :props="cascaderProps"
             multiple
             clearable
             filterable
             placeholder="选择标签"
             class="filter-tree"
             @change="refresh"
-          />
+            style="min-width: 200px"
+          >
+            <el-option v-for="item in flatTagOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
         <div class="filter-actions">
           <el-button type="primary" @click="openCreate">
@@ -95,6 +96,7 @@
         class="asset-table"
         :class="{ 'is-compact': compact }"
         :data="assets"
+        empty-text=""
         stripe
         style="width: 100%"
         :loading="loading"
@@ -108,7 +110,9 @@
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.status }}</el-tag>
+            <div class="cell-center">
+              <el-tag size="small">{{ row.status }}</el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="主商品价格" width="140">
@@ -127,7 +131,7 @@
               class="tag-item"
               :style="tag.color ? { backgroundColor: tag.color, borderColor: tag.color, color: '#0f172a' } : undefined"
             >
-              <i v-if="tag.icon" :class="tag.icon" class="tag-icon" />
+              <IconRenderer :icon="tag.icon" />
               {{ tag.name }}
             </el-tag>
             <span v-if="!row.tags.length">-</span>
@@ -242,6 +246,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import IconRenderer from '@/components/IconRenderer.vue'
 import {
   fetchAssets,
   deleteAsset,
@@ -338,6 +343,20 @@ const buildTagOptions = (nodes: TagNode[]): any[] =>
 
 const categoryOptions = computed(() => buildCategoryOptions(categoryTree.value))
 const tagOptions = computed(() => buildTagOptions(tagTree.value))
+
+// 扁平化标签选项用于多选下拉（value,label）
+const flatTagOptions = computed(() => {
+  const res: { value: number; label: string }[] = []
+  const walk = (nodes: any[] = []) => {
+    nodes.forEach((n) => {
+      if (!n) return
+      res.push({ value: n.value, label: n.label })
+      if (n.children && n.children.length) walk(n.children)
+    })
+  }
+  walk(tagOptions.value)
+  return res
+})
 
 const coverSuggestionDialogVisible = ref(false)
 const coverSuggestionAsset = ref<AssetSummary | null>(null)
@@ -703,7 +722,7 @@ onMounted(async () => {
 }
 
 .status-card {
-  padding-bottom: 0;
+  padding: 6px 12px;
 }
 
 .status-tabs :deep(.el-tabs__header) {
@@ -714,17 +733,24 @@ onMounted(async () => {
   border: none;
   background: transparent;
   color: var(--color-muted);
+  padding: 8px 18px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .status-tabs :deep(.el-tabs__item.is-active) {
   background: var(--color-accent-soft);
   color: var(--color-accent);
   border-radius: 8px 8px 0 0;
+  box-shadow: none;
 }
 
 .status-tabs :deep(.el-tabs__nav) {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .filter-form {
@@ -765,6 +791,13 @@ onMounted(async () => {
   align-items: center;
 }
 
+.cell-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
 .row-actions {
   display: inline-flex;
   align-items: center;
@@ -783,6 +816,13 @@ onMounted(async () => {
 
 .tag-icon {
   margin-right: 4px;
+}
+
+.tag-icon-svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: text-bottom;
+  margin-right: 6px;
 }
 
 .card-grid {
