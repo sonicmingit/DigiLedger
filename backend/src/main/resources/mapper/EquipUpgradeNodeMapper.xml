@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.EquipUpgradeNodeMapper">
+
+    <resultMap id="nodeResultMap" type="com.digiledger.backend.model.entity.EquipUpgradeNode">
+        <id column="id" property="id" />
+        <result column="route_id" property="routeId" />
+        <result column="asset_id" property="assetId" />
+        <result column="level" property="level" />
+        <result column="sort" property="sort" />
+        <result column="label" property="label" />
+        <result column="remark" property="remark" />
+        <result column="is_deleted" property="isDeleted" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="findByRouteId" parameterType="long" resultMap="nodeResultMap">
+        SELECT *
+        FROM equip_upgrade_node
+        WHERE route_id = #{routeId} AND is_deleted = 0
+        ORDER BY level ASC, sort ASC, id ASC
+    </select>
+
+    <select id="findById" parameterType="long" resultMap="nodeResultMap">
+        SELECT *
+        FROM equip_upgrade_node
+        WHERE id = #{id} AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.digiledger.backend.model.entity.EquipUpgradeNode" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO equip_upgrade_node (route_id, asset_id, level, sort, label, remark)
+        VALUES (#{routeId}, #{assetId}, #{level}, #{sort}, #{label}, #{remark})
+    </insert>
+
+    <update id="softDelete" parameterType="long">
+        UPDATE equip_upgrade_node
+        SET is_deleted = 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="softDeleteByRoute" parameterType="long">
+        UPDATE equip_upgrade_node
+        SET is_deleted = 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE route_id = #{routeId}
+    </update>
+</mapper>

@@ -142,3 +142,44 @@ export interface WishlistItem {
   createdAt: string
   updatedAt: string
 }
+
+export interface UpgradeRouteItem {
+  id: number
+  name: string
+  rootAssetId?: number | null
+  rootAssetName?: string | null
+  remark?: string | null
+  updatedAt: string
+}
+
+export interface UpgradeGraphNode {
+  nodeId: number
+  assetId: number
+  name: string
+  status: AssetStatus
+  purchasePrice: number
+  salePrice: number
+  sold: boolean
+  purchaseDate?: string
+  coverImageUrl?: string
+  level?: number
+  sort?: number
+  label?: string | null
+  remark?: string | null
+}
+
+export interface UpgradeGraphLink {
+  linkId: number
+  fromNodeId: number
+  toNodeId: number
+  stepCost: number
+  remark?: string | null
+}
+
+export interface UpgradeRouteGraph {
+  routeId: number
+  routeName: string
+  remark?: string | null
+  nodes: UpgradeGraphNode[]
+  links: UpgradeGraphLink[]
+}

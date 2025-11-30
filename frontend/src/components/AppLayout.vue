@@ -7,6 +7,7 @@
           <el-menu-item index="/">资产总览</el-menu-item>
           <el-menu-item index="/assets">物品中心</el-menu-item>
           <el-menu-item index="/wishlist">心愿单</el-menu-item>
+          <el-menu-item index="/upgrade-routes">装备升级路线图</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-menu>
       </el-aside>
@@ -41,6 +42,7 @@ const route = useRoute()
 const active = computed(() => {
   if (route.path.startsWith('/assets')) return '/assets'
   if (route.path.startsWith('/wishlist')) return '/wishlist'
+  if (route.path.startsWith('/upgrade-routes')) return '/upgrade-routes'
   if (route.path.startsWith('/settings')) return '/settings'
   return '/'
 })

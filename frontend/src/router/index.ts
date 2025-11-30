@@ -4,6 +4,8 @@ import AssetList from '@/views/assets/AssetList.vue'
 import AssetDetail from '@/views/assets/AssetDetail.vue'
 import WishlistList from '@/views/wishlist/WishlistList.vue'
 import SystemSettings from '@/views/settings/SystemSettings.vue'
+import UpgradeRouteList from '@/views/upgrade/UpgradeRouteList.vue'
+import UpgradeRouteGraph from '@/views/upgrade/UpgradeRouteGraph.vue'
 
 const MobileRoot = () => import('@/mobile/layouts/MobileRoot.vue')
 const MobileHome = () => import('@/mobile/pages/Home.vue')
@@ -37,6 +39,17 @@ const router = createRouter({
       path: '/wishlist',
       name: 'wishlist',
       component: WishlistList
+    },
+    {
+      path: '/upgrade-routes',
+      name: 'upgradeRoutes',
+      component: UpgradeRouteList
+    },
+    {
+      path: '/upgrade-routes/:id',
+      name: 'upgradeRouteGraph',
+      component: UpgradeRouteGraph,
+      props: true
     },
     {
       path: '/settings',
