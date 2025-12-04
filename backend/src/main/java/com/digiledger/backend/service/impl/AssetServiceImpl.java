@@ -8,6 +8,7 @@ import com.digiledger.backend.mapper.DictBrandMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictPlatformMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
+import com.digiledger.backend.mapper.EquipUpgradeNodeMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
 import com.digiledger.backend.mapper.SaleMapper;
 import com.digiledger.backend.model.dto.asset.*;
@@ -54,6 +55,7 @@ public class AssetServiceImpl implements AssetService {
     private static final List<String> VALID_STATUSES = List.of("使用中", "已闲置", "待出售", "已出售", "已丢弃");
 
     private final AssetMapper assetMapper;
+    private final EquipUpgradeNodeMapper equipUpgradeNodeMapper;
     private final PurchaseMapper purchaseMapper;
     private final SaleMapper saleMapper;
     private final DictCategoryMapper dictCategoryMapper;
@@ -65,6 +67,7 @@ public class AssetServiceImpl implements AssetService {
     private final StoragePathHelper storagePathHelper;
 
     public AssetServiceImpl(AssetMapper assetMapper,
+                            EquipUpgradeNodeMapper equipUpgradeNodeMapper,
                             PurchaseMapper purchaseMapper,
                             SaleMapper saleMapper,
                             DictCategoryMapper dictCategoryMapper,
@@ -75,6 +78,7 @@ public class AssetServiceImpl implements AssetService {
                             ObjectMapper objectMapper,
                             StoragePathHelper storagePathHelper) {
         this.assetMapper = assetMapper;
+        this.equipUpgradeNodeMapper = equipUpgradeNodeMapper;
         this.purchaseMapper = purchaseMapper;
         this.saleMapper = saleMapper;
         this.dictCategoryMapper = dictCategoryMapper;
@@ -193,6 +197,9 @@ public class AssetServiceImpl implements AssetService {
         if (purchaseMapper.countByAsset(id) > 0 || saleMapper.countByAsset(id) > 0) {
             throw new BizException(ErrorCode.ASSET_DELETE_CONFLICT);
         }
+/*        // 删除与该资产关联的升级路线节点
+        equipUpgradeNodeMapper.softDeleteByAssetId(id);*/
+        // 删除资产本身
         assetMapper.delete(asset.getId());
     }
 

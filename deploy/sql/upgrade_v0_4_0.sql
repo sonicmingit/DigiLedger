@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS equip_upgrade_route (
   remark TEXT COMMENT '备注',
   is_deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  CONSTRAINT fk_upgrade_route_asset FOREIGN KEY (root_asset_id) REFERENCES device_asset(id)
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+ -- ,CONSTRAINT fk_upgrade_route_asset FOREIGN KEY (root_asset_id) REFERENCES device_asset(id)
 ) COMMENT='装备升级路线表';
 
 CREATE TABLE IF NOT EXISTS equip_upgrade_node (
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS equip_upgrade_node (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_upgrade_node_route (route_id),
   INDEX idx_upgrade_node_asset (asset_id),
-  CONSTRAINT fk_upgrade_node_route FOREIGN KEY (route_id) REFERENCES equip_upgrade_route(id) ON DELETE CASCADE,
-  CONSTRAINT fk_upgrade_node_asset FOREIGN KEY (asset_id) REFERENCES device_asset(id)
+  CONSTRAINT fk_upgrade_node_route FOREIGN KEY (route_id) REFERENCES equip_upgrade_route(id) ON DELETE CASCADE
+  -- ,CONSTRAINT fk_upgrade_node_asset FOREIGN KEY (asset_id) REFERENCES device_asset(id)
 ) COMMENT='装备升级节点表';
 
 CREATE TABLE IF NOT EXISTS equip_upgrade_link (

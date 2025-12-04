@@ -18,4 +18,6 @@ public interface EquipUpgradeNodeMapper {
     int softDelete(@Param("id") Long id);
 
     int softDeleteByRoute(@Param("routeId") Long routeId);
+    
+    int softDeleteByAssetId(@Param("assetId") Long assetId);
 }

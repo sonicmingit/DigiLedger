@@ -12,3 +12,4 @@ frontend/dist/
 /参考/
 /backend/src/main/resources/application-home.yml
 /.vscode/settings.json
+/frontend/dist.zip

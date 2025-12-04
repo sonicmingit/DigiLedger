@@ -48,4 +48,11 @@
             updated_at = CURRENT_TIMESTAMP
         WHERE route_id = #{routeId}
     </update>
+    
+    <update id="softDeleteByAssetId" parameterType="long">
+        UPDATE equip_upgrade_node
+        SET is_deleted = 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE asset_id = #{assetId}
+    </update>
 </mapper>
