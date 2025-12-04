@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.digiledger.backend.mapper.FileAttachmentMapper">
 
@@ -39,10 +39,15 @@
         SELECT
         <include refid="Base_Column_List" />
         FROM file_attachment
+        WHERE biz_type = #{bizType} AND biz_id = #{bizId} AND is_deleted = 0
+        ORDER BY id ASC
+    </select>
+    
+    <select id="findAllActive" resultMap="FileAttachmentResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM file_attachment
         WHERE is_deleted = 0
-          AND biz_type = #{bizType}
-          AND biz_id = #{bizId}
-        ORDER BY created_at DESC, id DESC
     </select>
 
     <update id="softDelete">
@@ -59,4 +64,5 @@
             updated_at = NOW()
         WHERE id = #{id}
     </update>
+
 </mapper>

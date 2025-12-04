@@ -25,15 +25,94 @@
         <img v-if="result.preview" :src="result.preview" alt="预览" class="preview" />
       </div>
     </el-card>
+    
+    <!-- 手动清理功能 -->
+    <el-card shadow="never" class="cleanup-section">
+      <h3 class="title">手动清理未使用文件</h3>
+      <p class="description">
+        此功能可以帮助您查找并删除存储中不再被引用的文件，释放存储空间。
+      </p>
+      
+      <el-button 
+        type="warning" 
+        :loading="scanning"
+        @click="scanUnusedFiles"
+      >
+        {{ scanning ? '扫描中...' : '扫描未使用文件' }}
+      </el-button>
+      
+      <div v-if="unusedFiles !== null" class="scan-result mt">
+        <el-alert 
+          :type="unusedFiles.length > 0 ? 'warning' : 'success'" 
+          :title="`找到 ${unusedFiles.length} 个未使用的文件`" 
+          show-icon 
+          class="mb-sm"
+        />
+        
+        <div v-if="unusedFiles.length > 0">
+          <el-table 
+            :data="unusedFiles" 
+            max-height="360" 
+            class="file-table"
+            row-key="objectKey"
+            @selection-change="handleSelectionChange"
+          >
+            <el-table-column type="selection" width="48" />
+            <el-table-column label="预览" width="120">
+              <template #default="{ row }">
+                <el-image
+                  v-if="row.preview"
+                  :src="row.preview"
+                  fit="cover"
+                  :preview-src-list="[row.preview]"
+                  style="width: 80px; height: 48px; border-radius: 6px"
+                />
+                <span v-else class="no-preview">无预览</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="fileName" label="文件名" />
+            <el-table-column prop="objectKey" label="对象键" show-overflow-tooltip />
+          </el-table>
+          
+          <div class="actions mt">
+            <el-popconfirm
+              :title="confirmTitle"
+              confirm-button-text="确认删除"
+              cancel-button-text="取消"
+              @confirm="performCleanup"
+            >
+              <template #reference>
+                <el-button 
+                  type="danger" 
+                  :loading="cleaning"
+                  :disabled="cleaning || selectedFiles.length === 0"
+                >
+                  {{ cleaning ? '清理中...' : `确认删除 (${selectedFiles.length || 0})` }}
+                </el-button>
+              </template>
+            </el-popconfirm>
+            
+            <el-button @click="resetScan">重新扫描</el-button>
+            <div class="summary">
+              已选 {{ selectedFiles.length }} / 共 {{ unusedFiles.length }} 个
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="no-files">
+          <el-result icon="success" title="无需清理" subTitle="没有发现未使用的文件" />
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { uploadFile } from '@/api/file'
+import { uploadFile, getUnusedAttachments, cleanupUnusedAttachments, type UnusedAttachment } from '@/api/file'
 import { buildOssUrl } from '@/utils/storage'
 
 interface UploadResult {
@@ -42,9 +121,21 @@ interface UploadResult {
   preview: string | null
 }
 
+interface UnusedFile {
+  objectKey: string
+  fileName: string
+  preview: string | null
+}
+
 const uploading = ref(false)
 const error = ref('')
 const result = ref<UploadResult | null>(null)
+
+// 新增的状态
+const scanning = ref(false)
+const cleaning = ref(false)
+const unusedFiles = ref<UnusedFile[] | null>(null)
+const selectedFiles = ref<UnusedFile[]>([])
 
 const handleUpload = async (options: UploadRequestOptions) => {
   uploading.value = true
@@ -66,6 +157,68 @@ const handleUpload = async (options: UploadRequestOptions) => {
   } finally {
     uploading.value = false
   }
+}
+
+// 新增的方法
+const scanUnusedFiles = async () => {
+  scanning.value = true
+  try {
+    const files = (await getUnusedAttachments()) || []
+    unusedFiles.value = files.map((item: UnusedAttachment) => ({
+      objectKey: item.objectKey,
+      fileName: extractFileName(item.objectKey),
+      preview: item.url || buildOssUrl(item.objectKey) || null
+    }))
+    selectedFiles.value = []
+    ElMessage.success(`扫描完成，找到 ${files.length} 个未使用的文件`)
+  } catch (err: any) {
+    ElMessage.error(err?.message || '扫描失败')
+  } finally {
+    scanning.value = false
+  }
+}
+
+const performCleanup = async () => {
+  if (!selectedFiles.value.length) {
+    ElMessage.warning('请至少选择一个文件进行清理')
+    return
+  }
+
+  cleaning.value = true
+  try {
+    const objectKeys = selectedFiles.value.map((item) => item.objectKey)
+    await cleanupUnusedAttachments(objectKeys)
+    ElMessage.success('清理完成')
+    // 清理完成后从列表中移除已删除项
+    if (unusedFiles.value) {
+      const deletedSet = new Set(objectKeys)
+      unusedFiles.value = unusedFiles.value.filter((item) => !deletedSet.has(item.objectKey))
+    }
+    selectedFiles.value = []
+  } catch (err: any) {
+    ElMessage.error(err?.message || '清理失败')
+  } finally {
+    cleaning.value = false
+  }
+}
+
+const resetScan = () => {
+  unusedFiles.value = null
+  selectedFiles.value = []
+}
+
+const extractFileName = (objectKey: string) => {
+  const parts = objectKey.split('/')
+  return parts[parts.length - 1]
+}
+
+const confirmTitle = computed(() => {
+  const count = selectedFiles.value.length
+  return count ? `确定删除选中的 ${count} 个文件吗？此操作不可撤销` : '请选择要删除的文件'
+})
+
+const handleSelectionChange = (rows: UnusedFile[]) => {
+  selectedFiles.value = rows
 }
 </script>
 
@@ -97,10 +250,43 @@ const handleUpload = async (options: UploadRequestOptions) => {
   margin-top: 12px;
 }
 
+.mb-sm {
+  margin-bottom: 12px;
+}
+
 .preview {
   margin-top: 16px;
   width: 220px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.cleanup-section {
+  margin-top: 20px;
+}
+
+.file-table {
+  margin-top: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.summary {
+  margin-left: auto;
+  color: var(--el-text-color-secondary);
+  align-self: center;
+}
+
+.no-preview {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.no-files {
+  margin-top: 16px;
 }
 </style>

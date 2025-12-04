@@ -23,4 +23,7 @@ public interface FileAttachmentMapper {
     int updateBizInfo(@Param("id") Long id,
                       @Param("bizType") String bizType,
                       @Param("bizId") Long bizId);
+    
+    // 添加获取所有未删除附件的方法
+    List<FileAttachment> findAllActive();
 }

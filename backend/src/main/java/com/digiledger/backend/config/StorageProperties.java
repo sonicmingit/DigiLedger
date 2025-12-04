@@ -4,26 +4,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * 对象存储配置属性。
+ * 存储配置属性
  */
 @Component
 @ConfigurationProperties(prefix = "app.storage")
 public class StorageProperties {
 
-    /** 存储提供方 */
-    private String provider;
-    /** 访问端点 */
-    private String endpoint;
-    /** 区域 */
-    private String region;
-    /** 桶名称 */
-    private String bucket;
-    /** Access Key */
-    private String accessKey;
-    /** Secret Key */
-    private String secretKey;
-    /** 对外访问前缀 */
-    private String baseUrl;
+    private String provider = "minio";
+    private String endpoint = "http://localhost:9000";
+    private String region = "";
+    private String bucket = "digiledger";
+    private String accessKey = "minioadmin";
+    private String secretKey = "minioadmin";
+    private String baseUrl = "";
+
+    // Getters and setters
 
     public String getProvider() {
         return provider;
