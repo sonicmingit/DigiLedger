@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
 public class GoogleCustomSearchProperties {
 
     /** API Key */
-    private String apiKey = "AIzaSyCE1jX6DJ_6o5w1zRSBoc6u7IpHqmB01sg";
+    private String apiKey = "";
 
     /** 自定义搜索引擎 ID */
-    private String cseId ="851b134570d8146be";
+    private String cseId ="";
 
     /** 请求地址 */
     private String endpoint = "https://www.googleapis.com/customsearch/v1";
