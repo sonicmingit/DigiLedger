@@ -254,7 +254,7 @@ watch(selectedParentId, () => {
 
 .tree-panel .el-tree {
   flex: 1;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px;
 }
@@ -270,9 +270,10 @@ watch(selectedParentId, () => {
 
 .form-panel {
   flex: 1;
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 16px;
+  box-shadow: var(--color-shadow);
 }
 </style>

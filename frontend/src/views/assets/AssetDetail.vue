@@ -640,8 +640,10 @@ onMounted(async () => {
 }
 
 .summary-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow);
+  border-radius: 18px;
 }
 
 .summary-header {
@@ -660,8 +662,8 @@ onMounted(async () => {
   width: 240px;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #0f172a;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-ghost);
 }
 
 .cover-preview {
@@ -705,12 +707,13 @@ onMounted(async () => {
   z-index: 10;
 }
 .cover-dropdown-button {
-  background: rgba(15, 23, 42, 0.8);
-  color: #fff;
+  background: var(--color-surface-ghost);
+  color: var(--color-text);
   border-radius: 8px;
   padding: 4px 8px;
   min-width: 32px;
   height: 32px;
+  border: 1px solid var(--color-border);
 }
 
 .metrics {
@@ -721,19 +724,21 @@ onMounted(async () => {
 }
 
 .metric {
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--color-card);
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow);
 }
 
 .metric .label {
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .metric .value {
   display: block;
   font-size: 20px;
-  color: #38bdf8;
+  color: var(--color-accent);
   margin-top: 6px;
 }
 

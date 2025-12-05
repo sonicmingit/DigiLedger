@@ -163,10 +163,11 @@ reset()
 
 <style scoped>
 .brand-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
   padding: 16px;
+  box-shadow: var(--color-shadow);
 }
 
 .toolbar {

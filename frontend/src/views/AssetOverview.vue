@@ -275,22 +275,23 @@ watch(activeTab, () => {
   align-items: flex-start;
   gap: 16px;
   padding: 28px;
-  border-radius: 20px;
-  background: radial-gradient(circle at top left, rgba(14, 165, 233, 0.32), rgba(15, 23, 42, 0.8));
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: inset 0 0 80px rgba(15, 118, 110, 0.25);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(96, 165, 250, 0.08)),
+    var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow);
 }
 
 .hero h1 {
   margin: 0 0 8px;
   font-size: 32px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--color-text);
 }
 
 .hero p {
   margin: 0;
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .hero-actions {
@@ -306,14 +307,15 @@ watch(activeTab, () => {
 }
 
 .kpi-card {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  color: #e2e8f0;
+  color: var(--color-text);
+  box-shadow: var(--color-shadow);
 }
 
 .kpi-label {
-  color: #94a3b8;
+  color: var(--color-muted);
   font-size: 14px;
 }
 
@@ -321,12 +323,12 @@ watch(activeTab, () => {
   margin-top: 8px;
   font-size: 28px;
   font-weight: 600;
-  color: #22d3ee;
+  color: var(--color-accent);
 }
 
 .kpi-desc {
   margin-top: 6px;
-  color: #64748b;
+  color: var(--color-muted);
 }
 
 .kpi-trend {
@@ -345,18 +347,19 @@ watch(activeTab, () => {
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .trend-text strong {
   font-size: 18px;
-  color: #f8fafc;
+  color: var(--color-text);
 }
 
 .category-card {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
+  box-shadow: var(--color-shadow);
 }
 
 .category-header {
@@ -368,7 +371,7 @@ watch(activeTab, () => {
 }
 
 .tabs :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
   border-color: transparent;
 }
 
@@ -377,8 +380,8 @@ watch(activeTab, () => {
 }
 
 .quick-search :deep(.el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: var(--color-surface-ghost);
+  border: 1px solid var(--color-border);
 }
 
 .asset-grid {

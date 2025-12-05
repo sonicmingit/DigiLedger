@@ -1,8 +1,14 @@
 <template>
   <el-config-provider namespace="el">
     <el-container class="layout">
-      <el-aside width="220px" class="sidebar">
-        <div class="logo">DigiLedger</div>
+      <el-aside width="240px" class="sidebar">
+        <div class="logo">
+          <div class="mark">DL</div>
+          <div class="brand">
+            <span class="brand-title">DigiLedger</span>
+            <small class="brand-sub">资产管理台</small>
+          </div>
+        </div>
         <el-menu :default-active="active" router>
           <el-menu-item index="/">资产总览</el-menu-item>
           <el-menu-item index="/assets">物品中心</el-menu-item>
@@ -13,7 +19,10 @@
       </el-aside>
       <el-container>
         <el-header class="header">
-          <span class="header-title">数码物品全生命周期管理</span>
+          <div class="header-left">
+            <span class="header-title">数码物品全生命周期管理</span>
+            <span class="badge">v2</span>
+          </div>
           <div class="header-actions">
             <el-select v-model="currentTheme" size="small" class="theme-select">
               <el-option
@@ -67,30 +76,59 @@ const currentTheme = computed({
 
 .layout {
   min-height: 100vh;
+  background: radial-gradient(120% 80% at 10% 20%, rgba(124, 58, 237, 0.15), transparent),
+    radial-gradient(60% 60% at 80% 0%, rgba(56, 189, 248, 0.12), transparent),
+    var(--color-bg);
 }
 
 .sidebar {
-  background: var(--color-sidebar-bg);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
   color: var(--color-sidebar-text);
-  padding: 16px 0;
+  padding: 24px 0;
+  border-right: 1px solid var(--color-border);
+  box-shadow: 18px 0 40px rgba(124, 58, 237, 0.08);
 }
 
 .logo {
-  color: var(--color-accent);
-  font-size: 20px;
-  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px 16px;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #f8f9ff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.25);
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.brand-sub {
+  color: var(--color-muted);
 }
 
 .header {
   background: var(--color-header-bg);
   color: var(--color-text);
-  font-size: 18px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 28px;
+  box-shadow: 0 1px 0 var(--color-border), 0 10px 30px rgba(12, 10, 41, 0.04);
 }
 
 .main {
@@ -100,32 +138,53 @@ const currentTheme = computed({
 
 .main :deep(.el-card) {
   background: var(--color-card);
-  border-color: transparent;
+  border-color: var(--color-border);
   color: var(--color-text);
+  box-shadow: var(--color-shadow);
 }
 
 .main :deep(.el-card__header) {
-  border-bottom-color: rgba(148, 163, 184, 0.2);
+  border-bottom-color: var(--color-border);
 }
 
 .sidebar :deep(.el-menu) {
   border-right: none;
   background: transparent;
+  padding: 0 8px;
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: var(--color-accent-soft);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(124, 58, 237, 0.08));
   color: var(--color-accent);
+  border-radius: 12px;
+  font-weight: 600;
 }
 
 .sidebar :deep(.el-menu-item) {
   color: var(--color-muted);
+  border-radius: 10px;
+  margin: 4px 8px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: var(--color-surface-soft);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .theme-select {
