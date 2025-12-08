@@ -1,5 +1,5 @@
 <template>
-  <div class="mobile-uploader">
+  <div class="mobile-uploader" @paste.stop.prevent="handlePaste">
     <div v-for="(item, index) in internalValue" :key="item.objectKey ?? item.url ?? index" class="mobile-uploader-item">
       <img :src="item.url" :alt="item.name || '附件'" />
       <button type="button" class="mobile-uploader-remove" @click="remove(index)">×</button>
@@ -51,6 +51,23 @@ const internalValue = ref<MobileAttachment[]>([...props.modelValue])
 const inputRef = ref<HTMLInputElement | null>(null)
 const error = ref('')
 
+const isAcceptedFile = (file: File) => {
+  if (!props.accept) return true
+  const acceptList = props.accept
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (acceptList.length === 0) return true
+
+  return acceptList.some((accept) => {
+    if (accept === '*/*') return true
+    if (accept.endsWith('/*')) return file.type.startsWith(accept.slice(0, -1))
+    if (accept.startsWith('.')) return file.name.toLowerCase().endsWith(accept.toLowerCase())
+    return file.type === accept
+  })
+}
+
 watch(
   () => props.modelValue,
   (val) => {
@@ -65,6 +82,34 @@ const handleSelect = async (event: Event) => {
   error.value = ''
 
   for (const file of Array.from(files)) {
+    if (!file.type.startsWith('image/') || !isAcceptedFile(file)) continue
+    await processFile(file)
+  }
+
+  emit('update:modelValue', internalValue.value)
+  if (inputRef.value) inputRef.value.value = ''
+}
+
+const handlePaste = async (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items
+  if (!items?.length) return
+  error.value = ''
+
+  const files = Array.from(items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => !!file && file.type.startsWith('image/') && isAcceptedFile(file))
+
+  if (files.length === 0) return
+
+  for (const file of props.multiple ? files : files.slice(0, 1)) {
+    await processFile(file)
+  }
+
+  emit('update:modelValue', internalValue.value)
+}
+
+const processFile = async (file: File) => {
     try {
       const data = await uploadFile(file)
       const attachment: MobileAttachment = {
@@ -78,10 +123,6 @@ const handleSelect = async (event: Event) => {
       error.value = '上传失败，请检查网络后重试'
     }
   }
-
-  emit('update:modelValue', internalValue.value)
-  if (inputRef.value) inputRef.value.value = ''
-}
 
 const remove = (index: number) => {
   internalValue.value.splice(index, 1)
