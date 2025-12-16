@@ -32,11 +32,11 @@
             <polyline
               :points="trendPoints"
               fill="none"
-              stroke="#22d3ee"
+              stroke="#059669"
               stroke-width="2"
               stroke-linecap="round"
             />
-            <polygon :points="trendArea" fill="rgba(34, 211, 238, 0.15)" />
+            <polygon :points="trendArea" fill="rgba(5, 150, 105, 0.14)" />
           </svg>
           <div class="trend-text">
             <strong>{{ purchasesInWindow }}</strong>
@@ -275,22 +275,22 @@ watch(activeTab, () => {
   align-items: flex-start;
   gap: 16px;
   padding: 28px;
-  border-radius: 20px;
-  background: radial-gradient(circle at top left, rgba(14, 165, 233, 0.32), rgba(15, 23, 42, 0.8));
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: inset 0 0 80px rgba(15, 118, 110, 0.25);
+  border-radius: 24px;
+  background: linear-gradient(140deg, #ffffff, #ecfdf3);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
 .hero h1 {
   margin: 0 0 8px;
   font-size: 32px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #065f46;
 }
 
 .hero p {
   margin: 0;
-  color: #94a3b8;
+  color: #4b5563;
 }
 
 .hero-actions {
@@ -306,14 +306,15 @@ watch(activeTab, () => {
 }
 
 .kpi-card {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 18px;
-  color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
 .kpi-label {
-  color: #94a3b8;
+  color: #6b7280;
   font-size: 14px;
 }
 
@@ -321,12 +322,12 @@ watch(activeTab, () => {
   margin-top: 8px;
   font-size: 28px;
   font-weight: 600;
-  color: #22d3ee;
+  color: #059669;
 }
 
 .kpi-desc {
   margin-top: 6px;
-  color: #64748b;
+  color: #6b7280;
 }
 
 .kpi-trend {
@@ -345,18 +346,19 @@ watch(activeTab, () => {
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  color: #94a3b8;
+  color: #6b7280;
 }
 
 .trend-text strong {
   font-size: 18px;
-  color: #f8fafc;
+  color: #065f46;
 }
 
 .category-card {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
 }
 
 .category-header {
@@ -368,7 +370,7 @@ watch(activeTab, () => {
 }
 
 .tabs :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+  background: linear-gradient(130deg, #059669, #10b981);
   border-color: transparent;
 }
 
@@ -377,8 +379,9 @@ watch(activeTab, () => {
 }
 
 .quick-search :deep(.el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .asset-grid {
