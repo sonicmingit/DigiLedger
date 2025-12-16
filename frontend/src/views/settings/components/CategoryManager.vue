@@ -1,64 +1,40 @@
 <template>
   <div class="category-manager" v-loading="loading">
     <div class="toolbar">
-      <el-input
-        v-model="filterText"
-        placeholder="搜索分类"
-        clearable
-        size="small"
-        class="toolbar-search"
-      >
+      <el-button type="primary" @click="addRoot">新增根类别</el-button>
+      <el-button @click="refreshDicts">刷新</el-button>
+      <el-button link type="info" @click="expandAll">展开全部</el-button>
+      <el-button link type="info" @click="collapseAll">折叠全部</el-button>
+      <el-input v-model="filterText" placeholder="搜索分类" clearable size="small" class="toolbar-search">
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-      <div class="toolbar-actions">
-        <el-button text size="small" @click="expandAll">展开全部</el-button>
-        <el-button text size="small" @click="collapseAll">折叠全部</el-button>
-        <el-button text size="small" @click="refreshDicts">
-          <el-icon><Refresh /></el-icon>
-          刷新
-        </el-button>
-        <el-button type="primary" @click="addRoot">
-          <el-icon class="mr-1"><Plus /></el-icon>
-          新增根类别
-        </el-button>
-      </div>
     </div>
-    <el-tree
-      ref="treeRef"
-      :data="categoryTree"
-      node-key="id"
-      default-expand-all
-      draggable
-      :props="{ children: 'children', label: 'name' }"
-      :filter-node-method="filterNode"
-      empty-text="暂无类别"
-      @node-drop="handleDrop"
-    >
-      <template #default="{ data }">
-        <div class="node-row">
-          <span class="node-label">{{ data.name }}</span>
-          <span class="node-actions">
-            <el-tooltip content="新增子类" placement="top">
-              <el-button circle text type="success" @click.stop="addChild(data)">
-                <el-icon><Plus /></el-icon>
-              </el-button>
-            </el-tooltip>
-            <el-tooltip content="重命名" placement="top">
-              <el-button circle text @click.stop="editNode(data)">
-                <el-icon><EditPen /></el-icon>
-              </el-button>
-            </el-tooltip>
-            <el-tooltip content="删除" placement="top">
-              <el-button circle text type="danger" @click.stop="removeNode(data)">
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </el-tooltip>
+    <div class="content">
+      <el-tree
+        ref="treeRef"
+        :data="categoryTree"
+        node-key="id"
+        default-expand-all
+        draggable
+        :props="{ children: 'children', label: 'name' }"
+        :filter-node-method="filterNode"
+        empty-text="暂无类别"
+        @node-drop="handleDrop"
+      >
+        <template #default="{ data }">
+          <span class="category-node">
+            <span class="name">{{ data.name }}</span>
           </span>
-        </div>
-      </template>
-    </el-tree>
+          <span class="node-actions">
+            <el-button link type="primary" @click.stop="addChild(data)">新增子类</el-button>
+            <el-button link @click.stop="editNode(data)">编辑</el-button>
+            <el-button link type="danger" @click.stop="removeNode(data)">删除</el-button>
+          </span>
+        </template>
+      </el-tree>
+    </div>
     <CategoryCreateDialog
       v-model="createDialogVisible"
       :default-parent-id="createDialogParentId"
@@ -70,7 +46,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, EditPen, Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { Search } from '@element-plus/icons-vue'
 import { updateCategory, deleteCategory, type CategoryNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
@@ -214,12 +190,11 @@ watch(filterText, (value) => handleFilter(value))
 
 <style scoped>
 .category-manager {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
   padding: 16px;
   min-height: 360px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .toolbar {
@@ -230,38 +205,54 @@ watch(filterText, (value) => handleFilter(value))
 }
 
 .toolbar-search {
+  margin-left: auto;
   max-width: 240px;
 }
 
-.toolbar-actions {
-  display: flex;
-  gap: 10px;
-  margin-left: auto;
+.content {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 8px;
 }
 
-.toolbar-actions :deep(.el-button--primary) {
-  border-radius: 10px;
+.category-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.node-label {
+.category-node .name {
+  color: rgba(15, 23, 42, 0.9);
   font-weight: 500;
 }
 
 .node-actions {
   display: inline-flex;
-  gap: 6px;
+  gap: 8px;
+  margin-left: auto;
 }
 
-.node-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+:deep(.el-tree) {
+  background: transparent;
+}
+
+:deep(.el-tree-node__content) {
+  border-radius: 8px;
   padding: 6px 10px;
-  border-radius: 10px;
-  transition: background-color 0.2s ease;
 }
 
-.node-row:hover {
-  background: #ecfdf3;
+:deep(.el-tree-node__content:hover) {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
+:deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.88);
 }
 </style>

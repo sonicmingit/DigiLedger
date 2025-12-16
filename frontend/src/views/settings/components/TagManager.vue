@@ -3,6 +3,11 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreateRoot">新增根标签</el-button>
       <el-button @click="refreshDicts">刷新</el-button>
+      <el-input v-model="filterText" placeholder="搜索标签" clearable size="small" class="toolbar-search">
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
     </div>
     <el-tree
       ref="treeRef"
@@ -11,6 +16,7 @@
       default-expand-all
       draggable
       :props="{ children: 'children', label: 'name' }"
+      :filter-node-method="filterNode"
       empty-text="暂无标签"
       @node-drop="handleDrop"
     >
@@ -84,9 +90,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { createTag, updateTag, deleteTag, type TagNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 import IconRenderer from '@/components/IconRenderer.vue'
@@ -99,6 +106,7 @@ const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const treeRef = ref()
 const parentLabel = ref('根标签')
+const filterText = ref('')
 
 const form = reactive({
   id: 0,
@@ -167,6 +175,16 @@ const availableIcons = [
   'mdi-image',
   'mdi-user',
 ]
+
+const handleFilter = (value: string) => {
+  const tree = treeRef.value as any
+  tree?.filter(value)
+}
+
+const filterNode = (value: string, data: TagNode) => {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
+}
 
 const nextSort = (nodes: TagNode[] = []) => nodes.reduce((max, node) => Math.max(max, node.sort ?? 0), 0) + 10
 
@@ -278,6 +296,7 @@ const handleDrop = async (_dragging: any, dropNode: any, dropType: string) => {
 
 loadDicts()
 reset()
+watch(filterText, (value) => handleFilter(value))
 </script>
 
 <style scoped>
@@ -292,6 +311,12 @@ reset()
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.toolbar-search {
+  margin-left: auto;
+  max-width: 240px;
 }
 
 .tag-node {

@@ -1,9 +1,11 @@
 <template>
   <div class="asset-page">
     <el-card class="status-card">
-      <el-tabs v-model="statusTab" class="status-tabs" type="card">
-        <el-tab-pane v-for="item in statusTabOptions" :key="item.value" :label="item.label" :name="item.value" />
-      </el-tabs>
+      <el-radio-group v-model="statusTab" class="status-tabs" size="large">
+        <el-radio-button v-for="item in statusTabOptions" :key="item.value" :label="item.value">
+          {{ item.label }}
+        </el-radio-button>
+      </el-radio-group>
     </el-card>
     <el-card class="filter-card">
       <el-form :model="filters" inline class="filter-form">
@@ -762,38 +764,14 @@ onMounted(async () => {
 
 .status-card {
   padding: 8px 12px;
-  background: #ecfdf3;
-  border: 1px solid #d1fae5;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   border-radius: 14px;
 }
 
-.status-tabs :deep(.el-tabs__header) {
-  border-bottom: none;
-}
-
-.status-tabs :deep(.el-tabs__item) {
-  border: none;
-  background: transparent;
-  color: var(--color-muted);
-  padding: 8px 18px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.status-tabs :deep(.el-tabs__item.is-active) {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  border-radius: 8px 8px 0 0;
-  box-shadow: none;
-}
-
-.status-tabs :deep(.el-tabs__nav) {
+.status-tabs {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-form {

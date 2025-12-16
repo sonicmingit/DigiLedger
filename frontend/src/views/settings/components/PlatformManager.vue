@@ -3,8 +3,13 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新增平台</el-button>
       <el-button @click="refreshDicts">刷新</el-button>
+      <el-input v-model="filterText" placeholder="搜索平台" clearable size="small" class="toolbar-search">
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
     </div>
-    <el-table :data="platforms" stripe empty-text="暂无平台">
+    <el-table :data="filteredPlatforms" stripe empty-text="暂无平台">
       <el-table-column prop="name" label="平台名称" min-width="160" />
       <el-table-column label="链接" min-width="200">
         <template #default="{ row }">
@@ -48,12 +53,23 @@
 import { reactive, ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { createPlatform, updatePlatform, deletePlatform, type PlatformItem } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const { platforms: platformList, refresh: refreshDicts, load: loadDicts } = useDictionaries()
 
 const platforms = computed(() => platformList.value)
+const filterText = ref('')
+const filteredPlatforms = computed(() => {
+  const keyword = filterText.value.trim().toLowerCase()
+  if (!keyword) return platforms.value
+  return platforms.value.filter((item) => {
+    const name = item.name?.toLowerCase() || ''
+    const link = item.link?.toLowerCase() || ''
+    return name.includes(keyword) || link.includes(keyword)
+  })
+})
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
@@ -146,5 +162,11 @@ reset()
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.toolbar-search {
+  margin-left: auto;
+  max-width: 240px;
 }
 </style>
