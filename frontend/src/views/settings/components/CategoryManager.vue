@@ -190,8 +190,8 @@ watch(filterText, (value) => handleFilter(value))
 
 <style scoped>
 .category-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
   padding: 16px;
   min-height: 360px;
@@ -210,9 +210,9 @@ watch(filterText, (value) => handleFilter(value))
 }
 
 .content {
-  background: #ffffff;
+  background: var(--color-bg-alt);
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid var(--el-border-color-light);
   padding: 8px;
 }
 
@@ -223,7 +223,7 @@ watch(filterText, (value) => handleFilter(value))
 }
 
 .category-node .name {
-  color: rgba(15, 23, 42, 0.9);
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -243,16 +243,37 @@ watch(filterText, (value) => handleFilter(value))
 }
 
 :deep(.el-tree-node__content:hover) {
-  background: rgba(15, 23, 42, 0.04);
+  background: rgba(148, 163, 184, 0.14);
 }
 
-:deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+.toolbar-search :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  background-color: var(--color-bg-alt);
   box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-:deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.88);
+.toolbar-search :deep(.el-input__wrapper:hover) {
+  border-color: var(--color-accent);
+}
+
+.toolbar-search :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.toolbar-search :deep(.el-input__inner) {
+  color: var(--color-text);
+}
+
+.toolbar-search :deep(.el-input__prefix),
+.toolbar-search :deep(.el-input__suffix) {
+  color: var(--color-muted);
+}
+
+:global([data-theme='dark']) .toolbar-search :deep(.el-input__wrapper),
+:global([data-theme='neon']) .toolbar-search :deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 </style>

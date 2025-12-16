@@ -33,6 +33,7 @@
             v-model="filters.categoryId"
             :options="categoryOptions"
             :props="cascaderProps"
+            filterable
             clearable
             placeholder="选择类别"
             class="filter-tree"
@@ -764,7 +765,7 @@ onMounted(async () => {
 
 .status-card {
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--el-border-color-light);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   border-radius: 14px;
 }
@@ -785,13 +786,50 @@ onMounted(async () => {
 .filter-form :deep(.el-select .el-input__wrapper),
 .filter-form :deep(.el-cascader .el-input__wrapper) {
   border-radius: 12px;
-  border-color: #e5e7eb;
-  background-color: #f9fafb;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--el-border-color-light);
+  background-color: var(--color-bg-alt);
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.filter-form :deep(.el-input__wrapper:hover),
+.filter-form :deep(.el-select .el-input__wrapper:hover),
+.filter-form :deep(.el-cascader .el-input__wrapper:hover) {
+  border-color: var(--color-accent);
+}
+
+.filter-form :deep(.el-input__wrapper.is-focus),
+.filter-form :deep(.el-select .el-input__wrapper.is-focus),
+.filter-form :deep(.el-cascader .el-input__wrapper.is-focus) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.filter-form :deep(.el-input__inner) {
+  color: var(--color-text);
+}
+
+.filter-form :deep(.el-input__prefix),
+.filter-form :deep(.el-input__suffix) {
+  color: var(--color-muted);
+}
+
+.filter-form :deep(.el-input__prefix .el-icon),
+.filter-form :deep(.el-input__suffix .el-icon) {
+  color: var(--color-muted);
+}
+
+:global([data-theme='dark']) .filter-form :deep(.el-input__wrapper),
+:global([data-theme='dark']) .filter-form :deep(.el-select .el-input__wrapper),
+:global([data-theme='dark']) .filter-form :deep(.el-cascader .el-input__wrapper),
+:global([data-theme='neon']) .filter-form :deep(.el-input__wrapper),
+:global([data-theme='neon']) .filter-form :deep(.el-select .el-input__wrapper),
+:global([data-theme='neon']) .filter-form :deep(.el-cascader .el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .filter-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--el-border-color-light);
   border-radius: 14px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }

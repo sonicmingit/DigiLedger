@@ -27,7 +27,7 @@
       >
         <div class="form-grid">
           <section class="media-panel">
-            <div class="panel-title">封面与备注</div>
+            <div class="panel-title">封面</div>
             <el-form-item label="封面图" class="cover-item">
               <div class="cover-upload">
                 <div class="upload-drop">
@@ -60,14 +60,6 @@
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="备注" class="note-item">
-              <el-input
-                v-model="form.notes"
-                type="textarea"
-                :rows="4"
-                placeholder="记录特殊说明、保养节点或使用心得"
-              />
-            </el-form-item>
           </section>
 
           <section class="fields-panel">
@@ -79,30 +71,48 @@
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :md="12">
-                <el-form-item label="物品类别" prop="categoryId" class="with-extra">
+                <el-form-item prop="categoryId">
+                  <template #label>
+                    <span class="label-with-action">
+                      <span>物品类别</span>
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="primary"
+                        :icon="Plus"
+                        @click="openCategoryDialog"
+                      />
+                    </span>
+                  </template>
                   <el-cascader
                     v-model="form.categoryId"
                     :options="categoryOptions"
                     :props="cascaderProps"
+                    filterable
                     clearable
                     placeholder="请选择类别"
                     style="width: 100%"
                   />
-                  <el-button
-                    class="inline-action"
-                    text
-                    size="small"
-                    type="primary"
-                    @click="openCategoryDialog"
-                  >
-                    新建
-                  </el-button>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
               <el-col :xs="24" :md="12">
-                <el-form-item label="品牌">
+                <el-form-item>
+                  <template #label>
+                    <span class="label-with-action">
+                      <span>品牌</span>
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="primary"
+                        :icon="Plus"
+                        @click="handleCreateBrand"
+                      />
+                    </span>
+                  </template>
                   <div class="brand-field">
                     <el-select
                       v-model="form.brandId"
@@ -118,15 +128,6 @@
                         :value="item.id"
                       />
                     </el-select>
-                    <el-button
-                      class="inline-action"
-                      text
-                      size="small"
-                      type="primary"
-                      @click="handleCreateBrand"
-                    >
-                      新建
-                    </el-button>
                   </div>
                 </el-form-item>
               </el-col>
@@ -157,7 +158,20 @@
             </el-row>
             <el-row :gutter="16">
               <el-col :xs="24" :md="12">
-                <el-form-item label="标签">
+                <el-form-item>
+                  <template #label>
+                    <span class="label-with-action">
+                      <span>标签</span>
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="primary"
+                        :icon="Plus"
+                        @click="handleCreateTag"
+                      />
+                    </span>
+                  </template>
                   <el-tree-select
                     v-model="form.tagIds"
                     :data="tagOptions"
@@ -168,15 +182,18 @@
                     placeholder="选择标签"
                     style="width: 100%"
                   />
-                  <el-button
-                    class="inline-action"
-                    text
-                    size="small"
-                    type="primary"
-                    @click="handleCreateTag"
-                  >
-                    新建
-                  </el-button>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24">
+                <el-form-item label="备注" class="note-item">
+                  <el-input
+                    v-model="form.notes"
+                    type="textarea"
+                    :rows="4"
+                    placeholder="记录特殊说明、保养节点或使用心得"
+                  />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -194,10 +211,11 @@
             </div>
           </template>
           <el-empty v-if="!form.purchases.length" description="尚未添加购买记录" />
-          <el-collapse v-else accordion>
+          <el-collapse v-else v-model="activePurchasePanel" accordion>
             <el-collapse-item
               v-for="(purchase, index) in form.purchases"
               :key="index"
+              :name="String(index)"
               :title="`记录 ${index + 1} · ${purchase.type}`"
             >
               <el-row :gutter="12">
@@ -345,6 +363,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
@@ -370,6 +389,7 @@ const customSubmit = ref<((payload: AssetPayload) => Promise<any>) | null>(null)
 const customSuccessMessage = ref<string | null>(null)
 const customAfterSuccess = ref<((result: any) => void) | null>(null)
 //const categoryDialogVisible = ref(false)
+const activePurchasePanel = ref<string>('')
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -611,11 +631,17 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
         }))
       : []
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
+    setDefaultPurchasePanel()
   } else {
     reset()
     form.purchaseDate = today()
     if (options?.prefill) {
       applyPrefill(options.prefill)
+    }
+    if (!form.purchases.length) {
+      addPurchase()
+    } else {
+      setDefaultPurchasePanel()
     }
   }
 }
@@ -635,6 +661,7 @@ const reset = () => {
   form.notes = ''
   form.purchases = []
   coverProgress.value = 0
+  activePurchasePanel.value = ''
 }
 
 const applyPrefill = (prefill: AssetFormPrefill) => {
@@ -656,6 +683,15 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
     })) as AssetFormState['purchases']
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   }
+}
+
+const setDefaultPurchasePanel = () => {
+  if (!form.purchases.length) {
+    activePurchasePanel.value = ''
+    return
+  }
+  const primaryIndex = form.purchases.findIndex((purchase) => purchase.type === 'PRIMARY')
+  activePurchasePanel.value = String(primaryIndex >= 0 ? primaryIndex : 0)
 }
 
 const syncPurchaseWarranty = (purchase: AssetFormState['purchases'][number]) => {
@@ -680,6 +716,7 @@ const addPurchase = () => {
   })
   const last = form.purchases[form.purchases.length - 1]
   syncPurchaseWarranty(last)
+  activePurchasePanel.value = String(form.purchases.length - 1)
 }
 
 const removePurchase = (index: number) => {
@@ -893,7 +930,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .media-panel,
@@ -903,6 +940,8 @@ onMounted(async () => {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-title {
@@ -921,6 +960,22 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+}
+
+.cover-item {
+  flex: 1;
+}
+
+.cover-item :deep(.el-form-item__content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .upload-drop {
@@ -1007,11 +1062,6 @@ onMounted(async () => {
   margin-top: 12px;
 }
 
-.inline-action {
-  margin-top: 4px;
-  padding: 0 6px;
-}
-
 .brand-field {
   display: flex;
   gap: 8px;
@@ -1027,15 +1077,22 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.with-extra {
-  position: relative;
-  padding-bottom: 12px;
+.label-with-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.with-extra .inline-action {
-  position: absolute;
-  right: 0;
-  bottom: -6px;
+.label-action {
+  margin-left: 4px;
+}
+
+.label-action :deep(.el-icon) {
+  font-size: 14px;
+}
+
+.inline-action {
+  padding: 0 6px;
 }
 
 @media (max-width: 960px) {

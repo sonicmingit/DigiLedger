@@ -97,6 +97,7 @@
               v-model="form.categoryId"
               :options="categoryOptions"
               :props="cascaderProps"
+              filterable
               clearable
               placeholder="选择类别"
               class="w-full"
@@ -533,6 +534,37 @@ onMounted(async () => {
 
 .search-input {
   width: 220px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  background-color: var(--color-bg-alt);
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  border-color: var(--color-accent);
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.search-input :deep(.el-input__inner) {
+  color: var(--color-text);
+}
+
+.search-input :deep(.el-input__prefix),
+.search-input :deep(.el-input__suffix) {
+  color: var(--color-muted);
+}
+
+:global([data-theme='dark']) .search-input :deep(.el-input__wrapper),
+:global([data-theme='neon']) .search-input :deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .preview {
