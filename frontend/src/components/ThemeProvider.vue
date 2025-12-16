@@ -19,7 +19,14 @@ const themeVariables: Record<ThemeName, Record<string, string>> = {
     'color-muted': '#6b7280',
     'color-accent': '#059669',
     'color-accent-soft': '#d1fae5',
-    'color-card': '#ffffff'
+    'color-card': '#ffffff',
+    'el-color-primary': '#059669',
+    'el-color-primary-light-3': '#34d399',
+    'el-color-primary-light-5': '#6ee7b7',
+    'el-color-primary-light-7': '#a7f3d0',
+    'el-color-primary-light-8': '#d1fae5',
+    'el-color-primary-light-9': '#ecfdf3',
+    'el-color-primary-dark-2': '#047857'
   },
   dark: {
     'color-bg': '#0f172a',
@@ -31,7 +38,14 @@ const themeVariables: Record<ThemeName, Record<string, string>> = {
     'color-muted': '#cbd5f5',
     'color-accent': '#38bdf8',
     'color-accent-soft': 'rgba(56, 189, 248, 0.2)',
-    'color-card': '#1e293b'
+    'color-card': '#1e293b',
+    'el-color-primary': '#38bdf8',
+    'el-color-primary-light-3': '#7dd3fc',
+    'el-color-primary-light-5': '#a5e2ff',
+    'el-color-primary-light-7': '#c7efff',
+    'el-color-primary-light-8': 'rgba(56, 189, 248, 0.2)',
+    'el-color-primary-light-9': 'rgba(56, 189, 248, 0.12)',
+    'el-color-primary-dark-2': '#0ea5e9'
   },
   neon: {
     'color-bg': '#050114',
@@ -43,7 +57,14 @@ const themeVariables: Record<ThemeName, Record<string, string>> = {
     'color-muted': '#c084fc',
     'color-accent': '#f97316',
     'color-accent-soft': 'rgba(249, 115, 22, 0.24)',
-    'color-card': '#150537'
+    'color-card': '#150537',
+    'el-color-primary': '#f97316',
+    'el-color-primary-light-3': '#fb923c',
+    'el-color-primary-light-5': '#fdba74',
+    'el-color-primary-light-7': '#fed7aa',
+    'el-color-primary-light-8': 'rgba(249, 115, 22, 0.24)',
+    'el-color-primary-light-9': 'rgba(249, 115, 22, 0.14)',
+    'el-color-primary-dark-2': '#ea580c'
   }
 }
 

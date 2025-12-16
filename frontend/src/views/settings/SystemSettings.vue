@@ -1,11 +1,11 @@
 <template>
   <div class="settings-page">
-    <el-card shadow="never">
-      <el-radio-group v-model="active" class="settings-tabs" size="large">
-        <el-radio-button v-for="item in tabOptions" :key="item.value" :label="item.value">
-          {{ item.label }}
-        </el-radio-button>
-      </el-radio-group>
+    <PageHeader title="系统设置" subtitle="维护类别、平台、标签与品牌等基础字典">
+      <template #actions>
+        <SegmentedTabs v-model="active" :items="tabOptions" size="large" />
+      </template>
+    </PageHeader>
+    <el-card shadow="never" class="settings-content">
       <div class="tab-panels">
         <div v-show="active === 'categories'"><category-manager /></div>
         <div v-show="active === 'platforms'"><platform-manager /></div>
@@ -20,6 +20,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import PageHeader from '@/components/PageHeader.vue'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
 import CategoryManager from './components/CategoryManager.vue'
 import PlatformManager from './components/PlatformManager.vue'
 import TagManager from './components/TagManager.vue'
@@ -46,49 +48,17 @@ onMounted(async () => {
 
 <style scoped>
 .settings-page {
-  padding: 8px 0;
-}
-
-.settings-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 6px 0 14px;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .tab-panels {
   padding-top: 6px;
 }
 
-:deep(.el-card) {
-  background: var(--color-card);
+.settings-content {
+  border-radius: var(--dl-radius-md);
   border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
-}
-
-.settings-tabs :deep(.el-radio-button__inner) {
-  border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
-  background: transparent;
-  color: var(--color-text);
-}
-
-.settings-tabs :deep(.el-radio-button__inner:hover) {
-  color: var(--color-accent);
-}
-
-.settings-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  box-shadow: none;
-}
-
-:deep(.el-tabs__item.is-active) {
-  color: var(--color-accent);
-}
-
-:deep(.el-tabs__active-bar) {
-  background-color: var(--color-accent);
 }
 </style>

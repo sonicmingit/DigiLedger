@@ -1,19 +1,13 @@
 <template>
   <div class="upgrade-route-page">
-    <el-card class="mb">
-      <div class="actions">
-        <div>
-          <h2 class="title">装备升级路线图</h2>
-          <p class="subtitle">以现有物品为节点，梳理多代升级路线并计算净投入</p>
-        </div>
-        <div class="action-buttons">
-          <el-button type="primary" @click="openDialog()">
-            <el-icon class="mr-1"><plus /></el-icon>新建路线
-          </el-button>
-          <el-button :loading="loading" @click="loadRoutes">刷新</el-button>
-        </div>
-      </div>
-    </el-card>
+    <PageHeader title="装备升级路线图" subtitle="以现有物品为节点，梳理多代升级路线并计算净投入">
+      <template #actions>
+        <el-button type="primary" @click="openDialog()">
+          <el-icon class="mr-1"><plus /></el-icon>新建路线
+        </el-button>
+        <el-button :loading="loading" @click="loadRoutes">刷新</el-button>
+      </template>
+    </PageHeader>
     <el-card>
       <el-table :data="routes" stripe :loading="loading" empty-text="暂无路线" row-key="id">
         <el-table-column prop="name" label="路线名称" min-width="180" />
@@ -29,8 +23,12 @@
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
         <el-table-column label="操作" width="260">
           <template #default="{ row }">
-            <el-button link type="primary" @click="goGraph(row.id)">查看路线图</el-button>
-            <el-button link type="info" @click="openDialog(row)">编辑</el-button>
+            <RowActions
+              :actions="[
+                { key: 'graph', label: '查看路线图', type: 'primary', onClick: () => goGraph(row.id) },
+                { key: 'edit', label: '编辑', type: 'info', onClick: () => openDialog(row) }
+              ]"
+            />
             <el-popconfirm title="确定删除该路线？" @confirm="handleDelete(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
@@ -82,6 +80,8 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import PageHeader from '@/components/PageHeader.vue'
+import RowActions from '@/components/RowActions.vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { fetchUpgradeRoutes, createUpgradeRoute, updateUpgradeRoute, deleteUpgradeRoute } from '@/api/upgrade'
 import { fetchAssets } from '@/api/asset'
@@ -189,33 +189,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.title {
-  margin: 0;
-  font-size: 20px;
-  color: var(--color-text);
-}
-
-.subtitle {
-  margin: 4px 0 0;
-  color: var(--color-muted);
-  font-size: 14px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.mb {
-  margin-bottom: 8px;
 }
 
 .text-muted {

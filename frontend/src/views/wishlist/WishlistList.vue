@@ -1,32 +1,35 @@
 <template>
   <div class="wishlist-page">
-    <el-card class="mb">
-      <div class="actions">
+    <PageHeader title="心愿单" subtitle="记录想买的数码物品，跟踪购买状态">
+      <template #actions>
+        <el-button type="primary" @click="openDialog()">
+          <el-icon class="mr-1"><plus /></el-icon>新增心愿
+        </el-button>
+        <el-button @click="refresh" :loading="loading">刷新</el-button>
+      </template>
+      <FilterBar>
         <el-radio-group v-model="activeStatus" size="large" @change="handleStatusChange">
           <el-radio-button label="全部" />
           <el-radio-button label="未购买" />
           <el-radio-button label="已购买" />
         </el-radio-group>
-        <div class="action-buttons">
-          <el-input
-            v-model="keyword"
-            placeholder="搜索名称/品牌"
-            clearable
-            class="search-input"
-            @keyup.enter="filterItems"
-            @clear="filterItems"
-          >
-            <template #prefix>
-              <el-icon><search /></el-icon>
-            </template>
-          </el-input>
-          <el-button type="primary" @click="openDialog()">
-            <el-icon class="mr-1"><plus /></el-icon>新增心愿
-          </el-button>
-          <el-button @click="refresh" :loading="loading">刷新</el-button>
-        </div>
-      </div>
-    </el-card>
+        <el-input
+          v-model="keyword"
+          placeholder="搜索名称/品牌"
+          clearable
+          class="search-input"
+          @keyup.enter="filterItems"
+          @clear="filterItems"
+        >
+          <template #prefix>
+            <el-icon><search /></el-icon>
+          </template>
+        </el-input>
+        <template #actions>
+          <el-button @click="filterItems">筛选</el-button>
+        </template>
+      </FilterBar>
+    </PageHeader>
     <el-card>
       <el-table :data="filtered" stripe :loading="loading" empty-text="暂无心愿" row-key="id">
         <el-table-column label="图片" width="120">
@@ -59,29 +62,23 @@
         </el-table-column>
         <el-table-column label="操作" width="360">
           <template #default="{ row }">
-            <el-button link type="info" @click="showDetail(row)">详情</el-button>
-            <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-button
-              link
-              type="success"
-              @click="convert(row)"
-              :disabled="row.status === '已购买'"
+            <RowActions
+              :actions="getRowActions(row)"
             >
-              已购买
-            </el-button>
-            <el-button
-              v-if="row.status === '已购买' && row.convertedAssetId"
-              link
-              type="success"
-              @click="goToAssetDetail(row.convertedAssetId)"
-            >
-              物品详情
-            </el-button>
-            <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+              <el-button
+                v-if="row.status === '已购买' && row.convertedAssetId"
+                link
+                type="success"
+                @click="goToAssetDetail(row.convertedAssetId)"
+              >
+                物品详情
+              </el-button>
+              <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </RowActions>
           </template>
         </el-table-column>
       </el-table>
@@ -183,6 +180,9 @@ import { ElMessage } from 'element-plus'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { FormInstance } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import RowActions from '@/components/RowActions.vue'
 import { useRouter } from 'vue-router'
 import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
@@ -476,6 +476,18 @@ const goToAssetDetail = (assetId: number) => {
   router.push(`/assets/${assetId}`)
 }
 
+const getRowActions = (row: WishlistItem) => [
+  { key: 'detail', label: '详情', type: 'info', onClick: () => showDetail(row) },
+  { key: 'edit', label: '编辑', type: 'primary', onClick: () => openDialog(row) },
+  {
+    key: 'convert',
+    label: '已购买',
+    type: 'success',
+    disabled: row.status === '已购买',
+    onClick: () => convert(row)
+  }
+] as const
+
 const handleUpload = async (options: any) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
@@ -514,57 +526,8 @@ onMounted(async () => {
   gap: 16px;
 }
 
-.mb {
-  margin-bottom: 8px;
-}
-
-.actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .search-input {
   width: 220px;
-}
-
-.search-input :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
-  background-color: var(--color-bg-alt);
-  box-shadow: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-
-.search-input :deep(.el-input__wrapper:hover) {
-  border-color: var(--color-accent);
-}
-
-.search-input :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
-}
-
-.search-input :deep(.el-input__inner) {
-  color: var(--color-text);
-}
-
-.search-input :deep(.el-input__prefix),
-.search-input :deep(.el-input__suffix) {
-  color: var(--color-muted);
-}
-
-:global([data-theme='dark']) .search-input :deep(.el-input__wrapper),
-:global([data-theme='neon']) .search-input :deep(.el-input__wrapper) {
-  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .preview {
@@ -601,10 +564,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .action-buttons {
-    width: 100%;
-  }
-
   .search-input {
     flex: 1;
   }

@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider namespace="el">
+  <el-config-provider namespace="el" size="default">
     <el-container class="layout">
       <el-aside width="220px" class="sidebar">
         <div class="logo">DigiLedger</div>

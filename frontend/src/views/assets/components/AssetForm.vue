@@ -79,8 +79,8 @@
                         class="label-action"
                         circle
                         text
-                        type="primary"
-                        :icon="Plus"
+                        type="success"
+                        :icon="CirclePlus"
                         @click="openCategoryDialog"
                       />
                     </span>
@@ -107,8 +107,8 @@
                         class="label-action"
                         circle
                         text
-                        type="primary"
-                        :icon="Plus"
+                        type="success"
+                        :icon="CirclePlus"
                         @click="handleCreateBrand"
                       />
                     </span>
@@ -166,8 +166,8 @@
                         class="label-action"
                         circle
                         text
-                        type="primary"
-                        :icon="Plus"
+                        type="success"
+                        :icon="CirclePlus"
                         @click="handleCreateTag"
                       />
                     </span>
@@ -240,14 +240,13 @@
                     <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
                   </el-select>
                   <el-button
-                    class="inline-action"
-                    text
-                    size="small"
-                    type="primary"
-                    @click="handleCreatePlatform(purchase)"
-                  >
-                    新建
-                  </el-button>
+                        class="inline-action"
+                        circle
+                        text
+                        type="success"
+                        :icon="CirclePlus"
+                        @click="handleCreatePlatform(purchase)"
+                      />
                 </el-col>
                 <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
                   金额: <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
@@ -363,7 +362,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { CirclePlus, Plus } from '@element-plus/icons-vue'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'

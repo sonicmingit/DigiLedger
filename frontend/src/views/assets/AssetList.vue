@@ -1,86 +1,100 @@
 <template>
   <div class="asset-page">
-    <el-card class="status-card">
-      <el-radio-group v-model="statusTab" class="status-tabs" size="large">
-        <el-radio-button v-for="item in statusTabOptions" :key="item.value" :label="item.value">
-          {{ item.label }}
-        </el-radio-button>
-      </el-radio-group>
-    </el-card>
-    <el-card class="filter-card">
-      <el-form :model="filters" inline class="filter-form">
-        <el-form-item label="关键字">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="名称/品牌/型号"
-            clearable
-            @clear="refresh"
-            @keyup.enter="refresh"
-            class="filter-input"
-          >
-            <template #prefix>
-              <el-icon><search /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh" style="width: 120px;">
-            <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类别">
-          <el-cascader
-            v-model="filters.categoryId"
-            :options="categoryOptions"
-            :props="cascaderProps"
-            filterable
-            clearable
-            placeholder="选择类别"
-            class="filter-tree"
-            @change="refresh"
-          />
-        </el-form-item>
-        <el-form-item label="平台">
-          <el-select
-            v-model="filters.platformId"
-            placeholder="全部平台"
-            filterable
-            clearable
-            @change="refresh"
-          >
-            <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select
-            v-model="filters.tagIds"
-            multiple
-            clearable
-            filterable
-            placeholder="选择标签"
-            class="filter-tree"
-            @change="refresh"
-            style="min-width: 200px"
-          >
-            <el-option v-for="item in flatTagOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <div class="filter-actions">
-          <el-button type="primary" @click="openCreate">
-            <el-icon class="mr-1"><plus /></el-icon>新建物品
-          </el-button>
-          <el-button @click="refresh" :loading="loading">刷新</el-button>
-        </div>
-      </el-form>
-    </el-card>
+    <PageHeader title="物品中心" subtitle="筛选、管理与查看你的物品">
+      <template #actions>
+        <el-button type="primary" @click="openCreate">
+          <el-icon class="mr-1"><plus /></el-icon>新建物品
+        </el-button>
+        <el-button @click="refresh" :loading="loading">刷新</el-button>
+      </template>
+      <FilterBar>
+        <SegmentedTabs v-model="statusTab" :items="statusTabOptions" size="large" />
+        <el-form :model="filters" inline class="filter-form">
+          <el-form-item label="关键字">
+            <el-input
+              v-model="filters.keyword"
+              placeholder="名称/品牌/型号"
+              clearable
+              @clear="refresh"
+              @keyup.enter="refresh"
+              class="filter-input"
+            >
+              <template #prefix>
+                <el-icon><search /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select
+              v-model="filters.status"
+              clearable
+              placeholder="全部状态"
+              @change="refresh"
+              style="width: 120px"
+            >
+              <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="类别">
+            <el-cascader
+              v-model="filters.categoryId"
+              :options="categoryOptions"
+              :props="cascaderProps"
+              filterable
+              clearable
+              placeholder="选择类别"
+              class="filter-tree"
+              @change="refresh"
+            />
+          </el-form-item>
+          <el-form-item label="平台">
+            <el-select
+              v-model="filters.platformId"
+              placeholder="全部平台"
+              filterable
+              clearable
+              @change="refresh"
+            >
+              <el-option
+                v-for="item in platforms"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-select
+              v-model="filters.tagIds"
+              multiple
+              clearable
+              filterable
+              placeholder="选择标签"
+              class="filter-tree"
+              @change="refresh"
+              style="min-width: 200px"
+            >
+              <el-option
+                v-for="item in flatTagOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </FilterBar>
+    </PageHeader>
 
     <el-card class="list-card">
-      <div class="list-toolbar">
-        <el-radio-group v-model="viewMode" size="small">
-          <el-radio-button label="table">表格视图</el-radio-button>
-          <el-radio-button label="card">卡片视图</el-radio-button>
-        </el-radio-group>
-        <div class="toolbar-actions">
+      <TableToolbar>
+        <template #left>
+          <el-radio-group v-model="viewMode" size="small">
+            <el-radio-button label="table">表格视图</el-radio-button>
+            <el-radio-button label="card">卡片视图</el-radio-button>
+          </el-radio-group>
+        </template>
+        <template #right>
           <el-button
             type="success"
             size="small"
@@ -90,8 +104,8 @@
             批量设置标签 ({{ selectedIds.length }})
           </el-button>
           <el-button size="small" @click="toggleCompact">{{ compact ? '舒展' : '紧凑' }}模式</el-button>
-        </div>
-      </div>
+        </template>
+      </TableToolbar>
 
       <el-table
         v-if="viewMode === 'table'"
@@ -277,6 +291,10 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, EditPen, More, Plus, Search, Tickets, View } from '@element-plus/icons-vue'
+import FilterBar from '@/components/FilterBar.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
+import TableToolbar from '@/components/TableToolbar.vue'
 import IconRenderer from '@/components/IconRenderer.vue'
 import {
   fetchAssets,
@@ -763,75 +781,11 @@ onMounted(async () => {
   gap: 18px;
 }
 
-.status-card {
-  padding: 8px 12px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-  border-radius: 14px;
-}
-
-.status-tabs {
-  display: flex;
-  flex-wrap: wrap;
-}
-
 .filter-form {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
-}
-
-.filter-form :deep(.el-input__wrapper),
-.filter-form :deep(.el-select .el-input__wrapper),
-.filter-form :deep(.el-cascader .el-input__wrapper) {
-  border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
-  background-color: var(--color-bg-alt);
-  box-shadow: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-
-.filter-form :deep(.el-input__wrapper:hover),
-.filter-form :deep(.el-select .el-input__wrapper:hover),
-.filter-form :deep(.el-cascader .el-input__wrapper:hover) {
-  border-color: var(--color-accent);
-}
-
-.filter-form :deep(.el-input__wrapper.is-focus),
-.filter-form :deep(.el-select .el-input__wrapper.is-focus),
-.filter-form :deep(.el-cascader .el-input__wrapper.is-focus) {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
-}
-
-.filter-form :deep(.el-input__inner) {
-  color: var(--color-text);
-}
-
-.filter-form :deep(.el-input__prefix),
-.filter-form :deep(.el-input__suffix) {
-  color: var(--color-muted);
-}
-
-.filter-form :deep(.el-input__prefix .el-icon),
-.filter-form :deep(.el-input__suffix .el-icon) {
-  color: var(--color-muted);
-}
-
-:global([data-theme='dark']) .filter-form :deep(.el-input__wrapper),
-:global([data-theme='dark']) .filter-form :deep(.el-select .el-input__wrapper),
-:global([data-theme='dark']) .filter-form :deep(.el-cascader .el-input__wrapper),
-:global([data-theme='neon']) .filter-form :deep(.el-input__wrapper),
-:global([data-theme='neon']) .filter-form :deep(.el-select .el-input__wrapper),
-:global([data-theme='neon']) .filter-form :deep(.el-cascader .el-input__wrapper) {
-  background-color: rgba(255, 255, 255, 0.06);
-}
-
-.filter-card {
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
 .filter-input {
@@ -840,24 +794,6 @@ onMounted(async () => {
 
 .filter-tree {
   min-width: 200px;
-}
-
-.filter-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 12px;
-}
-
-.list-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .status-action {

@@ -6,7 +6,7 @@
         <p>掌握你的数码物品资产与投入趋势，轻松规划下一台设备。</p>
       </div>
       <div class="hero-actions">
-        <el-button type="primary" size="large" @click="createAsset">
+        <el-button type="primary" @click="createAsset">
           <el-icon class="mr-2"><plus /></el-icon>
           创建物品
         </el-button>
@@ -50,17 +50,7 @@
       <template #header>
         <div class="category-header">
           <div class="tabs">
-            <el-button-group>
-              <el-button
-                v-for="tab in tabs"
-                :key="tab.value"
-                :type="tab.value === activeTab ? 'primary' : 'default'"
-                size="small"
-                @click="changeTab(tab.value)"
-              >
-                {{ tab.label }}
-              </el-button>
-            </el-button-group>
+            <SegmentedTabs v-model="activeTab" :items="tabs" size="small" />
           </div>
           <el-input
             v-model="quickSearch"
@@ -100,6 +90,7 @@ import { fetchAssets } from '@/api/asset'
 import type { AssetSummary } from '@/types'
 import AssetForm from '@/views/assets/components/AssetForm.vue'
 import AssetCard from '@/components/AssetCard.vue'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const router = useRouter()
@@ -216,10 +207,6 @@ const filteredAssets = computed(() => {
     })
     .slice(0, isMobile.value ? 8 : 12)
 })
-
-const changeTab = (value: 'all' | number) => {
-  activeTab.value = value
-}
 
 const viewDetail = (id: number) => {
   router.push(`/assets/${id}`)
@@ -367,11 +354,6 @@ watch(activeTab, () => {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-}
-
-.tabs :deep(.el-button--primary) {
-  background: linear-gradient(130deg, #059669, #10b981);
-  border-color: transparent;
 }
 
 .quick-search {
