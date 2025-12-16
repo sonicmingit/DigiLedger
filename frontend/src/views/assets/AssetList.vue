@@ -111,7 +111,7 @@
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
             <div class="cell-center">
-              <el-tag size="small">{{ row.status }}</el-tag>
+              <el-tag size="small" round :style="statusTagStyle(row.status)">{{ row.status }}</el-tag>
             </div>
           </template>
         </el-table-column>
@@ -137,12 +137,24 @@
             <span v-if="!row.tags.length">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260">
+        <el-table-column label="操作" width="210">
           <template #default="{ row }">
             <div class="row-actions">
-              <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
-              <el-button link @click="openEdit(row.id)">编辑</el-button>
-              <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
+              <el-tooltip content="详情" placement="top">
+                <el-button circle text type="primary" @click="viewDetail(row.id)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="编辑" placement="top">
+                <el-button circle text @click="openEdit(row.id)">
+                  <el-icon><EditPen /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="row.status !== '已出售'" content="出售" placement="top">
+                <el-button circle text type="success" @click="openSell(row)">
+                  <el-icon><Tickets /></el-icon>
+                </el-button>
+              </el-tooltip>
 
               <el-dropdown
                 v-if="row.status !== '已出售'"
@@ -151,7 +163,11 @@
                 @command="(value) => handleStatusCommand(row, value as AssetStatus)"
               >
                 <span class="status-action">
-                  <el-button link type="warning">修改状态</el-button>
+                  <el-tooltip content="修改状态" placement="top">
+                    <el-button circle text type="warning">
+                      <el-icon><More /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </span>
                 <template #dropdown>
                   <el-dropdown-menu>
@@ -169,7 +185,9 @@
 
               <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
                 <template #reference>
-                  <el-button link type="danger">删除</el-button>
+                  <el-button circle text type="danger">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -191,15 +209,21 @@
           @suggest-cover="openCoverSuggestionDialog"
         >
           <template #actions>
-            <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
-            <el-button text size="small" @click.stop="openEdit(item.id)">编辑</el-button>
-            <el-button
-              v-if="item.status !== '已出售'"
-              text
-              size="small"
-              type="success"
-              @click.stop="openSell(item)"
-            >出售</el-button>
+            <el-tooltip content="详情" placement="top">
+              <el-button text size="small" type="primary" circle @click.stop="viewDetail(item.id)">
+                <el-icon><View /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="编辑" placement="top">
+              <el-button text size="small" circle @click.stop="openEdit(item.id)">
+                <el-icon><EditPen /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip v-if="item.status !== '已出售'" content="出售" placement="top">
+              <el-button text size="small" type="success" circle @click.stop="openSell(item)">
+                <el-icon><Tickets /></el-icon>
+              </el-button>
+            </el-tooltip>
             <el-dropdown
               v-if="item.status !== '已出售'"
               trigger="click"
@@ -207,7 +231,11 @@
               @command="(value) => handleStatusCommand(item, value as AssetStatus)"
             >
               <span class="status-action">
-                <el-button text size="small" type="warning">修改状态</el-button>
+                <el-tooltip content="修改状态" placement="top">
+                  <el-button text size="small" type="warning" circle>
+                    <el-icon><More /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -245,7 +273,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Delete, EditPen, More, Plus, Search, Tickets, View } from '@element-plus/icons-vue'
 import IconRenderer from '@/components/IconRenderer.vue'
 import {
   fetchAssets,
@@ -285,6 +313,17 @@ const filters = reactive({
 
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 const editableStatuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已丢弃']
+
+const statusTagStyle = (status: AssetStatus) => {
+  const map: Record<AssetStatus, { backgroundColor: string; color: string; borderColor: string }> = {
+    使用中: { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#bbf7d0' },
+    已闲置: { backgroundColor: '#ecfeff', color: '#0ea5e9', borderColor: '#bae6fd' },
+    待出售: { backgroundColor: '#fef9c3', color: '#92400e', borderColor: '#fef08a' },
+    已出售: { backgroundColor: '#ffe4e6', color: '#be123c', borderColor: '#fecdd3' },
+    已丢弃: { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#e5e7eb' }
+  }
+  return map[status]
+}
 
 const resolveBrandText = (brand?: BrandInfo | null) => {
   const alias = brand?.alias?.trim()
@@ -718,11 +757,15 @@ onMounted(async () => {
 .asset-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .status-card {
-  padding: 6px 12px;
+  padding: 8px 12px;
+  background: #ecfdf3;
+  border: 1px solid #d1fae5;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
 }
 
 .status-tabs :deep(.el-tabs__header) {
@@ -758,6 +801,21 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
+}
+
+.filter-form :deep(.el-input__wrapper),
+.filter-form :deep(.el-select .el-input__wrapper),
+.filter-form :deep(.el-cascader .el-input__wrapper) {
+  border-radius: 12px;
+  border-color: #e5e7eb;
+  background-color: #f9fafb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.filter-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
 .filter-input {
@@ -805,8 +863,11 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 .row-actions :deep(.el-button) {
-  padding: 0 8px;
-  height: auto;
+  padding: 6px;
+  height: 32px;
+}
+.row-actions :deep(.el-button .el-icon) {
+  font-size: 16px;
 }
 
 .tag-item {

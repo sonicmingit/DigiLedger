@@ -1,8 +1,29 @@
 <template>
   <div class="category-manager" v-loading="loading">
     <div class="toolbar">
-      <el-button type="primary" @click="addRoot">新增根类别</el-button>
-      <el-button @click="refreshDicts">刷新</el-button>
+      <el-input
+        v-model="filterText"
+        placeholder="搜索分类"
+        clearable
+        size="small"
+        class="toolbar-search"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+      <div class="toolbar-actions">
+        <el-button text size="small" @click="expandAll">展开全部</el-button>
+        <el-button text size="small" @click="collapseAll">折叠全部</el-button>
+        <el-button text size="small" @click="refreshDicts">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+        <el-button type="primary" @click="addRoot">
+          <el-icon class="mr-1"><Plus /></el-icon>
+          新增根类别
+        </el-button>
+      </div>
     </div>
     <el-tree
       ref="treeRef"
@@ -11,16 +32,31 @@
       default-expand-all
       draggable
       :props="{ children: 'children', label: 'name' }"
+      :filter-node-method="filterNode"
       empty-text="暂无类别"
       @node-drop="handleDrop"
     >
       <template #default="{ data }">
-        <span class="node-label">{{ data.name }}</span>
-        <span class="node-actions">
-          <el-button link type="primary" @click.stop="addChild(data)">新增子类</el-button>
-          <el-button link @click.stop="editNode(data)">重命名</el-button>
-          <el-button link type="danger" @click.stop="removeNode(data)">删除</el-button>
-        </span>
+        <div class="node-row">
+          <span class="node-label">{{ data.name }}</span>
+          <span class="node-actions">
+            <el-tooltip content="新增子类" placement="top">
+              <el-button circle text type="success" @click.stop="addChild(data)">
+                <el-icon><Plus /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="重命名" placement="top">
+              <el-button circle text @click.stop="editNode(data)">
+                <el-icon><EditPen /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="删除" placement="top">
+              <el-button circle text type="danger" @click.stop="removeNode(data)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </span>
+        </div>
       </template>
     </el-tree>
     <CategoryCreateDialog
@@ -32,8 +68,9 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete, EditPen, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { updateCategory, deleteCategory, type CategoryNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
@@ -43,6 +80,7 @@ const loading = ref(false)
 const treeRef = ref()
 const createDialogVisible = ref(false)
 const createDialogParentId = ref<number | null>(null)
+const filterText = ref('')
 
 const promptName = async (title: string, defaultValue = ''): Promise<string | null> => {
   try {
@@ -58,10 +96,31 @@ const promptName = async (title: string, defaultValue = ''): Promise<string | nu
   }
 }
 
+const handleFilter = (value: string) => {
+  const tree = treeRef.value as any
+  tree?.filter(value)
+}
+
+const filterNode = (value: string, data: CategoryNode) => {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
+}
+
 const openCreateDialog = (parentId: number | null) => {
   createDialogParentId.value = parentId
   createDialogVisible.value = true
 }
+
+const toggleAll = (expand: boolean) => {
+  const tree = treeRef.value as any
+  if (!tree?.store?.nodesMap) return
+  Object.values(tree.store.nodesMap).forEach((node: any) => {
+    node.expanded = expand
+  })
+}
+
+const expandAll = () => toggleAll(true)
+const collapseAll = () => toggleAll(false)
 
 const addRoot = () => {
   openCreateDialog(null)
@@ -149,21 +208,39 @@ const handleCreateSuccess = (payload: { id: number }) => {
 }
 
 loadDicts()
+
+watch(filterText, (value) => handleFilter(value))
 </script>
 
 <style scoped>
 .category-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
   padding: 16px;
   min-height: 360px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.toolbar-search {
+  max-width: 240px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.toolbar-actions :deep(.el-button--primary) {
+  border-radius: 10px;
 }
 
 .node-label {
@@ -171,8 +248,20 @@ loadDicts()
 }
 
 .node-actions {
-  margin-left: 12px;
   display: inline-flex;
-  gap: 8px;
+  gap: 6px;
+}
+
+.node-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  transition: background-color 0.2s ease;
+}
+
+.node-row:hover {
+  background: #ecfdf3;
 }
 </style>

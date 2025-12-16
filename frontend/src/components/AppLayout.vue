@@ -67,12 +67,15 @@ const currentTheme = computed({
 
 .layout {
   min-height: 100vh;
+  background: var(--color-bg);
 }
 
 .sidebar {
   background: var(--color-sidebar-bg);
   color: var(--color-sidebar-text);
-  padding: 16px 0;
+  padding: 18px 0 12px;
+  border-right: 1px solid #e5e7eb;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
 }
 
 .logo {
@@ -80,7 +83,8 @@ const currentTheme = computed({
   font-size: 20px;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  letter-spacing: 0.5px;
 }
 
 .header {
@@ -90,12 +94,14 @@ const currentTheme = computed({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
 .main {
   background: var(--color-bg-alt);
-  padding: 24px;
+  padding: 28px;
 }
 
 .main :deep(.el-card) {
@@ -111,15 +117,20 @@ const currentTheme = computed({
 .sidebar :deep(.el-menu) {
   border-right: none;
   background: transparent;
+  padding: 0 12px;
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: var(--color-accent-soft);
+  background: linear-gradient(120deg, rgba(5, 150, 105, 0.16), rgba(5, 150, 105, 0.08));
   color: var(--color-accent);
+  border-radius: 12px;
+  margin: 0 6px;
 }
 
 .sidebar :deep(.el-menu-item) {
-  color: var(--color-muted);
+  color: #4b5563;
+  border-radius: 12px;
+  height: 44px;
 }
 
 .header-actions {
@@ -129,11 +140,12 @@ const currentTheme = computed({
 }
 
 .theme-select {
-  min-width: 120px;
+  min-width: 140px;
 }
 
 .header-title {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 @media (max-width: 900px) {

@@ -10,15 +10,15 @@ const STORAGE_KEY = 'digiledger-theme'
 
 const themeVariables: Record<ThemeName, Record<string, string>> = {
   light: {
-    'color-bg': '#f8fafc',
-    'color-bg-alt': '#e2e8f0',
-    'color-header-bg': '#f1f5f9',
+    'color-bg': '#f9fafb',
+    'color-bg-alt': '#f3f4f6',
+    'color-header-bg': '#ffffff',
     'color-sidebar-bg': '#ffffff',
-    'color-sidebar-text': '#475569',
-    'color-text': '#0f172a',
-    'color-muted': '#64748b',
-    'color-accent': '#2563eb',
-    'color-accent-soft': 'rgba(37, 99, 235, 0.12)',
+    'color-sidebar-text': '#1f2937',
+    'color-text': '#111827',
+    'color-muted': '#6b7280',
+    'color-accent': '#059669',
+    'color-accent-soft': '#d1fae5',
     'color-card': '#ffffff'
   },
   dark: {
@@ -53,7 +53,7 @@ const options: ThemeOption[] = [
   { label: '霓虹', value: 'neon' }
 ]
 
-const theme = ref<ThemeName>('dark')
+const theme = ref<ThemeName>('light')
 
 if (typeof window !== 'undefined') {
   const stored = localStorage.getItem(STORAGE_KEY) as ThemeName | null
