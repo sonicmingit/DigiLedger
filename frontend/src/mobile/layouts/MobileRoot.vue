@@ -9,7 +9,7 @@
         class="mobile-bottom-item"
         :class="{ active: route.path.startsWith(item.activePrefix) }"
       >
-        <span class="icon">{{ item.icon }}</span>
+        <span class="icon"><i class="mdi" :class="item.icon" aria-hidden="true"></i></span>
         <span>{{ item.label }}</span>
       </RouterLink>
     </div>
@@ -38,10 +38,10 @@ const router = useRouter()
 const fabOpen = ref(false)
 
 const navItems = computed(() => [
-  { to: '/mobile/index', icon: '🏠', label: '首页', activePrefix: '/mobile/index' },
-  { to: '/mobile/wishlist', icon: '🎁', label: '心愿', activePrefix: '/mobile/wishlist' },
-  { to: '/mobile/stats', icon: '📊', label: '统计', activePrefix: '/mobile/stats' },
-  { to: '/mobile/settings', icon: '⚙️', label: '设置', activePrefix: '/mobile/settings' }
+  { to: '/mobile/index', icon: 'mdi-home-variant-outline', label: '首页', activePrefix: '/mobile/index' },
+  { to: '/mobile/wishlist', icon: 'mdi-heart-outline', label: '心愿', activePrefix: '/mobile/wishlist' },
+  { to: '/mobile/stats', icon: 'mdi-chart-bar', label: '统计', activePrefix: '/mobile/stats' },
+  { to: '/mobile/settings', icon: 'mdi-cog-outline', label: '设置', activePrefix: '/mobile/settings' }
 ])
 
 const toggleFab = () => {

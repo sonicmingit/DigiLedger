@@ -65,6 +65,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--mobile-muted);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.mobile-bottom-item .icon .mdi {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-bottom-item.active .icon {
   background: rgba(76, 200, 140, 0.18);
   color: #0ea15c;
 }

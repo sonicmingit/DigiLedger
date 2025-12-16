@@ -121,16 +121,34 @@ const currentTheme = computed({
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: linear-gradient(120deg, rgba(5, 150, 105, 0.16), rgba(5, 150, 105, 0.08));
+  background: var(--color-accent-soft);
   color: var(--color-accent);
   border-radius: 12px;
   margin: 0 6px;
 }
 
 .sidebar :deep(.el-menu-item) {
-  color: #4b5563;
+  display: flex;
+  align-items: center;
+  line-height: 44px;
+  color: var(--color-sidebar-text);
   border-radius: 12px;
   height: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar :deep(.el-menu-item > span) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar :deep(.el-menu-item:hover) {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .header-actions {

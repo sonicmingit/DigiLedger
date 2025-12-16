@@ -61,8 +61,34 @@ onMounted(async () => {
 }
 
 :deep(.el-card) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
+}
+
+.settings-tabs :deep(.el-radio-button__inner) {
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.settings-tabs :deep(.el-radio-button__inner:hover) {
+  color: var(--color-accent);
+}
+
+.settings-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: none;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--color-accent);
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: var(--color-accent);
 }
 </style>
