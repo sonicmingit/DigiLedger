@@ -1013,6 +1013,15 @@ onMounted(async () => {
   padding-top: 10px;
 }
 
+.asset-dialog :deep(.el-input__wrapper),
+.asset-dialog :deep(.el-select .el-input__wrapper),
+.asset-dialog :deep(.el-cascader .el-input__wrapper),
+.asset-dialog :deep(.el-date-editor .el-input__wrapper),
+.asset-dialog :deep(.el-input-number .el-input__wrapper),
+.asset-dialog :deep(.el-select__wrapper) {
+  background-color: var(--el-fill-color-blank);
+}
+
 .dialog-hero {
   display: flex;
   justify-content: space-between;

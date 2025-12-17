@@ -22,6 +22,15 @@ import { ElCard } from 'element-plus'
   background: var(--dl-card);
 }
 
+.dl-filter-bar :deep(.el-input__wrapper),
+.dl-filter-bar :deep(.el-select .el-input__wrapper),
+.dl-filter-bar :deep(.el-cascader .el-input__wrapper),
+.dl-filter-bar :deep(.el-date-editor .el-input__wrapper),
+.dl-filter-bar :deep(.el-input-number .el-input__wrapper),
+.dl-filter-bar :deep(.el-select__wrapper) {
+  background-color: var(--el-fill-color-blank);
+}
+
 .dl-filter-bar__inner {
   display: flex;
   gap: var(--dl-space-4);
@@ -45,4 +54,3 @@ import { ElCard } from 'element-plus'
   margin-left: auto;
 }
 </style>
-

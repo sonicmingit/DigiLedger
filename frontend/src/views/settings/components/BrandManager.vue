@@ -9,26 +9,28 @@
         </template>
       </el-input>
     </div>
-    <el-table :data="filteredBrands" stripe empty-text="暂无品牌">
-      <el-table-column prop="name" label="品牌名称" min-width="160" />
-      <el-table-column prop="alias" label="展示名称" min-width="160">
-        <template #default="{ row }">{{ row.alias || '-' }}</template>
-      </el-table-column>
-      <el-table-column prop="initial" label="首字母" width="120">
-        <template #default="{ row }">{{ row.initial || '-' }}</template>
-      </el-table-column>
-      <el-table-column prop="sort" label="排序" width="100" />
-      <el-table-column label="操作" width="200">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-popconfirm title="确认删除该品牌？" @confirm="remove(row.id)">
-            <template #reference>
-              <el-button link type="danger">删除</el-button>
-            </template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="content">
+      <el-table :data="filteredBrands" stripe empty-text="暂无品牌">
+        <el-table-column prop="name" label="品牌名称" min-width="160" />
+        <el-table-column prop="alias" label="展示名称" min-width="160">
+          <template #default="{ row }">{{ row.alias || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="initial" label="首字母" width="120">
+          <template #default="{ row }">{{ row.initial || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="sort" label="排序" width="100" />
+        <el-table-column label="操作" width="200">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-popconfirm title="确认删除该品牌？" @confirm="remove(row.id)">
+              <template #reference>
+                <el-button link type="danger">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑品牌' : '新增品牌'" width="520px" @closed="reset">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" status-icon>
         <el-form-item label="名称" prop="name">
@@ -180,10 +182,11 @@ reset()
 
 <style scoped>
 .brand-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
   padding: 16px;
+  min-height: 360px;
 }
 
 .toolbar {
@@ -198,7 +201,15 @@ reset()
   max-width: 240px;
 }
 
-.brand-manager :deep(.el-table) {
+.content {
+  background: var(--dl-bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 8px;
+}
+
+.content :deep(.el-table) {
+  background: transparent;
   border-radius: 8px;
   overflow: hidden;
 }

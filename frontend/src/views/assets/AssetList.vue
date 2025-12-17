@@ -123,9 +123,14 @@
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" label="名称" min-width="180" :class-name="compact ? 'compact-col' : ''" />
         <el-table-column label="类别" width="160">
-          <template #default="{ row }">{{ resolveCategoryName(row) }}</template>
+          <template #default="{ row }">
+            <el-tag v-if="row.categoryId" size="small" round :type="categoryTagType(row)" class="category-tag">
+              {{ resolveCategoryLabel(row) }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column label="状态" width="110" align="center" header-align="center">
           <template #default="{ row }">
             <div class="cell-center">
               <el-tag size="small" round :style="statusTagStyle(row.status)">{{ row.status }}</el-tag>
@@ -626,6 +631,27 @@ const resolveCategoryName = (asset: AssetSummary) => {
   return categoryPathMap.value.get(asset.categoryId) || '-'
 }
 
+const resolveCategoryLabel = (asset: AssetSummary) => {
+  const name = resolveCategoryName(asset)
+  if (name === '-') return '-'
+  const parts = name
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  return parts[parts.length - 1] || name
+}
+
+const categoryTagType = (asset: AssetSummary) => {
+  const palette = ['success', 'info', 'warning', 'danger'] as const
+  const name = resolveCategoryName(asset)
+  const key = name === '-' ? String(asset.categoryId ?? '') : name.split('/')[0]?.trim() || name
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  return palette[hash % palette.length]
+}
+
 const handleSelectionChange = (rows: AssetSummary[]) => {
   selectedIds.value = rows.map((item) => item.id)
 }
@@ -825,6 +851,10 @@ onMounted(async () => {
 .tag-item {
   margin-right: 6px;
   margin-bottom: 4px;
+}
+
+.category-tag {
+  font-weight: 600;
 }
 
 .tag-icon {
