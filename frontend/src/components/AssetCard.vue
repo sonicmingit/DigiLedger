@@ -131,15 +131,15 @@ const handleCoverClick = () => {
 
 .asset-card {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--dl-shadow-md);
   cursor: default;
 }
 
@@ -169,14 +169,14 @@ const handleCoverClick = () => {
 }
 
 .asset-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(5, 150, 105, 0.35);
-  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.12);
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--dl-accent) 36%, var(--el-border-color-lighter));
+  box-shadow: var(--dl-shadow-lg);
 }
 
 .asset-card.selected {
-  border-color: rgba(5, 150, 105, 0.45);
-  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.18);
+  border-color: color-mix(in srgb, var(--dl-accent) 50%, var(--el-border-color-lighter));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dl-accent) 22%, transparent), var(--dl-shadow-md);
 }
 
 .card-header {
@@ -194,8 +194,8 @@ const handleCoverClick = () => {
   aspect-ratio: 4 / 3;
   border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(145deg, #ecfeff, #e0f2fe);
-  border: 1px dashed rgba(5, 150, 105, 0.3);
+  background: linear-gradient(145deg, var(--dl-bg-alt), color-mix(in srgb, var(--dl-accent) 8%, var(--dl-bg-alt)));
+  border: 1px dashed color-mix(in srgb, var(--dl-accent) 36%, transparent);
   cursor: pointer;
   position: relative;
 }
@@ -209,7 +209,7 @@ const handleCoverClick = () => {
 .cover-empty {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--dl-card) 78%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,14 +225,14 @@ const handleCoverClick = () => {
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--dl-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .price {
-  color: #059669;
+  color: var(--dl-accent);
   font-size: 18px;
   font-weight: 700;
 }
@@ -241,7 +241,7 @@ const handleCoverClick = () => {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dl-muted);
 }
 
 .tags {
@@ -272,7 +272,7 @@ const handleCoverClick = () => {
 }
 
 .actions :deep(.el-button.is-text) {
-  color: #059669;
+  color: var(--dl-accent);
 }
 
 @media (max-width: 768px) {

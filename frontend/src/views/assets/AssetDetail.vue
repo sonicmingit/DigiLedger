@@ -640,7 +640,7 @@ onMounted(async () => {
 }
 
 .summary-card {
-  background: var(--color-card);
+  background: var(--dl-card);
   border: 1px solid var(--el-border-color-light);
 }
 
@@ -658,10 +658,10 @@ onMounted(async () => {
 
 .cover-preview {
   width: 240px;
-  border-radius: 16px;
+  border-radius: var(--dl-radius-lg);
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #0f172a;
+  border: 1px solid var(--el-border-color-lighter);
+  background: var(--dl-bg-alt);
 }
 
 .cover-preview {
@@ -673,7 +673,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--dl-muted);
   font-size: 14px;
 }
 
@@ -705,9 +705,9 @@ onMounted(async () => {
   z-index: 10;
 }
 .cover-dropdown-button {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  border-radius: 8px;
+  border-radius: var(--dl-radius-md);
   padding: 4px 8px;
   min-width: 32px;
   height: 32px;
@@ -721,19 +721,20 @@ onMounted(async () => {
 }
 
 .metric {
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--dl-bg-alt);
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .metric .label {
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 .metric .value {
   display: block;
   font-size: 20px;
-  color: #38bdf8;
+  color: var(--dl-accent);
   margin-top: 6px;
 }
 
@@ -761,7 +762,7 @@ onMounted(async () => {
   height: 120px;
   border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .mt {
@@ -808,7 +809,7 @@ onMounted(async () => {
   height: 48px;
   border-radius: 6px;
   object-fit: cover;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .preview-body {
@@ -822,7 +823,7 @@ onMounted(async () => {
   max-width: 100%;
   max-height: 320px;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--el-border-color-light);
   object-fit: contain;
 }
 
@@ -835,7 +836,7 @@ onMounted(async () => {
 }
 
 .loss-neutral {
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 @media (max-width: 768px) {

@@ -7,6 +7,8 @@
   --dl-muted: var(--color-muted);
   --dl-accent: var(--color-accent);
   --dl-accent-soft: var(--color-accent-soft);
+  --dl-border: var(--color-border);
+  --dl-border-strong: var(--color-border-strong);
 
   /* Radii */
   --dl-radius-sm: 8px;
@@ -34,6 +36,7 @@
   --dl-font-small: 12px;
 
   /* Shadows */
+  /* May be overridden per-theme by ThemeProvider */
   --dl-shadow-sm: 0 6px 18px rgba(15, 23, 42, 0.04);
   --dl-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.06);
   --dl-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.08);

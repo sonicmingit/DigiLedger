@@ -60,26 +60,29 @@ const currentTheme = computed({
 <style scoped>
 :global(body) {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--dl-bg);
+  color: var(--dl-text);
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
 }
 
 .layout {
   min-height: 100vh;
-  background: var(--color-bg);
+  background: var(--dl-bg);
 }
 
 .sidebar {
   background: var(--color-sidebar-bg);
   color: var(--color-sidebar-text);
   padding: 18px 0 12px;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
+  border-right: 1px solid var(--dl-border);
+  box-shadow: var(--dl-shadow-md);
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
 .logo {
-  color: var(--color-accent);
+  color: var(--dl-accent);
   font-size: 20px;
   font-weight: bold;
   text-align: center;
@@ -89,25 +92,25 @@ const currentTheme = computed({
 
 .header {
   background: var(--color-header-bg);
-  color: var(--color-text);
+  color: var(--dl-text);
   font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+  border-bottom: 1px solid var(--dl-border);
+  box-shadow: var(--dl-shadow-sm);
 }
 
 .main {
-  background: var(--color-bg-alt);
+  background: var(--dl-bg-alt);
   padding: 28px;
 }
 
 .main :deep(.el-card) {
-  background: var(--color-card);
+  background: var(--dl-card);
   border-color: transparent;
-  color: var(--color-text);
+  color: var(--dl-text);
 }
 
 .main :deep(.el-card__header) {
@@ -121,10 +124,10 @@ const currentTheme = computed({
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--dl-accent-soft);
+  color: var(--dl-accent);
   border-radius: 12px;
-  margin: 0 6px;
+  box-shadow: inset 2px 0 0 var(--dl-accent);
 }
 
 .sidebar :deep(.el-menu-item) {
@@ -134,6 +137,8 @@ const currentTheme = computed({
   color: var(--color-sidebar-text);
   border-radius: 12px;
   height: 44px;
+  margin: 6px 6px;
+  box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -147,8 +152,8 @@ const currentTheme = computed({
 }
 
 .sidebar :deep(.el-menu-item:hover) {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--dl-accent-soft);
+  color: var(--dl-accent);
 }
 
 .header-actions {
@@ -163,7 +168,7 @@ const currentTheme = computed({
 
 .header-title {
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--dl-text);
 }
 
 @media (max-width: 900px) {
@@ -176,12 +181,18 @@ const currentTheme = computed({
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: static;
+    height: auto;
   }
 
   .sidebar :deep(.el-menu) {
     width: 100%;
     display: flex;
     justify-content: space-around;
+  }
+
+  .sidebar :deep(.el-menu-item) {
+    margin: 0 6px;
   }
 
   .main {

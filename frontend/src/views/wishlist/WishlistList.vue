@@ -8,26 +8,24 @@
         <el-button @click="refresh" :loading="loading">刷新</el-button>
       </template>
       <FilterBar>
-        <el-radio-group v-model="activeStatus" size="large" @change="handleStatusChange">
-          <el-radio-button label="全部" />
-          <el-radio-button label="未购买" />
-          <el-radio-button label="已购买" />
-        </el-radio-group>
-        <el-input
-          v-model="keyword"
-          placeholder="搜索名称/品牌"
-          clearable
-          class="search-input"
-          @keyup.enter="filterItems"
-          @clear="filterItems"
-        >
-          <template #prefix>
-            <el-icon><search /></el-icon>
-          </template>
-        </el-input>
-        <template #actions>
-          <el-button @click="filterItems">筛选</el-button>
-        </template>
+        <div class="wishlist-filter-stack">
+          <SegmentedTabs
+            v-model="activeStatus"
+            :items="statusOptions"
+            size="large"
+            @change="handleStatusChange"
+          />
+          <el-input
+            v-model="keyword"
+            placeholder="搜索名称/品牌"
+            clearable
+            class="search-input"
+          >
+            <template #prefix>
+              <el-icon><search /></el-icon>
+            </template>
+          </el-input>
+        </div>
       </FilterBar>
     </PageHeader>
     <el-card>
@@ -175,17 +173,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from 'vue'
+ import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { FormInstance } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import PageHeader from '@/components/PageHeader.vue'
-import FilterBar from '@/components/FilterBar.vue'
-import RowActions from '@/components/RowActions.vue'
-import { useRouter } from 'vue-router'
-import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
-import type { WishlistItem } from '@/types'
+ import PageHeader from '@/components/PageHeader.vue'
+ import FilterBar from '@/components/FilterBar.vue'
+ import SegmentedTabs from '@/components/SegmentedTabs.vue'
+ import RowActions from '@/components/RowActions.vue'
+ import { useRouter } from 'vue-router'
+ import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
+ import type { WishlistItem } from '@/types'
 import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
@@ -204,9 +203,15 @@ const visible = ref(false)
 const saving = ref(false)
 const current = ref<WishlistItem | null>(null)
 const formRef = ref<FormInstance>()
-const keyword = ref('')
-const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
-const categoryDialogVisible = ref(false)
+ const keyword = ref('')
+ const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
+ const categoryDialogVisible = ref(false)
+
+ const statusOptions = [
+   { label: '全部', value: '全部' },
+   { label: '未购买', value: '未购买' },
+   { label: '已购买', value: '已购买' }
+ ]
 
 const form = reactive({
   name: '',
@@ -350,6 +355,10 @@ const refresh = async () => {
 const handleStatusChange = () => {
   refresh()
 }
+
+watch(keyword, () => {
+  filterItems()
+})
 
 const openDialog = (item?: WishlistItem) => {
   current.value = item || null
@@ -526,8 +535,17 @@ onMounted(async () => {
   gap: 16px;
 }
 
+.wishlist-filter-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
 .search-input {
-  width: 220px;
+  width: 360px;
+  max-width: 100%;
 }
 
 .preview {
@@ -552,11 +570,12 @@ onMounted(async () => {
   width: 92px;
   height: 68px;
   border-radius: 12px;
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--dl-bg-alt);
+  border: 1px dashed var(--el-border-color-lighter);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--dl-muted);
 }
 
 .w-full {
@@ -565,7 +584,7 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .search-input {
-    flex: 1;
+    width: 100%;
   }
 }
 </style>

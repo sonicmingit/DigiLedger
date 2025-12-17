@@ -1,6 +1,7 @@
 :root {
   /* Element Plus sizing baseline (used by many components) */
   --el-component-size: var(--dl-control-md);
+  --el-border-radius-base: var(--dl-radius-md);
 }
 
 /* Card: unify radius, border, and shadow */
@@ -49,6 +50,19 @@
   color: var(--dl-muted);
 }
 
+/* Buttons: unify radius and hover feel */
+.el-button {
+  border-radius: var(--dl-radius-md);
+}
+
+.el-button--primary {
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--el-color-primary) 20%, transparent);
+}
+
+.el-button--primary:hover {
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--el-color-primary) 26%, transparent);
+}
+
 /* Segmented / radio-button groups: unify appearance */
 .el-radio-button__inner {
   border-radius: var(--dl-radius-md);
@@ -66,4 +80,16 @@
 /* Tags: keep pill look */
 .el-tag.is-round {
   border-radius: 999px;
+}
+
+/* Dialogs / Drawers */
+.el-dialog,
+.el-drawer {
+  border-radius: var(--dl-radius-lg);
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding-right: 20px;
 }

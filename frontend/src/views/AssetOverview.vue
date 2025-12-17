@@ -1,18 +1,14 @@
 <template>
   <div class="overview" v-loading="pageLoading">
-    <section class="hero">
-      <div class="hero-body">
-        <h1>资产总览</h1>
-        <p>掌握你的数码物品资产与投入趋势，轻松规划下一台设备。</p>
-      </div>
-      <div class="hero-actions">
+    <PageHeader title="资产总览" subtitle="掌握你的数码物品资产与投入趋势，轻松规划下一台设备。" variant="hero">
+      <template #actions>
         <el-button type="primary" @click="createAsset">
           <el-icon class="mr-2"><plus /></el-icon>
           创建物品
         </el-button>
         <el-button text @click="refresh" :loading="loading">刷新数据</el-button>
-      </div>
-    </section>
+      </template>
+    </PageHeader>
 
     <div class="kpi-grid">
       <el-card class="kpi-card">
@@ -32,11 +28,11 @@
             <polyline
               :points="trendPoints"
               fill="none"
-              stroke="#059669"
+              class="kpi-trend__line"
               stroke-width="2"
               stroke-linecap="round"
             />
-            <polygon :points="trendArea" fill="rgba(5, 150, 105, 0.14)" />
+            <polygon :points="trendArea" class="kpi-trend__area" />
           </svg>
           <div class="trend-text">
             <strong>{{ purchasesInWindow }}</strong>
@@ -92,6 +88,7 @@ import AssetForm from '@/views/assets/components/AssetForm.vue'
 import AssetCard from '@/components/AssetCard.vue'
 import SegmentedTabs from '@/components/SegmentedTabs.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const assets = ref<AssetSummary[]>([])
@@ -255,37 +252,6 @@ watch(activeTab, () => {
   gap: 24px;
 }
 
-.hero {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 28px;
-  border-radius: 24px;
-  background: linear-gradient(140deg, #ffffff, #ecfdf3);
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-}
-
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 32px;
-  font-weight: 700;
-  color: #065f46;
-}
-
-.hero p {
-  margin: 0;
-  color: #4b5563;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -293,15 +259,15 @@ watch(activeTab, () => {
 }
 
 .kpi-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  color: #0f172a;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  color: var(--dl-text);
+  box-shadow: var(--dl-shadow-md);
 }
 
 .kpi-label {
-  color: #6b7280;
+  color: var(--dl-muted);
   font-size: 14px;
 }
 
@@ -309,12 +275,12 @@ watch(activeTab, () => {
   margin-top: 8px;
   font-size: 28px;
   font-weight: 600;
-  color: #059669;
+  color: var(--dl-accent);
 }
 
 .kpi-desc {
   margin-top: 6px;
-  color: #6b7280;
+  color: var(--dl-muted);
 }
 
 .kpi-trend {
@@ -329,23 +295,31 @@ watch(activeTab, () => {
   height: 36px;
 }
 
+.kpi-trend__line {
+  stroke: var(--dl-accent);
+}
+
+.kpi-trend__area {
+  fill: color-mix(in srgb, var(--dl-accent) 16%, transparent);
+}
+
 .trend-text {
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dl-muted);
 }
 
 .trend-text strong {
   font-size: 18px;
-  color: #065f46;
+  color: var(--el-color-primary-dark-2);
 }
 
 .category-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 22px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: var(--dl-shadow-md);
 }
 
 .category-header {
@@ -360,12 +334,6 @@ watch(activeTab, () => {
   width: 260px;
 }
 
-.quick-search :deep(.el-input__wrapper) {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
 .asset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -373,31 +341,14 @@ watch(activeTab, () => {
 }
 
 @media (max-width: 1024px) {
-  .hero {
-    flex-direction: column;
-  }
-
-  .hero-actions {
-    width: 100%;
-    justify-content: space-between;
+  .overview {
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .overview {
     gap: 16px;
-  }
-
-  .hero {
-    padding: 20px;
-  }
-
-  .hero h1 {
-    font-size: 26px;
-  }
-
-  .hero-actions {
-    flex-wrap: wrap;
   }
 
   .quick-search {

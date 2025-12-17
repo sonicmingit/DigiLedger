@@ -192,6 +192,6 @@ onMounted(() => {
 }
 
 .text-muted {
-  color: var(--color-muted);
+  color: var(--dl-muted);
 }
 </style>
