@@ -100,8 +100,9 @@ const statusColors: Record<'使用中' | '已闲置' | '已出售', string> = {
 
 const statusDistribution = computed(() => {
   const total = assetCount.value
+  const labels = ['使用中', '已闲置', '已出售'] as const
   const list: Array<{ label: '使用中' | '已闲置' | '已出售'; count: number; percent: number; color: string }> =
-    ['使用中', '已闲置', '已出售'].map((label) => {
+    labels.map((label) => {
       const count = assets.value.filter((item) => item.status === label).length
       const percent = total ? (count / total) * 100 : 0
       return { label, count, percent, color: statusColors[label] }

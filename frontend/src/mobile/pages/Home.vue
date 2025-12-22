@@ -175,8 +175,8 @@ import MobileAssetCard from '@/mobile/components/MobileAssetCard.vue'
 import MobileEmptyState from '@/mobile/components/MobileEmptyState.vue'
 import { fetchAssets } from '@/api/asset'
 import { fetchCategoryTree, type CategoryNode } from '@/api/dict'
-import { fetchWishlist, type WishlistItem } from '@/api/wishlist'
-import type { AssetSummary } from '@/types'
+import { fetchWishlist } from '@/api/wishlist'
+import type { AssetSummary, WishlistItem } from '@/types'
 
 const router = useRouter()
 const assets = ref<AssetSummary[]>([])
