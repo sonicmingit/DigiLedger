@@ -71,7 +71,7 @@
         </div>
         <div class="actions">
           <el-button type="primary" @click="edit">编辑</el-button>
-          <el-button type="success" :disabled="detail.status === '已出售'" @click="sell">出售向导</el-button>
+          <el-button type="success" :disabled="!canOpenSellWizard" @click="sell">出售向导</el-button>
           <el-button @click="back">返回列表</el-button>
         </div>
       </el-card>
@@ -330,6 +330,22 @@ const primaryPurchase = computed(() =>
   detail.value?.purchases.find((purchase) => purchase.type === 'PRIMARY')
 )
 
+const sellableAccessoryPurchases = computed(() => {
+  if (!detail.value) return []
+  const soldAccessoryIds = new Set(
+    (detail.value.sales || [])
+      .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
+      .map((sale) => sale.purchaseId!)
+  )
+  return detail.value.purchases.filter((purchase) => purchase.type === 'ACCESSORY' && !soldAccessoryIds.has(purchase.id))
+})
+
+const canOpenSellWizard = computed(() => {
+  if (!detail.value) return false
+  if (detail.value.status !== '已出售') return true
+  return sellableAccessoryPurchases.value.length > 0
+})
+
 const reload = async () => {
   await load()
 }
@@ -338,11 +354,12 @@ const back = () => router.push('/assets')
 const edit = () => detail.value && formRef.value?.open(detail.value)
 const sell = () => {
   if (!detail.value) return
-  if (detail.value.status === '已出售') {
-    ElMessage.warning('已出售的物品不可重复出售')
+  if (detail.value.status === '已出售' && !sellableAccessoryPurchases.value.length) {
+    ElMessage.warning('当前资产暂无可出售的配件')
     return
   }
-  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name })
+  const initialScope = detail.value.status === '已出售' ? 'ACCESSORY' : 'ASSET'
+  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name }, undefined, { initialScope })
 }
 
 const editSale = (sale: SaleRecord) => {

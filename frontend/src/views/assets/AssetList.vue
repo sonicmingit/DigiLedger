@@ -172,7 +172,7 @@
                   <el-icon><EditPen /></el-icon>
                 </el-button>
               </el-tooltip>
-              <el-tooltip v-if="row.status !== '已出售'" content="出售" placement="top">
+              <el-tooltip content="出售" placement="top">
                 <el-button circle text type="success" @click="openSell(row)">
                   <el-icon><Tickets /></el-icon>
                 </el-button>
@@ -241,7 +241,7 @@
                 <el-icon><EditPen /></el-icon>
               </el-button>
             </el-tooltip>
-            <el-tooltip v-if="item.status !== '已出售'" content="出售" placement="top">
+            <el-tooltip content="出售" placement="top">
               <el-button text size="small" type="success" circle @click.stop="openSell(item)">
                 <el-icon><Tickets /></el-icon>
               </el-button>
@@ -600,11 +600,30 @@ const openEdit = async (id: number) => {
 }
 
 const openSell = (asset: AssetSummary) => {
-  if (asset.status === '已出售') {
-    ElMessage.warning('已出售的物品不可重复出售')
+  if (asset.status !== '已出售') {
+    sellDialog.value?.open({ id: asset.id, name: asset.name }, undefined, { initialScope: 'ASSET' })
     return
   }
-  sellDialog.value?.open({ id: asset.id, name: asset.name })
+  void (async () => {
+    try {
+      const detail = await fetchAssetDetail(asset.id)
+      const soldAccessoryIds = new Set(
+        (detail.sales || [])
+          .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
+          .map((sale) => sale.purchaseId!)
+      )
+      const sellableAccessories = detail.purchases.filter(
+        (purchase) => purchase.type === 'ACCESSORY' && !soldAccessoryIds.has(purchase.id)
+      )
+      if (!sellableAccessories.length) {
+        ElMessage.warning('当前资产暂无可出售的配件')
+        return
+      }
+      sellDialog.value?.open({ id: asset.id, name: asset.name }, undefined, { initialScope: 'ACCESSORY' })
+    } catch (error: any) {
+      ElMessage.error(error?.message || '获取资产信息失败')
+    }
+  })()
 }
 
 const viewDetail = (id: number) => {
