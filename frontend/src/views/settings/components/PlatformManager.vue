@@ -3,27 +3,34 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新增平台</el-button>
       <el-button @click="refreshDicts">刷新</el-button>
+      <el-input v-model="filterText" placeholder="搜索平台" clearable size="small" class="toolbar-search">
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
     </div>
-    <el-table :data="platforms" stripe empty-text="暂无平台">
-      <el-table-column prop="name" label="平台名称" min-width="160" />
-      <el-table-column label="链接" min-width="200">
-        <template #default="{ row }">
-          <el-link v-if="row.link" :href="row.link" target="_blank" type="primary">{{ row.link }}</el-link>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="sort" label="排序" width="100" />
-      <el-table-column label="操作" width="160">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-popconfirm title="确认删除该平台？" @confirm="remove(row.id)">
-            <template #reference>
-              <el-button link type="danger">删除</el-button>
-            </template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="content">
+      <el-table :data="filteredPlatforms" stripe empty-text="暂无平台">
+        <el-table-column prop="name" label="平台名称" min-width="160" />
+        <el-table-column label="链接" min-width="200">
+          <template #default="{ row }">
+            <el-link v-if="row.link" :href="row.link" target="_blank" type="primary">{{ row.link }}</el-link>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="sort" label="排序" width="100" />
+        <el-table-column label="操作" width="160">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-popconfirm title="确认删除该平台？" @confirm="remove(row.id)">
+              <template #reference>
+                <el-button link type="danger">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑平台' : '新增平台'" width="480px" @closed="reset">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px" status-icon>
         <el-form-item label="名称" prop="name">
@@ -48,12 +55,23 @@
 import { reactive, ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { createPlatform, updatePlatform, deletePlatform, type PlatformItem } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const { platforms: platformList, refresh: refreshDicts, load: loadDicts } = useDictionaries()
 
 const platforms = computed(() => platformList.value)
+const filterText = ref('')
+const filteredPlatforms = computed(() => {
+  const keyword = filterText.value.trim().toLowerCase()
+  if (!keyword) return platforms.value
+  return platforms.value.filter((item) => {
+    const name = item.name?.toLowerCase() || ''
+    const link = item.link?.toLowerCase() || ''
+    return name.includes(keyword) || link.includes(keyword)
+  })
+})
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
@@ -136,15 +154,33 @@ reset()
 
 <style scoped>
 .platform-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
   padding: 16px;
+  min-height: 360px;
 }
 
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.toolbar-search {
+  margin-left: auto;
+  max-width: 240px;
+}
+
+.content {
+  background: var(--dl-bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 8px;
+}
+
+.content :deep(.el-table) {
+  background: transparent;
 }
 </style>

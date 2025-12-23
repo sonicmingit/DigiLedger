@@ -6,7 +6,14 @@
   >
     <div class="card-header">
       <div class="status-label">
-        <el-tag size="small">{{ asset.status }}</el-tag>
+        <el-tag
+          size="small"
+          round
+          disable-transitions
+          :style="statusStyle"
+        >
+          {{ asset.status }}
+        </el-tag>
       </div>
       <el-checkbox v-if="selectable" :model-value="selected" @change="toggleSelect" />
     </div>
@@ -85,6 +92,17 @@ const fallback = computed(
 
 const coverUrl = computed(() => buildOssUrl(props.asset.coverImageUrl))
 
+const statusStyle = computed(() => {
+  const palette: Record<string, { backgroundColor: string; color: string; borderColor: string }> = {
+    使用中: { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#bbf7d0' },
+    已闲置: { backgroundColor: '#ecfeff', color: '#0ea5e9', borderColor: '#bae6fd' },
+    待出售: { backgroundColor: '#fef9c3', color: '#92400e', borderColor: '#fef08a' },
+    已出售: { backgroundColor: '#ffe4e6', color: '#be123c', borderColor: '#fecdd3' },
+    已丢弃: { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#e5e7eb' }
+  }
+  return palette[props.asset.status] || { backgroundColor: '#ecfeff', color: '#0f172a', borderColor: '#bae6fd' }
+})
+
 const formatNumber = (value: number | undefined) => {
   if (!value && value !== 0) return '0.00'
   return value.toFixed(2)
@@ -110,17 +128,18 @@ const handleCoverClick = () => {
 </script>
 
 <style scoped>
+
 .asset-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(30, 64, 175, 0.35), rgba(8, 47, 73, 0.65));
-  border: 1px solid rgba(56, 189, 248, 0.24);
-  border-radius: 18px;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.45);
+  box-shadow: var(--dl-shadow-md);
   cursor: default;
 }
 
@@ -150,14 +169,14 @@ const handleCoverClick = () => {
 }
 
 .asset-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(94, 234, 212, 0.6);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.55);
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--dl-accent) 36%, var(--el-border-color-lighter));
+  box-shadow: var(--dl-shadow-lg);
 }
 
 .asset-card.selected {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45);
+  border-color: color-mix(in srgb, var(--dl-accent) 50%, var(--el-border-color-lighter));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dl-accent) 22%, transparent), var(--dl-shadow-md);
 }
 
 .card-header {
@@ -175,8 +194,8 @@ const handleCoverClick = () => {
   aspect-ratio: 4 / 3;
   border-radius: 14px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(145deg, var(--dl-bg-alt), color-mix(in srgb, var(--dl-accent) 8%, var(--dl-bg-alt)));
+  border: 1px dashed color-mix(in srgb, var(--dl-accent) 36%, transparent);
   cursor: pointer;
   position: relative;
 }
@@ -190,7 +209,7 @@ const handleCoverClick = () => {
 .cover-empty {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.72);
+  background: color-mix(in srgb, var(--dl-card) 78%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -206,23 +225,23 @@ const handleCoverClick = () => {
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: #f8fafc;
+  color: var(--dl-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .price {
-  color: #22d3ee;
-  font-size: 16px;
-  font-weight: 500;
+  color: var(--dl-accent);
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .meta {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 .tags {
@@ -232,7 +251,7 @@ const handleCoverClick = () => {
 }
 
 .tag {
-  border-radius: 20px;
+  border-radius: 18px;
 }
 
 .tag-icon {
@@ -253,7 +272,7 @@ const handleCoverClick = () => {
 }
 
 .actions :deep(.el-button.is-text) {
-  color: #38bdf8;
+  color: var(--dl-accent);
 }
 
 @media (max-width: 768px) {

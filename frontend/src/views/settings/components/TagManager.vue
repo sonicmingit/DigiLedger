@@ -3,30 +3,38 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreateRoot">新增根标签</el-button>
       <el-button @click="refreshDicts">刷新</el-button>
+      <el-input v-model="filterText" placeholder="搜索标签" clearable size="small" class="toolbar-search">
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
     </div>
-    <el-tree
-      ref="treeRef"
-      :data="tagTree"
-      node-key="id"
-      default-expand-all
-      draggable
-      :props="{ children: 'children', label: 'name' }"
-      empty-text="暂无标签"
-      @node-drop="handleDrop"
-    >
-      <template #default="{ data }">
-        <span class="tag-node">
-          <span v-if="data.color" class="color-dot" :style="{ backgroundColor: data.color }"></span>
-          <IconRenderer :icon="data.icon" />
-          <span class="name">{{ data.name }}</span>
-        </span>
-        <span class="node-actions">
-          <el-button link type="primary" @click.stop="openCreateChild(data)">新增子标签</el-button>
-          <el-button link @click.stop="openEdit(data)">编辑</el-button>
-          <el-button link type="danger" @click.stop="removeTag(data)">删除</el-button>
-        </span>
-      </template>
-    </el-tree>
+    <div class="content">
+      <el-tree
+        ref="treeRef"
+        :data="tagTree"
+        node-key="id"
+        default-expand-all
+        draggable
+        :props="{ children: 'children', label: 'name' }"
+        :filter-node-method="filterNode"
+        empty-text="暂无标签"
+        @node-drop="handleDrop"
+      >
+        <template #default="{ data }">
+          <span class="tag-node">
+            <span v-if="data.color" class="color-dot" :style="{ backgroundColor: data.color }"></span>
+            <IconRenderer :icon="data.icon" />
+            <span class="name">{{ data.name }}</span>
+          </span>
+          <span class="node-actions">
+            <el-button link type="primary" @click.stop="openCreateChild(data)">新增子标签</el-button>
+            <el-button link @click.stop="openEdit(data)">编辑</el-button>
+            <el-button link type="danger" @click.stop="removeTag(data)">删除</el-button>
+          </span>
+        </template>
+      </el-tree>
+    </div>
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑标签' : '新增标签'" width="520px" @closed="reset">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px" status-icon>
         <el-form-item label="名称" prop="name">
@@ -84,9 +92,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { createTag, updateTag, deleteTag, type TagNode } from '@/api/dict'
 import { useDictionaries } from '@/composables/useDictionaries'
 import IconRenderer from '@/components/IconRenderer.vue'
@@ -99,6 +108,7 @@ const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const treeRef = ref()
 const parentLabel = ref('根标签')
+const filterText = ref('')
 
 const form = reactive({
   id: 0,
@@ -167,6 +177,16 @@ const availableIcons = [
   'mdi-image',
   'mdi-user',
 ]
+
+const handleFilter = (value: string) => {
+  const tree = treeRef.value as any
+  tree?.filter(value)
+}
+
+const filterNode = (value: string, data: TagNode) => {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
+}
 
 const nextSort = (nodes: TagNode[] = []) => nodes.reduce((max, node) => Math.max(max, node.sort ?? 0), 0) + 10
 
@@ -278,20 +298,48 @@ const handleDrop = async (_dragging: any, dropNode: any, dropType: string) => {
 
 loadDicts()
 reset()
+watch(filterText, (value) => handleFilter(value))
 </script>
 
 <style scoped>
 .tag-manager {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
   padding: 16px;
+  min-height: 360px;
 }
 
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.toolbar-search {
+  margin-left: auto;
+  max-width: 240px;
+}
+
+.content {
+  background: var(--dl-bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 8px;
+}
+
+:deep(.el-tree) {
+  background: transparent;
+}
+
+:deep(.el-tree-node__content) {
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+:deep(.el-tree-node__content:hover) {
+  background: rgba(148, 163, 184, 0.14);
 }
 
 .tag-node {
@@ -304,7 +352,7 @@ reset()
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .tag-icon {
@@ -312,7 +360,7 @@ reset()
 }
 
 .node-actions {
-  margin-left: 12px;
+  margin-left: auto;
   display: inline-flex;
   gap: 8px;
 }
@@ -330,8 +378,8 @@ reset()
   justify-content: center;
   width: 84px;
   height: 56px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 6px;
   cursor: pointer;
   padding: 6px;
@@ -347,12 +395,12 @@ reset()
 .icon-tile .icon-label {
   font-size: 11px;
   margin-top: 6px;
-  color: rgba(255,255,255,0.65);
+  color: var(--dl-muted);
   text-align: center;
   word-break: break-all;
 }
 .icon-tile.selected {
-  border-color: var(--el-color-primary);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.06);
+  border-color: var(--dl-accent);
+  box-shadow: 0 0 0 2px var(--dl-accent-soft);
 }
 </style>

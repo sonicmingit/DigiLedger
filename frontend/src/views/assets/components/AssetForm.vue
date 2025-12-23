@@ -2,278 +2,404 @@
   <div>
     <el-dialog
       v-model="visible"
-      :title="isEdit ? '编辑物品' : '新建物品'"
-      width="760px"
+      :title="null"
+      width="820px"
+      class="asset-dialog"
       @closed="reset"
       destroy-on-close
     >
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" status-icon>
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-form-item label="物品名称" prop="name">
-            <el-input v-model="form.name" placeholder="请输入物品名称" />
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <el-form-item label="物品类别" prop="categoryId" class="with-extra">
-            <el-cascader
-              v-model="form.categoryId"
-              :options="categoryOptions"
-              :props="cascaderProps"
-              clearable
-              placeholder="请选择类别"
-              style="width: 80%"
-            />
-            <el-button
-              class="inline-action"
-              text
-              size="small"
-              type="primary"
-              @click="openCategoryDialog"
-            >
-              新建
-            </el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-form-item label="品牌">
-            <div class="brand-field">
-              <el-select
-                v-model="form.brandId"
-                filterable
-                clearable
-                placeholder="选择品牌"
-                @change="handleBrandSelect"
-              >
-                <el-option
-                  v-for="item in brandOptions"
-                  :key="item.id"
-                  :label="item.label"
-                  :value="item.id"
-                />
-              </el-select>
-              <el-button
-                class="inline-action"
-                text
-                size="small"
-                type="primary"
-                @click="handleCreateBrand"
-              >
-                新建
-              </el-button>
-            </div>
-            <!-- <p class="brand-hint">可选品牌后调整显示名称，留空表示不记录品牌。</p> -->
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <el-form-item label="型号">
-            <el-input v-model="form.model" placeholder="型号/配置" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-form-item label="序列号">
-            <el-input v-model="form.serialNo" placeholder="如 SN / IMEI" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-form-item label="购买日期" prop="purchaseDate">
-            <el-date-picker
-              v-model="form.purchaseDate"
-              type="date"
-              value-format="YYYY-MM-DD"
-              :shortcuts="dateShortcuts"
-              placeholder="选择购买日期"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <el-form-item label="标签">
-            <el-tree-select
-              v-model="form.tagIds"
-              :data="tagOptions"
-              :props="treeProps"
-              multiple
-              show-checkbox
-              filterable
-              placeholder="选择标签"
-              style="width: 80%"
-            />
-            <el-button
-              class="inline-action"
-              text
-              size="small"
-              type="primary"
-              @click="handleCreateTag"
-            >
-              新建
-            </el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-form-item label="封面图">
-        <div class="cover-upload">
-          <UnifiedUploader
-            :http-request="handleUpload"
-            :show-file-list="false"
-            accept="image/*"
-            capture="environment"
-            @progress="coverProgress = $event.percent"
-          />
-          <el-progress
-            v-if="coverProgress && coverProgress < 100"
-            :percentage="Math.round(coverProgress)"
-            :stroke-width="4"
-            status="success"
-          />
-          <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
-          <div class="cover-actions">
-            <el-button type="text" size="small" :disabled="!form.id" @click="openCoverSuggestionDialog">
-              智能找图设封面
-            </el-button>
-          </div>
+      <div class="dialog-hero">
+        <div>
+          <h3>{{ isEdit ? '编辑物品' : '新建物品' }}</h3>
+          <p>上传封面、补充品牌与购买记录，系统会帮你算出日均成本。</p>
         </div>
-      </el-form-item>
-      <el-form-item label="备注">
-        <el-input v-model="form.notes" type="textarea" rows="3" placeholder="记录特殊说明" />
-      </el-form-item>
-      <div class="section-header">购买记录</div>
-      <el-button type="primary" text @click="addPurchase">添加购买</el-button>
-      <el-empty v-if="!form.purchases.length" description="尚未添加购买记录" />
-      <el-collapse v-else accordion>
-        <el-collapse-item
-          v-for="(purchase, index) in form.purchases"
-          :key="index"
-          :title="`记录 ${index + 1} · ${purchase.type}`"
-        >
-          <el-row :gutter="12">
-            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
-              <el-select v-model="purchase.type" placeholder="类型" @change="handlePurchaseTypeChange(purchase)">
-                <el-option label="主商品" value="PRIMARY" />
-                <el-option label="配件" value="ACCESSORY" />
-                <el-option label="服务" value="SERVICE" />
-              </el-select>
-            </el-col>
-            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="6">
-              <el-input v-model="purchase.name" placeholder="配件/服务名称" />
-            </el-col>
-            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
-              <el-select
-                v-model="purchase.platformId"
-                placeholder="购买平台"
-                filterable
-                clearable
-                style="width: 80%"
-              >
-                <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
-              </el-select>
-              <el-button
-                class="inline-action"
-                text
-                size="small"
-                type="primary"
-                @click="handleCreatePlatform(purchase)"
-              >
-                新建
-              </el-button>
-            </el-col>
-            <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
-              金额: <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
-            </el-col>
-          </el-row>
-          
-          <el-row :gutter="12" class="mt">
-            <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="8">
-              <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
-            </el-col>
-            <el-col :xs="24" :md="8">
-              <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
-            </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24" :md="8">
-              <el-date-picker
-                v-model="purchase.purchaseDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                :shortcuts="dateShortcuts"
-                placeholder="购买日期"
-                clearable
-                @change="() => syncPurchaseWarranty(purchase)"
-              />
-            </el-col>
-            <el-col :xs="24" :md="8">
-              <el-input-number
-                v-model="purchase.warrantyMonths"
-                :min="0"
-                :step="1"
-                placeholder="质保（月）"
-                controls-position="right"
-                @change="() => syncPurchaseWarranty(purchase)"
-              />
-            </el-col>
-            <el-col :xs="24" :md="8">
-              <el-date-picker
-                v-model="purchase.warrantyExpireDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                :shortcuts="dateShortcuts"
-                placeholder="质保到期日"
-                disabled
-              />
-            </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24">
-              购买链接: <el-input v-model="purchase.productLink" placeholder="购买链接" />
-            </el-col>
-          </el-row>
-          <el-row :gutter="12" class="mt">
-            <el-col :xs="24">
-              备注: <el-input v-model="purchase.notes" placeholder="备注" />
-            </el-col>
-          </el-row>
-          <div class="attachments">
-            <UnifiedUploader :http-request="(options) => uploadAttachment(options, purchase)" :show-file-list="false" accept="image/*" capture="environment" />
-            <div
-              v-for="(url, idx) in purchase.attachments"
-              :key="`${idx}-${url}`"
-              class="attachment-thumb"
-            >
-              <el-image
-                v-if="resolveOssUrl(url)"
-                :src="resolveOssUrl(url)"
-                fit="cover"
-                class="attachment-image"
-                :preview-src-list="[resolveOssUrl(url)]"
-              />
-              <div v-else class="attachment-fallback">附件{{ idx + 1 }}</div>
-              <el-button
-                text
-                type="danger"
-                size="small"
-                class="attachment-remove"
-                @click="removeAttachment(purchase, url)"
-              >
-                删除
-              </el-button>
+        <el-tag effect="plain" round type="success">物品卡片</el-tag>
+      </div>
+
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="auto"
+        label-position="top"
+        status-icon
+        class="asset-form"
+      >
+        <div class="form-grid">
+          <section class="media-panel">
+            <div class="panel-title">封面</div>
+            <el-form-item label="封面图" class="cover-item">
+              <div class="cover-upload">
+                <div class="upload-drop">
+                  <UnifiedUploader
+                    :http-request="handleUpload"
+                    :show-file-list="false"
+                    accept="image/*"
+                    capture="environment"
+                    @progress="coverProgress = $event.percent"
+                  />
+                  <div class="upload-hint">拖拽/点击上传，推荐 3:2 比例</div>
+                </div>
+                <el-progress
+                  v-if="coverProgress && coverProgress < 100"
+                  :percentage="Math.round(coverProgress)"
+                  :stroke-width="4"
+                  status="success"
+                />
+                <img v-if="coverImagePreview" :src="coverImagePreview" class="cover" />
+                <div class="cover-actions">
+                  <el-button
+                    type="primary"
+                    link
+                    size="small"
+                    :disabled="!form.id"
+                    @click="openCoverSuggestionDialog"
+                  >
+                    智能找图设封面
+                  </el-button>
+                </div>
+              </div>
+            </el-form-item>
+          </section>
+
+          <section class="fields-panel">
+            <div class="panel-title">基础信息</div>
+            <el-row :gutter="16">
+              <el-col :xs="24" :md="12">
+                <el-form-item label="物品名称" prop="name">
+                  <el-input v-model="form.name" placeholder="请输入物品名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :md="12">
+                <el-form-item label="物品类别" prop="categoryId">
+                  <div class="field-inline">
+                    <el-cascader
+                      v-model="form.categoryId"
+                      :options="categoryOptions"
+                      :props="cascaderProps"
+                      filterable
+                      clearable
+                      placeholder="请选择类别"
+                      class="field-grow"
+                    />
+                    <el-tooltip content="新建类别" placement="top">
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="success"
+                        :icon="CirclePlus"
+                        @click="openCategoryDialog"
+                      />
+                    </el-tooltip>
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :md="12">
+                <el-form-item label="品牌">                  
+                  <div class="brand-field">
+                    <el-select
+                      v-model="form.brandId"
+                      filterable
+                      clearable
+                      placeholder="选择品牌"
+                      @change="handleBrandSelect"
+                    >
+                      <el-option
+                        v-for="item in brandOptions"
+                        :key="item.id"
+                        :label="item.label"
+                        :value="item.id"
+                      />
+                    </el-select>
+                    <el-tooltip content="新建品牌" placement="top">
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="success"
+                        :icon="CirclePlus"
+                        @click="handleCreateBrand"
+                      />
+                    </el-tooltip>
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :md="12">
+                <el-form-item label="型号">
+                  <el-input v-model="form.model" placeholder="型号/配置" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :md="12">
+                <el-form-item label="序列号">
+                  <el-input v-model="form.serialNo" placeholder="如 SN / IMEI" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :md="12">
+                <el-form-item label="购买日期" prop="purchaseDate">
+                  <el-date-picker
+                    v-model="form.purchaseDate"
+                    type="date"
+                    value-format="YYYY-MM-DD"
+                    :shortcuts="dateShortcuts"
+                    placeholder="选择购买日期"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :md="12">
+                <el-form-item label="标签">
+                  <div class="field-inline">
+                    <el-tree-select
+                      v-model="form.tagIds"
+                      :data="tagOptions"
+                      :props="treeProps"
+                      multiple
+                      show-checkbox
+                      filterable
+                      placeholder="选择标签"
+                      class="field-grow"
+                    />
+                    <el-tooltip content="新建标签" placement="top">
+                      <el-button
+                        class="label-action"
+                        circle
+                        text
+                        type="success"
+                        :icon="CirclePlus"
+                        @click="handleCreateTag"
+                      />
+                    </el-tooltip>
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24">
+                <el-form-item label="备注" class="note-item">
+                  <el-input
+                    v-model="form.notes"
+                    type="textarea"
+                    :rows="5"
+                    placeholder="记录特殊说明、保养节点或使用心得"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </section>
+        </div>
+
+        <el-card class="purchase-card" shadow="never">
+          <template #header>
+            <div class="purchase-header">
+              <div>
+                <div class="panel-title">购买记录</div>
+                <p class="panel-subtitle">拆分主商品、配件、服务，方便核算投入</p>
+              </div>
+              <el-button type="primary" :icon="Plus" @click="addPurchase">添加购买</el-button>
             </div>
-          </div>
-          <div class="purchase-actions">
-            <el-button type="danger" text @click="removePurchase(index)">删除记录</el-button>
-          </div>
-        </el-collapse-item>
-      </el-collapse>
-    </el-form>
-    <template #footer>
-      <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
-    </template>
+          </template>
+          <el-empty v-if="!form.purchases.length" description="尚未添加购买记录" />
+          <el-collapse v-else v-model="activePurchasePanel" accordion>
+            <el-collapse-item
+              v-for="(purchase, index) in form.purchases"
+              :key="index"
+              :name="String(index)"
+            >
+              <template #title>
+                <div class="purchase-title">
+                  <div class="purchase-title-left">
+                    <el-tag
+                      size="small"
+                      effect="light"
+                      round
+                      :type="purchaseTypeTagType(purchase.type)"
+                      class="purchase-type-tag"
+                    >
+                      {{ purchaseTypeLabel(purchase.type) }}
+                    </el-tag>
+                    <span class="purchase-title-main">
+                      记录 {{ index + 1 }}
+                      <span v-if="purchase.type !== 'PRIMARY' && purchase.name">· {{ purchase.name }}</span>
+                    </span>
+                  </div>
+                  <div class="purchase-title-actions">
+                    <span class="purchase-title-meta">{{ formatMoney(purchase.price) }}</span>
+                    <span v-if="platformNameById(purchase.platformId)" class="purchase-title-meta">
+                      {{ platformNameById(purchase.platformId) }}
+                    </span>
+                    <span v-if="purchase.purchaseDate" class="purchase-title-meta">{{ purchase.purchaseDate }}</span>
+                    <el-button type="danger" text @click.stop="removePurchase(index)">删除记录</el-button>
+                  </div>
+                </div>
+              </template>
+
+              <el-row :gutter="12">
+                <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
+                  <el-form-item label="类型">
+                    <el-select v-model="purchase.type" placeholder="类型" @change="handlePurchaseTypeChange(purchase)">
+                      <el-option label="主商品" value="PRIMARY" />
+                      <el-option label="配件" value="ACCESSORY" />
+                      <el-option label="服务" value="SERVICE" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="6">
+                  <el-form-item label="名称">
+                    <el-input v-model="purchase.name" placeholder="配件/服务名称" />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
+                  <el-form-item label="购买平台">
+                    <div class="field-inline">
+                      <el-select
+                        v-model="purchase.platformId"
+                        placeholder="购买平台"
+                        filterable
+                        clearable
+                        class="field-grow"
+                      >
+                        <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
+                      </el-select>
+                      <el-tooltip content="新建平台" placement="top">
+                        <el-button
+                          class="inline-action"
+                          circle
+                          text
+                          type="success"
+                          :icon="CirclePlus"
+                          @click="handleCreatePlatform(purchase)"
+                        />
+                      </el-tooltip>
+                    </div>
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="purchase.type !== 'PRIMARY' ? 6 : 8">
+                  <el-form-item label="金额">
+                    <el-input-number v-model="purchase.price" :min="0" :precision="2" :step="100" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="12" class="mt">
+                <el-col v-if="purchase.type !== 'PRIMARY'" :xs="24" :md="8">
+                  <el-form-item label="数量">
+                    <el-input-number v-model="purchase.quantity" :min="1" :step="1" />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="8">
+                  <el-form-item label="卖家/店铺">
+                    <el-input v-model="purchase.seller" placeholder="卖家/店铺" />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="8">
+                  <el-form-item label="购买链接">
+                    <el-input v-model="purchase.productLink" placeholder="购买链接" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="12" class="mt">
+                <el-col :xs="24" :md="8">
+                  <el-form-item label="购买日期">
+                    <el-date-picker
+                      v-model="purchase.purchaseDate"
+                      type="date"
+                      value-format="YYYY-MM-DD"
+                      :shortcuts="dateShortcuts"
+                      placeholder="购买日期"
+                      clearable
+                      @change="() => syncPurchaseWarranty(purchase)"
+                    />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="8">
+                  <el-form-item label="质保（月）">
+                    <el-input-number
+                      v-model="purchase.warrantyMonths"
+                      :min="0"
+                      :step="1"
+                      placeholder="质保（月）"
+                      controls-position="right"
+                      @change="() => syncPurchaseWarranty(purchase)"
+                    />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="8">
+                  <el-form-item label="质保到期日">
+                    <el-date-picker
+                      v-model="purchase.warrantyExpireDate"
+                      type="date"
+                      value-format="YYYY-MM-DD"
+                      :shortcuts="dateShortcuts"
+                      placeholder="质保到期日"
+                      disabled
+                    />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="12" class="mt">
+                <el-col :xs="24" :md="12" class="purchase-notes-col">
+                  <el-form-item label="备注">
+                    <el-input v-model="purchase.notes" placeholder="备注" type="textarea" :rows="6" />
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :md="12" class="purchase-attachments-col">
+                  <el-form-item label="附件">
+                    <div
+                      class="attachments-grid"
+                      :class="{ 'attachments-grid--empty': !purchase.attachments?.length }"
+                    >
+                      <div class="attachment-add" :class="{ 'attachment-add--full': !purchase.attachments?.length }">
+                        <UnifiedUploader
+                          :http-request="(options) => uploadAttachment(options, purchase)"
+                          :show-file-list="false"
+                          accept="image/*"
+                          capture="environment"
+                        />
+                        <div v-if="purchase.attachments?.length" class="attachment-add-label">添加</div>
+                      </div>
+                      <div
+                        v-for="(url, idx) in purchase.attachments"
+                        :key="`${idx}-${url}`"
+                        class="attachment-thumb"
+                      >
+                        <el-image
+                          v-if="resolveOssUrl(url)"
+                          :src="resolveOssUrl(url)"
+                          fit="cover"
+                          class="attachment-image"
+                          :preview-src-list="[resolveOssUrl(url)]"
+                        />
+                        <div v-else class="attachment-fallback">附件{{ idx + 1 }}</div>
+                        <el-button
+                          text
+                          type="danger"
+                          size="small"
+                          class="attachment-remove"
+                          @click="removeAttachment(purchase, url)"
+                        >
+                          删除
+                        </el-button>
+                      </div>
+                    </div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-collapse-item>
+          </el-collapse>
+        </el-card>
+      </el-form>
+      <template #footer>
+        <el-button @click="visible = false">取消</el-button>
+        <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
+      </template>
     </el-dialog>
 
     <category-create-dialog
@@ -295,6 +421,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
+import { CirclePlus, Plus } from '@element-plus/icons-vue'
 import { uploadFile } from '@/api/file'
 import { createAsset, updateAsset } from '@/api/asset'
 import type { AssetDetail } from '@/types'
@@ -320,6 +447,7 @@ const customSubmit = ref<((payload: AssetPayload) => Promise<any>) | null>(null)
 const customSuccessMessage = ref<string | null>(null)
 const customAfterSuccess = ref<((result: any) => void) | null>(null)
 //const categoryDialogVisible = ref(false)
+const activePurchasePanel = ref<string>('')
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -362,7 +490,7 @@ const form = reactive({
     warrantyMonths?: number
     warrantyExpireDate?: string
     notes?: string
-    productLink?:string
+    productLink?: string
     name?: string
     attachments: string[]
   }>
@@ -456,6 +584,42 @@ const resolveCategoryName = (categoryId: number | null) => {
 
 const { load: loadDicts, categoryTree, tagTree, platforms, brands, brandMap } = useDictionaries()
 const { promptPlatformCreation, promptBrandCreation, promptTagCreation } = useDictionaryCreator()
+
+const platformNameMap = computed(() => {
+  const map = new Map<number, string>()
+  platforms.value.forEach((platform) => map.set(platform.id, platform.name))
+  return map
+})
+
+const platformNameById = (platformId?: number) => {
+  if (!platformId) return ''
+  return platformNameMap.value.get(platformId) || ''
+}
+
+const purchaseTypeLabel = (type: AssetFormState['purchases'][number]['type']) => {
+  if (type === 'PRIMARY') return '主商品'
+  if (type === 'ACCESSORY') return '配件'
+  return '服务'
+}
+
+const purchaseTypeTagType = (type: AssetFormState['purchases'][number]['type']) => {
+  if (type === 'PRIMARY') return 'success'
+  if (type === 'ACCESSORY') return 'warning'
+  return 'info'
+}
+
+const moneyFormatter = new Intl.NumberFormat('zh-CN', {
+  style: 'currency',
+  currency: 'CNY',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+})
+
+const formatMoney = (value: unknown) => {
+  const numberValue = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numberValue)) return '¥0'
+  return moneyFormatter.format(numberValue)
+}
 
 const brandOptions = computed(() =>
   brands.value.map((item) => ({
@@ -561,11 +725,17 @@ const open = (asset?: AssetDetail | null, options?: AssetFormOpenOptions) => {
         }))
       : []
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
+    setDefaultPurchasePanel()
   } else {
     reset()
     form.purchaseDate = today()
     if (options?.prefill) {
       applyPrefill(options.prefill)
+    }
+    if (!form.purchases.length) {
+      addPurchase()
+    } else {
+      setDefaultPurchasePanel()
     }
   }
 }
@@ -585,6 +755,7 @@ const reset = () => {
   form.notes = ''
   form.purchases = []
   coverProgress.value = 0
+  activePurchasePanel.value = ''
 }
 
 const applyPrefill = (prefill: AssetFormPrefill) => {
@@ -606,6 +777,15 @@ const applyPrefill = (prefill: AssetFormPrefill) => {
     })) as AssetFormState['purchases']
     form.purchases.forEach((purchase) => syncPurchaseWarranty(purchase))
   }
+}
+
+const setDefaultPurchasePanel = () => {
+  if (!form.purchases.length) {
+    activePurchasePanel.value = ''
+    return
+  }
+  const primaryIndex = form.purchases.findIndex((purchase) => purchase.type === 'PRIMARY')
+  activePurchasePanel.value = String(primaryIndex >= 0 ? primaryIndex : 0)
 }
 
 const syncPurchaseWarranty = (purchase: AssetFormState['purchases'][number]) => {
@@ -630,6 +810,7 @@ const addPurchase = () => {
   })
   const last = form.purchases[form.purchases.length - 1]
   syncPurchaseWarranty(last)
+  activePurchasePanel.value = String(form.purchases.length - 1)
 }
 
 const removePurchase = (index: number) => {
@@ -675,6 +856,24 @@ const uploadAttachment = async (options: UploadRequestOptions, purchase: any) =>
     ElMessage.error('附件上传失败')
   }
 }
+
+/**
+ * 直接上传单个 file 对象（用于 JS 触发的“换一个”按钮）
+ */
+const uploadAttachmentRaw = async (file: File, purchase: any) => {
+  try {
+    const { objectKey, url } = await uploadFile(file)
+    const stored = url || objectKey || extractObjectKey(url)
+    if (stored) {
+      purchase.attachments.push(stored)
+    }
+    ElMessage.success('附件上传成功')
+  } catch (err: any) {
+    ElMessage.error('附件上传失败')
+  }
+}
+
+
 
 const removeAttachment = (purchase: any, url: string) => {
   purchase.attachments = purchase.attachments.filter((item: string) => item !== url)
@@ -744,34 +943,34 @@ const submit = () => {
     try {
       normalizeBrandName()
       const brandText = form.brandName.trim()
-        const payload = {
-          name: form.name,
-          categoryId: form.categoryId!,
-          brandId: form.brandId || undefined,
-          brand: brandText || undefined,
-          model: form.model || undefined,
-          serialNo: form.serialNo || undefined,
-          status: form.status,
-          purchaseDate: form.purchaseDate || undefined,
-          coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
-          notes: form.notes || undefined,
-          tagIds: form.tagIds,
-          purchases: form.purchases.map((p) => ({
-            type: p.type,
-            platformId: p.platformId,
-            seller: p.seller || undefined,
-            price: p.price,
-            shippingCost: p.shippingCost,
-            quantity: p.quantity,
-            purchaseDate: p.purchaseDate,
-            warrantyMonths: p.warrantyMonths ?? undefined,
-            warrantyExpireDate: p.warrantyExpireDate || undefined,
-            productLink: p.productLink || undefined,
-            notes: p.notes || undefined,
-            name: p.type === 'PRIMARY' ? undefined : p.name,
-            attachments: extractObjectKeys(p.attachments)
-          }))
-        }
+      const payload = {
+        name: form.name,
+        categoryId: form.categoryId!,
+        brandId: form.brandId || undefined,
+        brand: brandText || undefined,
+        model: form.model || undefined,
+        serialNo: form.serialNo || undefined,
+        status: form.status,
+        purchaseDate: form.purchaseDate || undefined,
+        coverImageUrl: extractObjectKey(form.coverImageKey) || undefined,
+        notes: form.notes || undefined,
+        tagIds: form.tagIds,
+        purchases: form.purchases.map((p) => ({
+          type: p.type,
+          platformId: p.platformId,
+          seller: p.seller || undefined,
+          price: p.price,
+          shippingCost: p.shippingCost,
+          quantity: p.quantity,
+          purchaseDate: p.purchaseDate,
+          warrantyMonths: p.warrantyMonths ?? undefined,
+          warrantyExpireDate: p.warrantyExpireDate || undefined,
+          productLink: p.productLink || undefined,
+          notes: p.notes || undefined,
+          name: p.type === 'PRIMARY' ? undefined : p.name,
+          attachments: extractObjectKeys(p.attachments)
+        }))
+      }
       let result: any
       if (customSubmit.value) {
         result = await customSubmit.value(payload)
@@ -806,61 +1005,226 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.section-header {
-  margin-top: 16px;
-  margin-bottom: 8px;
+.asset-dialog :deep(.el-dialog__body) {
+  padding-top: 4px;
+}
+
+.asset-dialog :deep(.el-dialog__footer) {
+  padding-top: 10px;
+}
+
+.asset-dialog :deep(.el-input__wrapper),
+.asset-dialog :deep(.el-select .el-input__wrapper),
+.asset-dialog :deep(.el-cascader .el-input__wrapper),
+.asset-dialog :deep(.el-date-editor .el-input__wrapper),
+.asset-dialog :deep(.el-input-number .el-input__wrapper),
+.asset-dialog :deep(.el-select__wrapper) {
+  background-color: var(--el-fill-color-blank);
+}
+
+.dialog-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, var(--dl-card), var(--el-color-primary-light-9));
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  margin-bottom: 16px;
+}
+
+.dialog-hero h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: var(--el-color-primary-dark-2);
+}
+
+.dialog-hero p {
+  margin: 0;
+  color: var(--dl-muted);
+  font-size: 13px;
+}
+
+.asset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.field-grow {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.media-panel,
+.fields-panel {
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  padding: 16px;
+  box-shadow: var(--dl-shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 使基础信息面板内的列顶部对齐，label 与控件间距一致 */
+.fields-panel :deep(.el-row) {
+  align-items: flex-start;
+}
+.fields-panel :deep(.el-col) {
+  display: flex;
+  flex-direction: column;
+}
+.fields-panel :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+.fields-panel :deep(.el-form-item__label) {
   font-weight: 600;
-  color: #38bdf8;
+  margin-bottom: 8px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fields-panel :deep(.el-form-item__content) {
+  min-height: 36px; /* 保证控件高度一致，避免因行高影响对齐 */
+}
+.fields-panel :deep(.label-with-action) {
+  align-items: center;
+}
+
+.panel-title {
+  font-weight: 700;
+  color: var(--el-color-primary-dark-2);
+  margin-bottom: 10px;
+}
+
+.panel-subtitle {
+  margin: 4px 0 0;
+  color: var(--dl-muted);
+  font-size: 12px;
 }
 
 .cover-upload {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  flex: 1;
+}
+
+.cover-item {
+  flex: 1;
+}
+
+.cover-item :deep(.el-form-item__content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.upload-drop {
+  border: 1px dashed color-mix(in srgb, var(--dl-accent) 38%, transparent);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--dl-bg-alt);
+  text-align: center;
+  color: var(--el-color-primary-dark-2);
+}
+
+.upload-hint {
+  margin-top: 8px;
+  color: var(--dl-muted);
+  font-size: 12px;
 }
 
 .cover {
-  width: 120px;
-  height: 120px;
+  width: 100%;
   border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border: 1px solid color-mix(in srgb, var(--dl-accent) 20%, transparent);
+  box-shadow: var(--dl-shadow-sm);
+}
+
+.note-item :deep(.el-textarea__inner) {
+  border-radius: 12px;
 }
 
 .mt {
   margin-top: 12px;
 }
 
-.tag {
-  margin-right: 6px;
-  margin-top: 4px;
+.attachments-grid {
+  --attachment-size: 92px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--attachment-size), 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  align-items: start;
 }
 
-.attachments {
+.attachment-add {
+  height: var(--attachment-size);
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--dl-accent) 38%, transparent);
+  background: var(--dl-bg-alt);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.attachment-add :deep(.el-upload) {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 12px;
+  justify-content: center;
+}
+
+.attachment-add-label {
+  font-size: 12px;
 }
 
 .attachment-thumb {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: var(--attachment-size);
 }
 
 .attachment-image,
 .attachment-fallback {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--dl-accent) 18%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  background: var(--dl-bg-alt);
 }
 
 .attachment-remove {
@@ -870,25 +1234,179 @@ onMounted(async () => {
   padding: 0;
 }
 
+.purchase-card {
+  --purchase-bottom-height: 160px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: var(--dl-shadow-md);
+}
+
+.purchase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .purchase-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
 }
 
-.inline-action {
-  margin-top: 4px;
-  padding: 0 6px;
+.purchase-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-.brand-field {
+.purchase-title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.purchase-title-main {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-type-tag {
+  flex: 0 0 auto;
+}
+
+.purchase-title-meta {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.purchase-title-actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
+.purchase-attachments-col .attachments-grid {
+  /* 保持最小高度，但使用弹性布局使上传区可以撑满与备注框一致 */
+  min-height: var(--purchase-bottom-height);
+  align-content: start;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+
+/* 上传添加框，视觉上与备注框保持一致 */
+.purchase-attachments-col .attachment-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  min-width: 150px;
+  min-height: 136px;
+  border: 1px dashed color-mix(in srgb, var(--dl-accent) 36%, transparent);
+  border-radius: 12px;
+  background: var(--dl-bg-alt);
+  box-shadow: var(--dl-shadow-sm);
+}
+
+.purchase-attachments-col .attachment-add--full {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--purchase-bottom-height);
+  padding: 0;
+}
+
+.purchase-attachments-col .attachment-add--full :deep(.unified-uploader),
+.purchase-attachments-col .attachment-add--full :deep(.el-upload),
+.purchase-attachments-col .attachment-add--full :deep(.el-upload-dragger) {
+  width: 100%;
+  height: 100%;
+}
+
+.purchase-attachments-col .attachment-add--full :deep(.el-upload-dragger) {
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.purchase-attachments-col .attachment-add--full :deep(.upload-drag-content) {
+  padding: 0 18px;
+}
+
+.purchase-notes-col :deep(.el-textarea__inner) {
+  min-height: var(--purchase-bottom-height);
+  resize: none;
+}
+
+.purchase-attachments-col .attachment-add .attachment-add-label {
+  margin-top: 8px;
+  color: var(--dl-muted);
+  font-size: 12px;
+}
+
+.purchase-attachments-col .attachment-add :deep(.el-button) {
+  border-radius: 20px;
+  padding: 6px 14px;
+  box-shadow: var(--dl-shadow-sm);
+}
+
+.purchase-attachments-col .attachment-thumb {
+  position: relative;
+  width: 88px;
+  height: 88px;
+}
+
+.purchase-attachments-col .attachment-image,
+.purchase-attachments-col .attachment-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--dl-accent) 18%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  background: var(--dl-bg-alt);
+}
+
+.purchase-attachments-col .attachment-remove {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .purchase-attachments-col .attachments-grid,
+  .purchase-notes-col .el-input__inner,
+  .purchase-notes-col .el-textarea__inner {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .purchase-attachments-col .attachments-grid,
+  .purchase-notes-col .el-input__inner {
+    min-height: 120px;
+  }
+}
+
+
 .brand-field :deep(.el-select) {
-  width: 180px;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
 }
 
 .brand-field :deep(.el-input) {
@@ -896,13 +1414,54 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.brand-hint {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+.fields-panel :deep(.el-input),
+.fields-panel :deep(.el-select),
+.fields-panel :deep(.el-date-editor),
+.fields-panel :deep(.el-input-number),
+.purchase-card :deep(.el-input),
+.purchase-card :deep(.el-select),
+.purchase-card :deep(.el-date-editor),
+.purchase-card :deep(.el-input-number) {
+  width: 100%;
+  min-width: 0;
+}
+
+.purchase-card .el-form-item {
+  margin-bottom: 8px;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-action {
+  margin-left: 4px;
+}
+
+.label-action :deep(.el-icon) {
+  font-size: 14px;
+}
+
+.inline-action {
+  padding: 0 6px;
+}
+
+@media (max-width: 960px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
+  .purchase-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .purchase-title-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .brand-field {
     flex-direction: column;
     align-items: stretch;
@@ -911,20 +1470,7 @@ onMounted(async () => {
   .brand-field :deep(.el-select) {
     width: 100%;
   }
-}
 
-.with-extra {
-  position: relative;
-  padding-bottom: 12px;
-}
-
-.with-extra .inline-action {
-  position: absolute;
-  right: 0;
-  bottom: -6px;
-}
-
-@media (max-width: 768px) {
   :deep(.el-dialog) {
     width: 94vw !important;
   }

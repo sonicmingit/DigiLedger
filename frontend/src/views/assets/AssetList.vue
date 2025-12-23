@@ -1,83 +1,100 @@
 <template>
   <div class="asset-page">
-    <el-card class="status-card">
-      <el-tabs v-model="statusTab" class="status-tabs" type="card">
-        <el-tab-pane v-for="item in statusTabOptions" :key="item.value" :label="item.label" :name="item.value" />
-      </el-tabs>
-    </el-card>
-    <el-card class="filter-card">
-      <el-form :model="filters" inline class="filter-form">
-        <el-form-item label="关键字">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="名称/品牌/型号"
-            clearable
-            @clear="refresh"
-            @keyup.enter="refresh"
-            class="filter-input"
-          >
-            <template #prefix>
-              <el-icon><search /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部状态" @change="refresh" style="width: 120px;">
-            <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类别">
-          <el-cascader
-            v-model="filters.categoryId"
-            :options="categoryOptions"
-            :props="cascaderProps"
-            clearable
-            placeholder="选择类别"
-            class="filter-tree"
-            @change="refresh"
-          />
-        </el-form-item>
-        <el-form-item label="平台">
-          <el-select
-            v-model="filters.platformId"
-            placeholder="全部平台"
-            filterable
-            clearable
-            @change="refresh"
-          >
-            <el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select
-            v-model="filters.tagIds"
-            multiple
-            clearable
-            filterable
-            placeholder="选择标签"
-            class="filter-tree"
-            @change="refresh"
-            style="min-width: 200px"
-          >
-            <el-option v-for="item in flatTagOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <div class="filter-actions">
-          <el-button type="primary" @click="openCreate">
-            <el-icon class="mr-1"><plus /></el-icon>新建物品
-          </el-button>
-          <el-button @click="refresh" :loading="loading">刷新</el-button>
-        </div>
-      </el-form>
-    </el-card>
+    <PageHeader title="物品中心" subtitle="筛选、管理与查看你的物品">
+      <template #actions>
+        <el-button type="primary" @click="openCreate">
+          <el-icon class="mr-1"><plus /></el-icon>新建物品
+        </el-button>
+        <el-button @click="refresh" :loading="loading">刷新</el-button>
+      </template>
+      <FilterBar>
+        <SegmentedTabs v-model="statusTab" :items="statusTabOptions" size="large" />
+        <el-form :model="filters" inline class="filter-form">
+          <el-form-item label="关键字">
+            <el-input
+              v-model="filters.keyword"
+              placeholder="名称/品牌/型号"
+              clearable
+              @clear="refresh"
+              @keyup.enter="refresh"
+              class="filter-input"
+            >
+              <template #prefix>
+                <el-icon><search /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select
+              v-model="filters.status"
+              clearable
+              placeholder="全部状态"
+              @change="refresh"
+              style="width: 120px"
+            >
+              <el-option v-for="item in statuses" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="类别">
+            <el-cascader
+              v-model="filters.categoryId"
+              :options="categoryOptions"
+              :props="cascaderProps"
+              filterable
+              clearable
+              placeholder="选择类别"
+              class="filter-tree"
+              @change="refresh"
+            />
+          </el-form-item>
+          <el-form-item label="平台">
+            <el-select
+              v-model="filters.platformId"
+              placeholder="全部平台"
+              filterable
+              clearable
+              @change="refresh"
+            >
+              <el-option
+                v-for="item in platforms"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-select
+              v-model="filters.tagIds"
+              multiple
+              clearable
+              filterable
+              placeholder="选择标签"
+              class="filter-tree"
+              @change="refresh"
+              style="min-width: 200px"
+            >
+              <el-option
+                v-for="item in flatTagOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </FilterBar>
+    </PageHeader>
 
     <el-card class="list-card">
-      <div class="list-toolbar">
-        <el-radio-group v-model="viewMode" size="small">
-          <el-radio-button label="table">表格视图</el-radio-button>
-          <el-radio-button label="card">卡片视图</el-radio-button>
-        </el-radio-group>
-        <div class="toolbar-actions">
+      <TableToolbar>
+        <template #left>
+          <el-radio-group v-model="viewMode" size="small">
+            <el-radio-button label="table">表格视图</el-radio-button>
+            <el-radio-button label="card">卡片视图</el-radio-button>
+          </el-radio-group>
+        </template>
+        <template #right>
           <el-button
             type="success"
             size="small"
@@ -87,8 +104,8 @@
             批量设置标签 ({{ selectedIds.length }})
           </el-button>
           <el-button size="small" @click="toggleCompact">{{ compact ? '舒展' : '紧凑' }}模式</el-button>
-        </div>
-      </div>
+        </template>
+      </TableToolbar>
 
       <el-table
         v-if="viewMode === 'table'"
@@ -106,12 +123,17 @@
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" label="名称" min-width="180" :class-name="compact ? 'compact-col' : ''" />
         <el-table-column label="类别" width="160">
-          <template #default="{ row }">{{ resolveCategoryName(row) }}</template>
+          <template #default="{ row }">
+            <el-tag v-if="row.categoryId" size="small" round :type="categoryTagType(row)" class="category-tag">
+              {{ resolveCategoryLabel(row) }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column label="状态" width="110" align="center" header-align="center">
           <template #default="{ row }">
             <div class="cell-center">
-              <el-tag size="small">{{ row.status }}</el-tag>
+              <el-tag size="small" round :style="statusTagStyle(row.status)">{{ row.status }}</el-tag>
             </div>
           </template>
         </el-table-column>
@@ -137,12 +159,24 @@
             <span v-if="!row.tags.length">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260">
+        <el-table-column label="操作" width="210">
           <template #default="{ row }">
             <div class="row-actions">
-              <el-button link type="primary" @click="viewDetail(row.id)">详情</el-button>
-              <el-button link @click="openEdit(row.id)">编辑</el-button>
-              <el-button v-if="row.status !== '已出售'" link type="success" @click="openSell(row)">出售</el-button>
+              <el-tooltip content="详情" placement="top">
+                <el-button circle text type="primary" @click="viewDetail(row.id)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="编辑" placement="top">
+                <el-button circle text @click="openEdit(row.id)">
+                  <el-icon><EditPen /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="出售" placement="top">
+                <el-button circle text type="success" @click="openSell(row)">
+                  <el-icon><Tickets /></el-icon>
+                </el-button>
+              </el-tooltip>
 
               <el-dropdown
                 v-if="row.status !== '已出售'"
@@ -151,7 +185,11 @@
                 @command="(value) => handleStatusCommand(row, value as AssetStatus)"
               >
                 <span class="status-action">
-                  <el-button link type="warning">修改状态</el-button>
+                  <el-tooltip content="修改状态" placement="top">
+                    <el-button circle text type="warning">
+                      <el-icon><More /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </span>
                 <template #dropdown>
                   <el-dropdown-menu>
@@ -169,7 +207,9 @@
 
               <el-popconfirm title="确认删除该物品？" @confirm="remove(row.id)">
                 <template #reference>
-                  <el-button link type="danger">删除</el-button>
+                  <el-button circle text type="danger">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -191,15 +231,21 @@
           @suggest-cover="openCoverSuggestionDialog"
         >
           <template #actions>
-            <el-button text size="small" type="primary" @click.stop="viewDetail(item.id)">详情</el-button>
-            <el-button text size="small" @click.stop="openEdit(item.id)">编辑</el-button>
-            <el-button
-              v-if="item.status !== '已出售'"
-              text
-              size="small"
-              type="success"
-              @click.stop="openSell(item)"
-            >出售</el-button>
+            <el-tooltip content="详情" placement="top">
+              <el-button text size="small" type="primary" circle @click.stop="viewDetail(item.id)">
+                <el-icon><View /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="编辑" placement="top">
+              <el-button text size="small" circle @click.stop="openEdit(item.id)">
+                <el-icon><EditPen /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="出售" placement="top">
+              <el-button text size="small" type="success" circle @click.stop="openSell(item)">
+                <el-icon><Tickets /></el-icon>
+              </el-button>
+            </el-tooltip>
             <el-dropdown
               v-if="item.status !== '已出售'"
               trigger="click"
@@ -207,7 +253,11 @@
               @command="(value) => handleStatusCommand(item, value as AssetStatus)"
             >
               <span class="status-action">
-                <el-button text size="small" type="warning">修改状态</el-button>
+                <el-tooltip content="修改状态" placement="top">
+                  <el-button text size="small" type="warning" circle>
+                    <el-icon><More /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -245,7 +295,11 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Delete, EditPen, More, Plus, Search, Tickets, View } from '@element-plus/icons-vue'
+import FilterBar from '@/components/FilterBar.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
+import TableToolbar from '@/components/TableToolbar.vue'
 import IconRenderer from '@/components/IconRenderer.vue'
 import {
   fetchAssets,
@@ -285,6 +339,17 @@ const filters = reactive({
 
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 const editableStatuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已丢弃']
+
+const statusTagStyle = (status: AssetStatus) => {
+  const map: Record<AssetStatus, { backgroundColor: string; color: string; borderColor: string }> = {
+    使用中: { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#bbf7d0' },
+    已闲置: { backgroundColor: '#ecfeff', color: '#0ea5e9', borderColor: '#bae6fd' },
+    待出售: { backgroundColor: '#fef9c3', color: '#92400e', borderColor: '#fef08a' },
+    已出售: { backgroundColor: '#ffe4e6', color: '#be123c', borderColor: '#fecdd3' },
+    已丢弃: { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#e5e7eb' }
+  }
+  return map[status]
+}
 
 const resolveBrandText = (brand?: BrandInfo | null) => {
   const alias = brand?.alias?.trim()
@@ -535,11 +600,30 @@ const openEdit = async (id: number) => {
 }
 
 const openSell = (asset: AssetSummary) => {
-  if (asset.status === '已出售') {
-    ElMessage.warning('已出售的物品不可重复出售')
+  if (asset.status !== '已出售') {
+    sellDialog.value?.open({ id: asset.id, name: asset.name }, undefined, { initialScope: 'ASSET' })
     return
   }
-  sellDialog.value?.open({ id: asset.id, name: asset.name })
+  void (async () => {
+    try {
+      const detail = await fetchAssetDetail(asset.id)
+      const soldAccessoryIds = new Set(
+        (detail.sales || [])
+          .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
+          .map((sale) => sale.purchaseId!)
+      )
+      const sellableAccessories = detail.purchases.filter(
+        (purchase) => purchase.type === 'ACCESSORY' && !soldAccessoryIds.has(purchase.id)
+      )
+      if (!sellableAccessories.length) {
+        ElMessage.warning('当前资产暂无可出售的配件')
+        return
+      }
+      sellDialog.value?.open({ id: asset.id, name: asset.name }, undefined, { initialScope: 'ACCESSORY' })
+    } catch (error: any) {
+      ElMessage.error(error?.message || '获取资产信息失败')
+    }
+  })()
 }
 
 const viewDetail = (id: number) => {
@@ -564,6 +648,27 @@ const resolveCategoryName = (asset: AssetSummary) => {
     return '-'
   }
   return categoryPathMap.value.get(asset.categoryId) || '-'
+}
+
+const resolveCategoryLabel = (asset: AssetSummary) => {
+  const name = resolveCategoryName(asset)
+  if (name === '-') return '-'
+  const parts = name
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  return parts[parts.length - 1] || name
+}
+
+const categoryTagType = (asset: AssetSummary) => {
+  const palette = ['success', 'info', 'warning', 'danger'] as const
+  const name = resolveCategoryName(asset)
+  const key = name === '-' ? String(asset.categoryId ?? '') : name.split('/')[0]?.trim() || name
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  return palette[hash % palette.length]
 }
 
 const handleSelectionChange = (rows: AssetSummary[]) => {
@@ -718,39 +823,7 @@ onMounted(async () => {
 .asset-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.status-card {
-  padding: 6px 12px;
-}
-
-.status-tabs :deep(.el-tabs__header) {
-  border-bottom: none;
-}
-
-.status-tabs :deep(.el-tabs__item) {
-  border: none;
-  background: transparent;
-  color: var(--color-muted);
-  padding: 8px 18px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.status-tabs :deep(.el-tabs__item.is-active) {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  border-radius: 8px 8px 0 0;
-  box-shadow: none;
-}
-
-.status-tabs :deep(.el-tabs__nav) {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 18px;
 }
 
 .filter-form {
@@ -766,24 +839,6 @@ onMounted(async () => {
 
 .filter-tree {
   min-width: 200px;
-}
-
-.filter-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 12px;
-}
-
-.list-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .status-action {
@@ -805,13 +860,20 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 .row-actions :deep(.el-button) {
-  padding: 0 8px;
-  height: auto;
+  padding: 6px;
+  height: 32px;
+}
+.row-actions :deep(.el-button .el-icon) {
+  font-size: 16px;
 }
 
 .tag-item {
   margin-right: 6px;
   margin-bottom: 4px;
+}
+
+.category-tag {
+  font-weight: 600;
 }
 
 .tag-icon {

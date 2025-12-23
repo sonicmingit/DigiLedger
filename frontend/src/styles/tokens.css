@@ -1,0 +1,43 @@
+:root {
+  /* Color aliases (consume existing theme variables) */
+  --dl-bg: var(--color-bg);
+  --dl-bg-alt: var(--color-bg-alt);
+  --dl-card: var(--color-card);
+  --dl-text: var(--color-text);
+  --dl-muted: var(--color-muted);
+  --dl-accent: var(--color-accent);
+  --dl-accent-soft: var(--color-accent-soft);
+  --dl-border: var(--color-border);
+  --dl-border-strong: var(--color-border-strong);
+
+  /* Radii */
+  --dl-radius-sm: 8px;
+  --dl-radius-md: 12px;
+  --dl-radius-lg: 16px;
+  --dl-radius-xl: 24px;
+
+  /* Spacing */
+  --dl-space-1: 4px;
+  --dl-space-2: 8px;
+  --dl-space-3: 12px;
+  --dl-space-4: 16px;
+  --dl-space-5: 24px;
+  --dl-space-6: 32px;
+
+  /* Control sizes */
+  --dl-control-sm: 24px;
+  --dl-control-md: 32px;
+  --dl-control-lg: 40px;
+
+  /* Typography */
+  --dl-font-h1: 28px;
+  --dl-font-title: 20px;
+  --dl-font-body: 14px;
+  --dl-font-small: 12px;
+
+  /* Shadows */
+  /* May be overridden per-theme by ThemeProvider */
+  --dl-shadow-sm: 0 6px 18px rgba(15, 23, 42, 0.04);
+  --dl-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --dl-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.08);
+}

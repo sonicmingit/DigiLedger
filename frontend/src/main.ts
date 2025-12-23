@@ -6,6 +6,8 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import '@mdi/font/css/materialdesignicons.min.css'
 import 'element-plus/dist/index.css'
 import './style.css'
+import './styles/tokens.css'
+import './styles/element-plus-overrides.css'
 
 const app = createApp(App)
 app.use(router)

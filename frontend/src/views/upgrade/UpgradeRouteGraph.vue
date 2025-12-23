@@ -372,12 +372,12 @@ onMounted(() => {
 
 .subtitle {
   margin: 4px 0 0;
-  color: var(--color-muted);
+  color: var(--dl-muted);
 }
 
 .meta {
   margin: 4px 0 0;
-  color: var(--color-muted);
+  color: var(--dl-muted);
   font-size: 13px;
 }
 
@@ -399,9 +399,9 @@ onMounted(() => {
 }
 
 .level-column {
-  background: var(--color-bg);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 12px;
+  background: var(--dl-bg);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-md);
   padding: 12px;
   min-width: 240px;
 }
@@ -418,11 +418,11 @@ onMounted(() => {
 }
 
 .node-card {
-  background: var(--color-card);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-md);
   padding: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--dl-shadow-sm);
 }
 
 .node-header {
@@ -448,7 +448,7 @@ onMounted(() => {
   height: 80px;
   border-radius: 8px;
   object-fit: cover;
-  background: var(--color-bg-alt);
+  background: var(--dl-bg-alt);
 }
 
 .node-info {
@@ -459,7 +459,7 @@ onMounted(() => {
 }
 
 .text-muted {
-  color: var(--color-muted);
+  color: var(--dl-muted);
 }
 
 .node-actions {

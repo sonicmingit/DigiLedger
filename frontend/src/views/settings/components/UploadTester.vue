@@ -1,6 +1,6 @@
 <template>
   <div class="upload-tester">
-    <el-card shadow="never">
+    <div class="section">
       <h3 class="title">对象存储上传测试</h3>
       <p class="description">
         通过该工具可以验证上传配置是否正确。点击下方按钮选择文件，系统会调用后端上传接口并返回存储路径。
@@ -24,35 +24,30 @@
         </el-descriptions>
         <img v-if="result.preview" :src="result.preview" alt="预览" class="preview" />
       </div>
-    </el-card>
-    
-    <!-- 手动清理功能 -->
-    <el-card shadow="never" class="cleanup-section">
+    </div>
+
+    <div class="section">
       <h3 class="title">手动清理未使用文件</h3>
       <p class="description">
         此功能可以帮助您查找并删除存储中不再被引用的文件，释放存储空间。
       </p>
-      
-      <el-button 
-        type="warning" 
-        :loading="scanning"
-        @click="scanUnusedFiles"
-      >
+
+      <el-button type="warning" :loading="scanning" @click="scanUnusedFiles">
         {{ scanning ? '扫描中...' : '扫描未使用文件' }}
       </el-button>
-      
+
       <div v-if="unusedFiles !== null" class="scan-result mt">
-        <el-alert 
-          :type="unusedFiles.length > 0 ? 'warning' : 'success'" 
-          :title="`找到 ${unusedFiles.length} 个未使用的文件`" 
-          show-icon 
+        <el-alert
+          :type="unusedFiles.length > 0 ? 'warning' : 'success'"
+          :title="`找到 ${unusedFiles.length} 个未使用的文件`"
+          show-icon
           class="mb-sm"
         />
-        
+
         <div v-if="unusedFiles.length > 0">
-          <el-table 
-            :data="unusedFiles" 
-            max-height="360" 
+          <el-table
+            :data="unusedFiles"
+            max-height="360"
             class="file-table"
             row-key="objectKey"
             @selection-change="handleSelectionChange"
@@ -73,7 +68,7 @@
             <el-table-column prop="fileName" label="文件名" />
             <el-table-column prop="objectKey" label="对象键" show-overflow-tooltip />
           </el-table>
-          
+
           <div class="actions mt">
             <el-popconfirm
               :title="confirmTitle"
@@ -82,28 +77,22 @@
               @confirm="performCleanup"
             >
               <template #reference>
-                <el-button 
-                  type="danger" 
-                  :loading="cleaning"
-                  :disabled="cleaning || selectedFiles.length === 0"
-                >
+                <el-button type="danger" :loading="cleaning" :disabled="cleaning || selectedFiles.length === 0">
                   {{ cleaning ? '清理中...' : `确认删除 (${selectedFiles.length || 0})` }}
                 </el-button>
               </template>
             </el-popconfirm>
-            
+
             <el-button @click="resetScan">重新扫描</el-button>
-            <div class="summary">
-              已选 {{ selectedFiles.length }} / 共 {{ unusedFiles.length }} 个
-            </div>
+            <div class="summary">已选 {{ selectedFiles.length }} / 共 {{ unusedFiles.length }} 个</div>
           </div>
         </div>
-        
+
         <div v-else class="no-files">
           <el-result icon="success" title="无需清理" subTitle="没有发现未使用的文件" />
         </div>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -224,7 +213,21 @@ const handleSelectionChange = (rows: UnusedFile[]) => {
 
 <style scoped>
 .upload-tester {
-  padding: 12px 0;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 360px;
+}
+
+.section {
+  background: var(--dl-bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 14px;
 }
 
 .title {
@@ -259,10 +262,6 @@ const handleSelectionChange = (rows: UnusedFile[]) => {
   width: 220px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.25);
-}
-
-.cleanup-section {
-  margin-top: 20px;
 }
 
 .file-table {

@@ -71,7 +71,7 @@
         </div>
         <div class="actions">
           <el-button type="primary" @click="edit">编辑</el-button>
-          <el-button type="success" :disabled="detail.status === '已出售'" @click="sell">出售向导</el-button>
+          <el-button type="success" :disabled="!canOpenSellWizard" @click="sell">出售向导</el-button>
           <el-button @click="back">返回列表</el-button>
         </div>
       </el-card>
@@ -330,6 +330,22 @@ const primaryPurchase = computed(() =>
   detail.value?.purchases.find((purchase) => purchase.type === 'PRIMARY')
 )
 
+const sellableAccessoryPurchases = computed(() => {
+  if (!detail.value) return []
+  const soldAccessoryIds = new Set(
+    (detail.value.sales || [])
+      .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
+      .map((sale) => sale.purchaseId!)
+  )
+  return detail.value.purchases.filter((purchase) => purchase.type === 'ACCESSORY' && !soldAccessoryIds.has(purchase.id))
+})
+
+const canOpenSellWizard = computed(() => {
+  if (!detail.value) return false
+  if (detail.value.status !== '已出售') return true
+  return sellableAccessoryPurchases.value.length > 0
+})
+
 const reload = async () => {
   await load()
 }
@@ -338,11 +354,12 @@ const back = () => router.push('/assets')
 const edit = () => detail.value && formRef.value?.open(detail.value)
 const sell = () => {
   if (!detail.value) return
-  if (detail.value.status === '已出售') {
-    ElMessage.warning('已出售的物品不可重复出售')
+  if (detail.value.status === '已出售' && !sellableAccessoryPurchases.value.length) {
+    ElMessage.warning('当前资产暂无可出售的配件')
     return
   }
-  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name })
+  const initialScope = detail.value.status === '已出售' ? 'ACCESSORY' : 'ASSET'
+  sellDialog.value?.open({ id: detail.value.id, name: detail.value.name }, undefined, { initialScope })
 }
 
 const editSale = (sale: SaleRecord) => {
@@ -640,8 +657,8 @@ onMounted(async () => {
 }
 
 .summary-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .summary-header {
@@ -658,10 +675,10 @@ onMounted(async () => {
 
 .cover-preview {
   width: 240px;
-  border-radius: 16px;
+  border-radius: var(--dl-radius-lg);
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #0f172a;
+  border: 1px solid var(--el-border-color-lighter);
+  background: var(--dl-bg-alt);
 }
 
 .cover-preview {
@@ -673,7 +690,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--dl-muted);
   font-size: 14px;
 }
 
@@ -705,9 +722,9 @@ onMounted(async () => {
   z-index: 10;
 }
 .cover-dropdown-button {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  border-radius: 8px;
+  border-radius: var(--dl-radius-md);
   padding: 4px 8px;
   min-width: 32px;
   height: 32px;
@@ -721,19 +738,20 @@ onMounted(async () => {
 }
 
 .metric {
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--dl-bg-alt);
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .metric .label {
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 .metric .value {
   display: block;
   font-size: 20px;
-  color: #38bdf8;
+  color: var(--dl-accent);
   margin-top: 6px;
 }
 
@@ -761,7 +779,7 @@ onMounted(async () => {
   height: 120px;
   border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .mt {
@@ -808,7 +826,7 @@ onMounted(async () => {
   height: 48px;
   border-radius: 6px;
   object-fit: cover;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .preview-body {
@@ -822,7 +840,7 @@ onMounted(async () => {
   max-width: 100%;
   max-height: 320px;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--el-border-color-light);
   object-fit: contain;
 }
 
@@ -835,7 +853,7 @@ onMounted(async () => {
 }
 
 .loss-neutral {
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 @media (max-width: 768px) {
@@ -849,5 +867,4 @@ onMounted(async () => {
   }
 }
 </style>
-
 

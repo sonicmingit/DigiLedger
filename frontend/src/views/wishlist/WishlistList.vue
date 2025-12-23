@@ -1,32 +1,33 @@
 <template>
   <div class="wishlist-page">
-    <el-card class="mb">
-      <div class="actions">
-        <el-radio-group v-model="activeStatus" size="large" @change="handleStatusChange">
-          <el-radio-button label="全部" />
-          <el-radio-button label="未购买" />
-          <el-radio-button label="已购买" />
-        </el-radio-group>
-        <div class="action-buttons">
+    <PageHeader title="心愿单" subtitle="记录想买的数码物品，跟踪购买状态">
+      <template #actions>
+        <el-button type="primary" @click="openDialog()">
+          <el-icon class="mr-1"><plus /></el-icon>新增心愿
+        </el-button>
+        <el-button @click="refresh" :loading="loading">刷新</el-button>
+      </template>
+      <FilterBar>
+        <div class="wishlist-filter-stack">
+          <SegmentedTabs
+            v-model="activeStatus"
+            :items="statusOptions"
+            size="large"
+            @change="handleStatusChange"
+          />
           <el-input
             v-model="keyword"
             placeholder="搜索名称/品牌"
             clearable
             class="search-input"
-            @keyup.enter="filterItems"
-            @clear="filterItems"
           >
             <template #prefix>
               <el-icon><search /></el-icon>
             </template>
           </el-input>
-          <el-button type="primary" @click="openDialog()">
-            <el-icon class="mr-1"><plus /></el-icon>新增心愿
-          </el-button>
-          <el-button @click="refresh" :loading="loading">刷新</el-button>
         </div>
-      </div>
-    </el-card>
+      </FilterBar>
+    </PageHeader>
     <el-card>
       <el-table :data="filtered" stripe :loading="loading" empty-text="暂无心愿" row-key="id">
         <el-table-column label="图片" width="120">
@@ -59,29 +60,23 @@
         </el-table-column>
         <el-table-column label="操作" width="360">
           <template #default="{ row }">
-            <el-button link type="info" @click="showDetail(row)">详情</el-button>
-            <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-button
-              link
-              type="success"
-              @click="convert(row)"
-              :disabled="row.status === '已购买'"
+            <RowActions
+              :actions="getRowActions(row)"
             >
-              已购买
-            </el-button>
-            <el-button
-              v-if="row.status === '已购买' && row.convertedAssetId"
-              link
-              type="success"
-              @click="goToAssetDetail(row.convertedAssetId)"
-            >
-              物品详情
-            </el-button>
-            <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+              <el-button
+                v-if="row.status === '已购买' && row.convertedAssetId"
+                link
+                type="success"
+                @click="goToAssetDetail(row.convertedAssetId)"
+              >
+                物品详情
+              </el-button>
+              <el-popconfirm title="确定删除该心愿？" @confirm="remove(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </RowActions>
           </template>
         </el-table-column>
       </el-table>
@@ -97,6 +92,7 @@
               v-model="form.categoryId"
               :options="categoryOptions"
               :props="cascaderProps"
+              filterable
               clearable
               placeholder="选择类别"
               class="w-full"
@@ -177,14 +173,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from 'vue'
+ import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedUploader from '@/components/UnifiedUploader.vue'
 import type { FormInstance } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
-import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
-import type { WishlistItem } from '@/types'
+ import PageHeader from '@/components/PageHeader.vue'
+ import FilterBar from '@/components/FilterBar.vue'
+ import SegmentedTabs from '@/components/SegmentedTabs.vue'
+ import RowActions from '@/components/RowActions.vue'
+ import { useRouter } from 'vue-router'
+ import { fetchWishlist, createWishlist, updateWishlist, deleteWishlist, convertWishlist } from '@/api/wishlist'
+ import type { WishlistItem } from '@/types'
 import WishlistDetailDrawer from './components/WishlistDetailDrawer.vue'
 import { uploadFile } from '@/api/file'
 import { useDictionaries } from '@/composables/useDictionaries'
@@ -203,9 +203,15 @@ const visible = ref(false)
 const saving = ref(false)
 const current = ref<WishlistItem | null>(null)
 const formRef = ref<FormInstance>()
-const keyword = ref('')
-const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
-const categoryDialogVisible = ref(false)
+ const keyword = ref('')
+ const activeStatus = ref<'全部' | '未购买' | '已购买'>('未购买')
+ const categoryDialogVisible = ref(false)
+
+ const statusOptions = [
+   { label: '全部', value: '全部' },
+   { label: '未购买', value: '未购买' },
+   { label: '已购买', value: '已购买' }
+ ]
 
 const form = reactive({
   name: '',
@@ -350,6 +356,10 @@ const handleStatusChange = () => {
   refresh()
 }
 
+watch(keyword, () => {
+  filterItems()
+})
+
 const openDialog = (item?: WishlistItem) => {
   current.value = item || null
   visible.value = true
@@ -475,6 +485,18 @@ const goToAssetDetail = (assetId: number) => {
   router.push(`/assets/${assetId}`)
 }
 
+const getRowActions = (row: WishlistItem) => [
+  { key: 'detail', label: '详情', type: 'info', onClick: () => showDetail(row) },
+  { key: 'edit', label: '编辑', type: 'primary', onClick: () => openDialog(row) },
+  {
+    key: 'convert',
+    label: '已购买',
+    type: 'success',
+    disabled: row.status === '已购买',
+    onClick: () => convert(row)
+  }
+] as const
+
 const handleUpload = async (options: any) => {
   try {
     const { objectKey, url } = await uploadFile(options.file)
@@ -513,26 +535,17 @@ onMounted(async () => {
   gap: 16px;
 }
 
-.mb {
-  margin-bottom: 8px;
-}
-
-.actions {
+.wishlist-filter-stack {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .search-input {
-  width: 220px;
+  width: 360px;
+  max-width: 100%;
 }
 
 .preview {
@@ -557,11 +570,12 @@ onMounted(async () => {
   width: 92px;
   height: 68px;
   border-radius: 12px;
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--dl-bg-alt);
+  border: 1px dashed var(--el-border-color-lighter);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--dl-muted);
 }
 
 .w-full {
@@ -569,12 +583,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .action-buttons {
-    width: 100%;
-  }
-
   .search-input {
-    flex: 1;
+    width: 100%;
   }
 }
 </style>

@@ -1,0 +1,95 @@
+:root {
+  /* Element Plus sizing baseline (used by many components) */
+  --el-component-size: var(--dl-control-md);
+  --el-border-radius-base: var(--dl-radius-md);
+}
+
+/* Card: unify radius, border, and shadow */
+.el-card {
+  border-radius: var(--dl-radius-md);
+  border-color: var(--el-border-color-lighter);
+  box-shadow: var(--dl-shadow-md);
+}
+
+.el-card.is-never-shadow,
+.el-card[shadow='never'] {
+  box-shadow: none;
+}
+
+/* Inputs/selects/cascaders: unify wrapper look */
+.el-input__wrapper,
+.el-select .el-input__wrapper,
+.el-cascader .el-input__wrapper {
+  border-radius: var(--dl-radius-md);
+  border: 1px solid var(--el-border-color-light);
+  background-color: var(--dl-bg-alt);
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.el-input__wrapper:hover,
+.el-select .el-input__wrapper:hover,
+.el-cascader .el-input__wrapper:hover {
+  border-color: var(--dl-accent);
+}
+
+.el-input__wrapper.is-focus,
+.el-select .el-input__wrapper.is-focus,
+.el-cascader .el-input__wrapper.is-focus {
+  border-color: var(--dl-accent);
+  box-shadow: 0 0 0 2px var(--dl-accent-soft);
+}
+
+.el-input__inner,
+.el-select .el-input__inner {
+  color: var(--dl-text);
+}
+
+.el-input__prefix,
+.el-input__suffix {
+  color: var(--dl-muted);
+}
+
+/* Buttons: unify radius and hover feel */
+.el-button {
+  border-radius: var(--dl-radius-md);
+}
+
+.el-button--primary {
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--el-color-primary) 20%, transparent);
+}
+
+.el-button--primary:hover {
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--el-color-primary) 26%, transparent);
+}
+
+/* Segmented / radio-button groups: unify appearance */
+.el-radio-button__inner {
+  border-radius: var(--dl-radius-md);
+}
+
+/* Tables */
+.el-table {
+  --el-table-header-text-color: var(--dl-muted);
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+}
+
+/* Tags: keep pill look */
+.el-tag.is-round {
+  border-radius: 999px;
+}
+
+/* Dialogs / Drawers */
+.el-dialog,
+.el-drawer {
+  border-radius: var(--dl-radius-lg);
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding-right: 20px;
+}

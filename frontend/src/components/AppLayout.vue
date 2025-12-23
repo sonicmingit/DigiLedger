@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider namespace="el">
+  <el-config-provider namespace="el" size="default">
     <el-container class="layout">
       <el-aside width="220px" class="sidebar">
         <div class="logo">DigiLedger</div>
@@ -60,48 +60,57 @@ const currentTheme = computed({
 <style scoped>
 :global(body) {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--dl-bg);
+  color: var(--dl-text);
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
 }
 
 .layout {
   min-height: 100vh;
+  background: var(--dl-bg);
 }
 
 .sidebar {
   background: var(--color-sidebar-bg);
   color: var(--color-sidebar-text);
-  padding: 16px 0;
+  padding: 18px 0 12px;
+  border-right: 1px solid var(--dl-border);
+  box-shadow: var(--dl-shadow-md);
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
 .logo {
-  color: var(--color-accent);
+  color: var(--dl-accent);
   font-size: 20px;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  letter-spacing: 0.5px;
 }
 
 .header {
   background: var(--color-header-bg);
-  color: var(--color-text);
+  color: var(--dl-text);
   font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--dl-border);
+  box-shadow: var(--dl-shadow-sm);
 }
 
 .main {
-  background: var(--color-bg-alt);
-  padding: 24px;
+  background: var(--dl-bg-alt);
+  padding: 28px;
 }
 
 .main :deep(.el-card) {
-  background: var(--color-card);
+  background: var(--dl-card);
   border-color: transparent;
-  color: var(--color-text);
+  color: var(--dl-text);
 }
 
 .main :deep(.el-card__header) {
@@ -111,15 +120,40 @@ const currentTheme = computed({
 .sidebar :deep(.el-menu) {
   border-right: none;
   background: transparent;
+  padding: 0 12px;
 }
 
 .sidebar :deep(.el-menu-item.is-active) {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--dl-accent-soft);
+  color: var(--dl-accent);
+  border-radius: 12px;
+  box-shadow: inset 2px 0 0 var(--dl-accent);
 }
 
 .sidebar :deep(.el-menu-item) {
-  color: var(--color-muted);
+  display: flex;
+  align-items: center;
+  line-height: 44px;
+  color: var(--color-sidebar-text);
+  border-radius: 12px;
+  height: 44px;
+  margin: 6px 6px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar :deep(.el-menu-item > span) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar :deep(.el-menu-item:hover) {
+  background: var(--dl-accent-soft);
+  color: var(--dl-accent);
 }
 
 .header-actions {
@@ -129,11 +163,12 @@ const currentTheme = computed({
 }
 
 .theme-select {
-  min-width: 120px;
+  min-width: 140px;
 }
 
 .header-title {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--dl-text);
 }
 
 @media (max-width: 900px) {
@@ -146,12 +181,18 @@ const currentTheme = computed({
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: static;
+    height: auto;
   }
 
   .sidebar :deep(.el-menu) {
     width: 100%;
     display: flex;
     justify-content: space-around;
+  }
+
+  .sidebar :deep(.el-menu-item) {
+    margin: 0 6px;
   }
 
   .main {

@@ -3,7 +3,7 @@
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="出售范围" prop="saleScope">
         <el-radio-group v-model="form.saleScope">
-          <el-radio-button label="ASSET">主商品</el-radio-button>
+          <el-radio-button label="ASSET" :disabled="assetScopeDisabled">主商品</el-radio-button>
           <el-radio-button label="ACCESSORY">配件</el-radio-button>
         </el-radio-group>
       </el-form-item>
@@ -88,7 +88,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { useDictionaries } from '@/composables/useDictionaries'
 import { useDictionaryCreator } from '@/composables/useDictionaryCreator'
-import type { PurchaseRecord, SaleRecord } from '@/types'
+import type { PurchaseRecord, SaleRecord, SaleScope } from '@/types'
 import { uploadFile } from '@/api/file'
 import { buildOssUrl, extractObjectKeys } from '@/utils/storage'
 
@@ -98,6 +98,8 @@ const visible = ref(false)
 const assetInfo = ref<{ id: number; name: string } | null>(null)
 const editingSaleId = ref<number | null>(null)
 const loading = ref(false)
+const assetAlreadySold = ref(false)
+const requestedInitialScope = ref<SaleScope | null>(null)
 
 const { load: loadDicts, platforms } = useDictionaries()
 const { promptPlatformCreation } = useDictionaryCreator()
@@ -120,6 +122,7 @@ const formRef = ref<FormInstance>()
 
 const isEdit = computed(() => editingSaleId.value !== null)
 const dialogTitle = computed(() => (isEdit.value ? '编辑售出记录' : '出售向导'))
+const assetScopeDisabled = computed(() => assetAlreadySold.value && (!isEdit.value || form.saleScope !== 'ASSET'))
 
 const rules = {
   saleScope: [{ required: true, message: '请选择出售范围', trigger: 'change' }],
@@ -142,10 +145,11 @@ const rules = {
 const accessoryPurchases = ref<PurchaseRecord[]>([])
 const accessoryLoading = ref(false)
 
-const loadAccessoryPurchases = async (assetId: number) => {
+const loadSaleContext = async (assetId: number) => {
   accessoryLoading.value = true
   try {
     const detail = await fetchAssetDetail(assetId)
+    assetAlreadySold.value = (detail.sales || []).some((sale) => sale.saleScope === 'ASSET')
     const soldPurchaseIds = new Set(
       (detail.sales || [])
         .filter((sale) => sale.saleScope === 'ACCESSORY' && sale.purchaseId)
@@ -157,6 +161,13 @@ const loadAccessoryPurchases = async (assetId: number) => {
     accessoryPurchases.value = detail.purchases
       .filter((item) => item.type === 'ACCESSORY')
       .filter((item) => !soldPurchaseIds.has(item.id))
+    if (!isEdit.value) {
+      if (assetAlreadySold.value) {
+        form.saleScope = 'ACCESSORY'
+      } else if (requestedInitialScope.value) {
+        form.saleScope = requestedInitialScope.value
+      }
+    }
   } finally {
     accessoryLoading.value = false
   }
@@ -176,17 +187,22 @@ const fillFormFromSale = (sale: SaleRecord) => {
   form.attachments = Array.isArray(sale.attachments) ? [...sale.attachments] : []
 }
 
-const open = (asset: { id: number; name: string }, sale?: SaleRecord) => {
+const open = (
+  asset: { id: number; name: string },
+  sale?: SaleRecord,
+  options?: { initialScope?: SaleScope }
+) => {
   assetInfo.value = asset
   visible.value = true
   accessoryPurchases.value = []
   reset()
+  requestedInitialScope.value = options?.initialScope ?? null
   if (sale) {
     editingSaleId.value = sale.id
     fillFormFromSale(sale)
   }
   if (asset.id) {
-    void loadAccessoryPurchases(asset.id)
+    void loadSaleContext(asset.id)
   }
 }
 
@@ -206,6 +222,8 @@ const reset = () => {
   })
   accessoryPurchases.value = []
   editingSaleId.value = null
+  assetAlreadySold.value = false
+  requestedInitialScope.value = null
   formRef.value?.clearValidate()
 }
 
@@ -213,6 +231,10 @@ const submit = () => {
   if (!assetInfo.value) return
   if (form.saleScope === 'ACCESSORY' && !accessoryPurchases.value.length) {
     ElMessage.warning('当前资产暂无可出售的配件')
+    return
+  }
+  if (form.saleScope === 'ASSET' && assetAlreadySold.value && !isEdit.value) {
+    ElMessage.warning('主商品已售出，请选择“配件”继续出售')
     return
   }
   formRef.value?.validate(async (valid: boolean) => {
@@ -260,7 +282,7 @@ watch(
       formRef.value?.clearValidate('purchaseId')
     } else if (scope === 'ACCESSORY' && assetInfo.value) {
       if (!accessoryPurchases.value.length && !accessoryLoading.value) {
-        void loadAccessoryPurchases(assetInfo.value.id)
+        void loadSaleContext(assetInfo.value.id)
       }
     }
   }

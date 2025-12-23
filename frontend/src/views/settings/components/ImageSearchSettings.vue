@@ -1,14 +1,23 @@
 <template>
   <div class="image-search-settings" v-loading="loading">
-    <p class="hint">
+    <div class="toolbar">
+      <el-button type="primary" :loading="saving" @click="saveDefault" :disabled="saving">
+        保存默认服务
+      </el-button>
+      <el-button @click="loadProviders" :disabled="loading">重新加载</el-button>
+    </div>
+
+    <div class="hint">
       选择一个默认的智能找图服务，后续在物品中使用「智能找图」时会自动选中，也可以切换为「自动轮询」按顺序尝试全部服务。
-    </p>
-    <el-radio-group v-model="selectedProvider" class="provider-radios" :disabled="providers.length === 0">
-      <el-radio-button label="">自动轮询（推荐综合结果）</el-radio-button>
-      <el-radio-button v-for="provider in providers" :key="provider.name" :label="provider.name">
-        {{ provider.displayName }}
-      </el-radio-button>
-    </el-radio-group>
+    </div>
+
+    <SegmentedTabs
+      v-model="selectedProvider"
+      :items="providerOptions"
+      size="default"
+      @change="() => {}"
+    />
+
     <div class="provider-list">
       <el-card v-for="provider in providers" :key="provider.name" class="provider-card" shadow="never">
         <div class="provider-card-header">
@@ -24,25 +33,28 @@
       </el-card>
       <el-empty description="暂未发现可用的找图服务" v-if="!providers.length && !loading" />
     </div>
-    <div class="actions">
-      <el-button type="primary" :loading="saving" @click="saveDefault" :disabled="saving">
-        保存默认服务
-      </el-button>
-      <el-button link @click="loadProviders" :disabled="loading">重新加载</el-button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { ImageSearchProviderItem } from '@/types'
 import { fetchImageSearchProviders, updateDefaultImageSearchProvider } from '@/api/imageSearch'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
 
 const loading = ref(false)
 const saving = ref(false)
 const providers = ref<ImageSearchProviderItem[]>([])
 const selectedProvider = ref('')
+
+const providerOptions = computed(() => [
+  { label: '自动轮询（推荐）', value: '' },
+  ...providers.value.map((provider) => ({
+    label: provider.displayName,
+    value: provider.name
+  }))
+])
 
 const assignDefault = (provider?: string) => {
   selectedProvider.value = provider || ''
@@ -80,24 +92,29 @@ onMounted(() => {
 
 <style scoped>
 .image-search-settings {
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 360px;
 }
 
 .hint {
-  margin: 0;
   padding: 12px 16px;
-  background: rgba(59, 130, 246, 0.08);
+  background: var(--dl-bg-alt);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
-  color: #93c5fd;
+  color: var(--dl-muted);
   font-size: 13px;
 }
 
-.provider-radios {
+.toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
 }
 
 .provider-list {
@@ -119,17 +136,11 @@ onMounted(() => {
 
 .provider-card-header h4 {
   margin: 0;
-  color: #e2e8f0;
+  color: var(--dl-text);
 }
 
 .provider-desc {
-  color: #cbd5f5;
+  color: var(--dl-muted);
   min-height: 36px;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 </style>

@@ -1,18 +1,14 @@
 <template>
   <div class="overview" v-loading="pageLoading">
-    <section class="hero">
-      <div class="hero-body">
-        <h1>资产总览</h1>
-        <p>掌握你的数码物品资产与投入趋势，轻松规划下一台设备。</p>
-      </div>
-      <div class="hero-actions">
-        <el-button type="primary" size="large" @click="createAsset">
+    <PageHeader title="资产总览" subtitle="掌握你的数码物品资产与投入趋势，轻松规划下一台设备。" variant="hero">
+      <template #actions>
+        <el-button type="primary" @click="createAsset">
           <el-icon class="mr-2"><plus /></el-icon>
           创建物品
         </el-button>
         <el-button text @click="refresh" :loading="loading">刷新数据</el-button>
-      </div>
-    </section>
+      </template>
+    </PageHeader>
 
     <div class="kpi-grid">
       <el-card class="kpi-card">
@@ -32,11 +28,11 @@
             <polyline
               :points="trendPoints"
               fill="none"
-              stroke="#22d3ee"
+              class="kpi-trend__line"
               stroke-width="2"
               stroke-linecap="round"
             />
-            <polygon :points="trendArea" fill="rgba(34, 211, 238, 0.15)" />
+            <polygon :points="trendArea" class="kpi-trend__area" />
           </svg>
           <div class="trend-text">
             <strong>{{ purchasesInWindow }}</strong>
@@ -50,17 +46,7 @@
       <template #header>
         <div class="category-header">
           <div class="tabs">
-            <el-button-group>
-              <el-button
-                v-for="tab in tabs"
-                :key="tab.value"
-                :type="tab.value === activeTab ? 'primary' : 'default'"
-                size="small"
-                @click="changeTab(tab.value)"
-              >
-                {{ tab.label }}
-              </el-button>
-            </el-button-group>
+            <SegmentedTabs v-model="activeTab" :items="tabs" size="small" />
           </div>
           <el-input
             v-model="quickSearch"
@@ -100,7 +86,9 @@ import { fetchAssets } from '@/api/asset'
 import type { AssetSummary } from '@/types'
 import AssetForm from '@/views/assets/components/AssetForm.vue'
 import AssetCard from '@/components/AssetCard.vue'
+import SegmentedTabs from '@/components/SegmentedTabs.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
+import PageHeader from '@/components/PageHeader.vue'
 
 const router = useRouter()
 const assets = ref<AssetSummary[]>([])
@@ -217,10 +205,6 @@ const filteredAssets = computed(() => {
     .slice(0, isMobile.value ? 8 : 12)
 })
 
-const changeTab = (value: 'all' | number) => {
-  activeTab.value = value
-}
-
 const viewDetail = (id: number) => {
   router.push(`/assets/${id}`)
 }
@@ -268,37 +252,6 @@ watch(activeTab, () => {
   gap: 24px;
 }
 
-.hero {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 28px;
-  border-radius: 20px;
-  background: radial-gradient(circle at top left, rgba(14, 165, 233, 0.32), rgba(15, 23, 42, 0.8));
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: inset 0 0 80px rgba(15, 118, 110, 0.25);
-}
-
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 32px;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.hero p {
-  margin: 0;
-  color: #94a3b8;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -306,14 +259,15 @@ watch(activeTab, () => {
 }
 
 .kpi-card {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(34, 211, 238, 0.25);
-  border-radius: 18px;
-  color: #e2e8f0;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  color: var(--dl-text);
+  box-shadow: var(--dl-shadow-md);
 }
 
 .kpi-label {
-  color: #94a3b8;
+  color: var(--dl-muted);
   font-size: 14px;
 }
 
@@ -321,12 +275,12 @@ watch(activeTab, () => {
   margin-top: 8px;
   font-size: 28px;
   font-weight: 600;
-  color: #22d3ee;
+  color: var(--dl-accent);
 }
 
 .kpi-desc {
   margin-top: 6px;
-  color: #64748b;
+  color: var(--dl-muted);
 }
 
 .kpi-trend {
@@ -341,22 +295,31 @@ watch(activeTab, () => {
   height: 36px;
 }
 
+.kpi-trend__line {
+  stroke: var(--dl-accent);
+}
+
+.kpi-trend__area {
+  fill: color-mix(in srgb, var(--dl-accent) 16%, transparent);
+}
+
 .trend-text {
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--dl-muted);
 }
 
 .trend-text strong {
   font-size: 18px;
-  color: #f8fafc;
+  color: var(--el-color-primary-dark-2);
 }
 
 .category-card {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: 20px;
+  background: var(--dl-card);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: var(--dl-shadow-md);
 }
 
 .category-header {
@@ -367,18 +330,8 @@ watch(activeTab, () => {
   gap: 12px;
 }
 
-.tabs :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
-  border-color: transparent;
-}
-
 .quick-search {
   width: 260px;
-}
-
-.quick-search :deep(.el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .asset-grid {
@@ -388,31 +341,14 @@ watch(activeTab, () => {
 }
 
 @media (max-width: 1024px) {
-  .hero {
-    flex-direction: column;
-  }
-
-  .hero-actions {
-    width: 100%;
-    justify-content: space-between;
+  .overview {
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .overview {
     gap: 16px;
-  }
-
-  .hero {
-    padding: 20px;
-  }
-
-  .hero h1 {
-    font-size: 26px;
-  }
-
-  .hero-actions {
-    flex-wrap: wrap;
   }
 
   .quick-search {
