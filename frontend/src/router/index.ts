@@ -15,6 +15,7 @@ const MobileSettings = () => import('@/mobile/pages/Settings.vue')
 const MobileStats = () => import('@/mobile/pages/Stats.vue')
 const MobileEditor = () => import('@/mobile/pages/Editor.vue')
 const MobileCategories = () => import('@/mobile/pages/CategoryManager.vue')
+const MobileDetail = () => import('@/mobile/pages/Detail.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -73,6 +74,13 @@ const router = createRouter({
           name: 'mobileSearch',
           component: MobileSearch,
           meta: { layout: 'mobile' }
+        },
+        {
+          path: 'assets/:id',
+          name: 'mobileAssetDetail',
+          component: MobileDetail,
+          meta: { layout: 'mobile' },
+          props: true
         },
         {
           path: 'wishlist',

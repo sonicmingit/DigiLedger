@@ -1,29 +1,29 @@
 <template>
   <div class="asset-card" @click="emit('select', asset)">
-    <div class="asset-cover">
-      <img v-if="asset.coverImageUrl" :src="asset.coverImageUrl" :alt="asset.name" />
-      <div v-else class="placeholder">📦</div>
-      <span class="asset-status" :class="statusClass">
-        <span class="dot"></span>
-        {{ statusLabel }}
-      </span>
-    </div>
-    <div class="asset-content">
-      <h3>{{ asset.name }}</h3>
-      <p class="asset-meta">
-        <span>￥{{ asset.totalInvest.toFixed(2) }}</span>
-        <span>日均：￥{{ asset.avgCostPerDay.toFixed(2) }}</span>
-      </p>
-      <div class="asset-tags" v-if="asset.tags && asset.tags.length">
-        <span v-for="tag in asset.tags" :key="tag.id" class="tag" :style="getTagStyle(tag)">
-          <span class="dot" :style="getDotStyle(tag)"></span>
-          {{ tag.name }}
-        </span>
+    <div class="card-thumb">
+      <img v-if="asset.coverImageUrl" :src="asset.coverImageUrl" :alt="asset.name" loading="lazy" />
+      <div v-else class="placeholder">
+        <i class="mdi mdi-cube-outline"></i>
       </div>
-      <footer>
-        <small>已使用 {{ asset.useDays }} 天</small>
-        <button class="detail-btn" type="button">查看详情</button>
-      </footer>
+    </div>
+    
+    <div class="card-content">
+      <div class="card-header">
+        <span class="brand" v-if="asset.brandName">{{ asset.brandName }}</span>
+        <h3 class="name">{{ asset.name }}</h3>
+      </div>
+      
+      <div class="card-body">
+        <span class="price">￥{{ formatPrice(asset.totalInvest) }}</span>
+      </div>
+      
+      <div class="card-footer">
+        <span class="usage-days" :class="{ 'text-neon': asset.status === '使用中' }">
+          <i class="mdi mdi-clock-outline"></i>
+          {{ asset.useDays }}天
+        </span>
+        <span class="status-badge" :class="statusClass">{{ statusLabel }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -35,48 +35,47 @@ import type { AssetSummary } from '@/types'
 const props = defineProps<{ asset: AssetSummary }>()
 const emit = defineEmits<{ (e: 'select', asset: AssetSummary): void }>()
 
-const statusMap: Record<string, { label: string; color: string; dot: string }> = {
-  使用中: { label: '服役中', color: 'rgba(46, 204, 113, 0.2)', dot: '#0ea15c' },
-  已闲置: { label: '已退役', color: 'rgba(148, 163, 184, 0.15)', dot: '#64748b' },
-  待出售: { label: '待出售', color: 'rgba(249, 115, 22, 0.18)', dot: '#f97316' },
-  已出售: { label: '已卖出', color: 'rgba(148, 163, 184, 0.2)', dot: '#475569' },
-  已丢弃: { label: '已处理', color: 'rgba(148, 163, 184, 0.2)', dot: '#94a3b8' }
-}
+const formatPrice = (val?: number) => (val || 0).toFixed(2)
 
-const statusInfo = computed(() => statusMap[props.asset.status] || statusMap['使用中'])
+const statusInfo = computed(() => {
+  switch (props.asset.status) {
+    case '使用中': return { label: '使用中', class: 'status-active' }
+    case '已闲置': return { label: '闲置', class: 'status-idle' }
+    case '已出售': return { label: '已售', class: 'status-sold' }
+    default: return { label: props.asset.status, class: 'status-default' }
+  }
+})
+
 const statusLabel = computed(() => statusInfo.value.label)
-const statusClass = computed(() => ({
-  sold: props.asset.status === '已出售',
-  retired: props.asset.status === '已闲置'
-}))
-
-const getTagStyle = (tag: { color?: string }) => ({
-  background: tag.color ? `${tag.color}1A` : 'rgba(148, 163, 184, 0.15)'
-})
-
-const getDotStyle = (tag: { color?: string }) => ({
-  background: tag.color || '#94a3b8'
-})
+const statusClass = computed(() => statusInfo.value.class)
 </script>
 
 <style scoped>
 .asset-card {
   display: flex;
-  flex-direction: column;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: var(--mobile-card-shadow);
-  overflow: hidden;
-  position: relative;
+  background: var(--dl-bg-surface-light);
+  border-radius: var(--dl-radius-lg);
+  padding: 12px;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s;
 }
 
-.asset-cover {
-  position: relative;
-  height: 140px;
-  overflow: hidden;
+.asset-card:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.asset-cover img {
+.card-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--dl-radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--dl-bg-base);
+}
+
+.card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -88,84 +87,90 @@ const getDotStyle = (tag: { color?: string }) => ({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(148, 163, 184, 0.12);
   font-size: 32px;
+  color: var(--dl-text-muted);
 }
 
-.asset-status {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: v-bind('statusInfo.color');
-  color: #0f172a;
-  font-size: 12px;
-}
-
-.asset-status .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: v-bind('statusInfo.dot');
-}
-
-.asset-content {
-  padding: 16px;
+.card-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
 }
 
-.asset-content h3 {
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand {
+  font-size: 10px;
+  color: var(--dl-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dl-text-primary);
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.price {
   font-size: 16px;
+  font-family: var(--dl-font-mono);
+  color: var(--dl-primary);
+  font-weight: 700;
+  text-shadow: 0 0 5px var(--dl-primary-dim);
 }
 
-.asset-meta {
-  display: flex;
-  justify-content: space-between;
-  color: var(--mobile-muted);
-  font-size: 12px;
-  margin: 0;
-}
-
-.asset-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-.tag .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-footer {
+.card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: var(--mobile-muted);
 }
 
-.detail-btn {
-  border: none;
-  background: transparent;
-  color: #0ea15c;
-  font-size: 12px;
+.usage-days {
+  color: var(--dl-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.status-active {
+  background: rgba(0, 255, 157, 0.1);
+  color: var(--dl-success);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+}
+
+.status-idle {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--dl-warning);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.status-sold {
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--dl-danger);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+}
+
+.status-default {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--dl-text-muted);
 }
 </style>

@@ -1,326 +1,340 @@
 <template>
-  <div class="mobile-scroll">
-    <header class="mobile-topbar mobile-home-top">
-      <div class="mobile-topbar-header">
-        <div>
-          <p class="mobile-home-eyebrow">资产看板</p>
-          <h1>DigiLedger</h1>
-        </div>
-        <button type="button" class="icon-btn" @click="goSearch">搜</button>
-      </div>
-
-      <div class="mobile-home-hero">
-        <div>
-          <p class="mobile-home-subtitle">掌握装备资产、心愿与趋势数据</p>
-        </div>
-        <div class="mobile-home-hero-stat">
-          <span>当前资产</span>
-          <strong>￥{{ totalValue }}</strong>
-          <button type="button" class="link-button" @click="goStats">查看统计</button>
+  <div class="page-home">
+    <!-- Header Area -->
+    <header class="home-header">
+      <div class="logo-area">
+        <h1 class="app-logo">DigiLedger</h1>
+        <div class="avatar">
+          <i class="mdi mdi-account"></i>
         </div>
       </div>
-
-      <div class="mobile-summary-card">
-        <div class="mobile-summary-grid">
-          <div class="mobile-summary-item">
-            <h3>总资产</h3>
-            <strong>￥{{ totalValue }}</strong>
-          </div>
-          <div class="mobile-summary-item">
-            <h3>日均成本</h3>
-            <strong>￥{{ avgCost }}</strong>
+      
+      <!-- Stats Scroll -->
+      <div class="stats-scroll">
+        <div class="stat-card primary-card">
+          <div class="stat-label">总投入</div>
+          <div class="stat-value">￥{{ totalValue }}</div>
+          <div class="stat-trend">
+            <i class="mdi mdi-buffer"></i> {{ assets.length }} 件资产
           </div>
         </div>
-        <div class="mobile-status-group">
-          <span class="mobile-status-chip">
-            <span class="dot" style="background:#0ea15c"></span>
-            服役中 {{ statusStats.active }}
-          </span>
-          <span class="mobile-status-chip">
-            <span class="dot" style="background:#64748b"></span>
-            已退役 {{ statusStats.retired }}
-          </span>
-          <span class="mobile-status-chip">
-            <span class="dot" style="background:#475569"></span>
-            已卖出 {{ statusStats.sold }}
-          </span>
+        
+        <div class="stat-card">
+          <div class="stat-label">本月支出</div>
+          <div class="stat-value text-neon">￥{{ currentMonthSpending }}</div>
+          <div class="stat-trend" :class="{ up: true }">
+            <i class="mdi mdi-arrow-up"></i> 新增 {{ recentAssets.length }} 件
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">在用 / 闲置</div>
+          <div class="stat-value">{{ statusStats.active }} / {{ statusStats.idle }}</div>
+          <div class="stat-bar">
+            <div class="bar-fill" :style="{ width: activeRatio + '%' }"></div>
+          </div>
         </div>
       </div>
     </header>
 
-    <section class="mobile-home-actions">
-      <button type="button" class="mobile-action-card" @click="goAssets">
-        <span class="action-title">查看全部物品</span>
-        <small>{{ assets.length }} 件资产</small>
-      </button>
-      <button type="button" class="mobile-action-card primary" @click="openEditor('asset')">
-        <span class="action-title">新增物品</span>
-        <small>立即记录装备和采购</small>
-      </button>
-      <button type="button" class="mobile-action-card" @click="goWishlist">
-        <span class="action-title">心愿清单</span>
-        <small>{{ wishlistCount }} 条心愿</small>
-      </button>
-      <button type="button" class="mobile-action-card primary" @click="openEditor('wishlist')">
-        <span class="action-title">新增心愿</span>
-        <small>留住灵感，下次再入手</small>
-      </button>
-    </section>
-
-    <section class="mobile-card-section mobile-home-wishlist">
-      <div class="mobile-section-header">
-        <div>
-          <h4>心愿快照</h4>
-          <p>总价值 ￥{{ wishlistTotalValue }} · 共 {{ wishlistCount }} 条</p>
-        </div>
-        <button type="button" class="link-button" @click="goWishlist">查看全部</button>
+    <!-- Recent Activity -->
+    <section class="section">
+      <div class="section-header">
+        <h2>最近活动</h2>
+        <span class="link" @click="goAssets">全部 <i class="mdi mdi-chevron-right"></i></span>
       </div>
-      <div v-if="wishlistPreview.length" class="mobile-wishlist-preview">
-        <article v-for="item in wishlistPreview" :key="item.id" class="mobile-wishlist-preview-item">
-          <div class="mobile-wishlist-preview-heading">
-            <span class="mobile-wishlist-preview-title">{{ item.name }}</span>
-            <span class="mobile-wishlist-pill">{{ item.status }}</span>
-          </div>
-          <div class="mobile-wishlist-preview-meta">
-            <span>预期 ￥{{ (item.expectedPrice || 0).toFixed(2) }}</span>
-            <small>{{ item.categoryName || '未分类' }}</small>
-          </div>
-          <p v-if="item.notes" class="mobile-wishlist-preview-notes">{{ item.notes }}</p>
-        </article>
-      </div>
-      <MobileEmptyState
-        v-else
-        description="心愿列表还空着，先添加一条吧"
-        actionLabel="新增心愿"
-        @action="openEditor('wishlist')"
-      />
-    </section>
-
-    <section class="mobile-card-section mobile-status-panels">
-      <div class="mobile-section-header">
-        <div>
-          <h4>状态速览</h4>
-          <p>分布信息一目了然</p>
-        </div>
-        <button type="button" class="link-button" @click="goStats">查看趋势</button>
-      </div>
-      <div class="mobile-status-grid">
-        <article v-for="status in quickStatus" :key="status.label" class="mobile-status-card">
-          <div class="mobile-status-label">
-            <span class="dot" :style="{ background: status.color }"></span>
-            <span>{{ status.label }}</span>
-          </div>
-          <strong>{{ status.count }} 件</strong>
-          <p>{{ status.description }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="mobile-tab-strip" aria-label="分类筛选">
-      <button
-        v-for="tab in categoryTabs"
-        :key="tab.id"
-        class="mobile-tab-button"
-        :class="{ active: tab.id === activeCategory }"
-        @click="changeCategory(tab.id)"
-      >
-        {{ tab.name }}
-      </button>
-    </section>
-
-    <section class="mobile-chip-group" aria-label="状态筛选">
-      <button
-        v-for="chip in statusChips"
-        :key="chip"
-        class="mobile-chip"
-        :class="{ active: chip === activeStatus }"
-        @click="changeStatus(chip)"
-      >
-        {{ chip }}
-      </button>
-    </section>
-
-    <section class="mobile-card-section mobile-assets-section">
-      <div class="mobile-list-header">
-        <span>共 {{ filteredAssets.length }} 件资产</span>
-        <div class="mobile-list-actions">
-          <button type="button" @click="toggleSort">{{ sortLabel }}</button>
-          <button type="button" @click="goStats">统计</button>
-        </div>
-      </div>
-      <div v-if="filteredAssets.length" class="mobile-card-list tight">
-        <MobileAssetCard
-          v-for="asset in filteredAssets"
-          :key="asset.id"
-          :asset="asset"
-          @select="goAsset(asset.id)"
+      
+      <div class="asset-list" v-if="recentAssets.length">
+        <MobileAssetCard 
+          v-for="asset in recentAssets" 
+          :key="asset.id" 
+          :asset="asset" 
+          @select="goDetail(asset.id)"
         />
       </div>
-      <MobileEmptyState
-        v-else
-        description="暂无资产，点击上方按钮或右下角 + 快速添加"
-        actionLabel="新增资产"
-        @action="openEditor('asset')"
-      />
+      <div v-else class="empty-state">
+        暂无数据
+      </div>
     </section>
 
-    <div v-if="toast" class="mobile-toast">{{ toast }}</div>
+    <!-- Quick Actions -->
+    <section class="section">
+      <div class="section-header">
+        <h2>快捷操作</h2>
+      </div>
+      <div class="quick-actions">
+        <button class="action-btn" @click="goSearch">
+          <div class="icon-box neon-cyan"><i class="mdi mdi-magnify"></i></div>
+          <span>搜索</span>
+        </button>
+        <button class="action-btn" @click="goWishlist">
+          <div class="icon-box neon-purple"><i class="mdi mdi-heart-outline"></i></div>
+          <span>心愿单</span>
+        </button>
+         <button class="action-btn" @click="openQuickAdd">
+          <div class="icon-box neon-green"><i class="mdi mdi-plus"></i></div>
+          <span>记一笔</span>
+        </button>
+        <button class="action-btn" @click="goStats">
+          <div class="icon-box neon-yellow"><i class="mdi mdi-chart-box-outline"></i></div>
+          <span>统计</span>
+        </button>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MobileAssetCard from '@/mobile/components/MobileAssetCard.vue'
-import MobileEmptyState from '@/mobile/components/MobileEmptyState.vue'
 import { fetchAssets } from '@/api/asset'
-import { fetchCategoryTree, type CategoryNode } from '@/api/dict'
-import { fetchWishlist } from '@/api/wishlist'
-import type { AssetSummary, WishlistItem } from '@/types'
+import type { AssetSummary } from '@/types'
 
 const router = useRouter()
 const assets = ref<AssetSummary[]>([])
-const wishlist = ref<WishlistItem[]>([])
-const sortLabel = ref('按最新添加')
-const activeCategory = ref<number | 'all'>('all')
-const activeStatus = ref<'全部' | '服役中' | '已退役' | '已卖出'>('全部')
-const categoryTabs = ref<Array<{ id: number | 'all'; name: string }>>([{ id: 'all', name: '全部' }])
-const statusChips = ['全部', '服役中', '已退役', '已卖出'] as const
-const toast = ref('')
 
-const statusMap: Record<(typeof statusChips)[number], string | undefined> = {
-  全部: undefined,
-  服役中: '使用中',
-  已退役: '已闲置',
-  已卖出: '已出售'
-}
-
-const showToast = (message: string, duration = 2200) => {
-  toast.value = message
-  setTimeout(() => {
-    toast.value = ''
-  }, duration)
-}
-
-const loadCategories = async () => {
-  const data = await fetchCategoryTree()
-  categoryTabs.value = [{ id: 'all', name: '全部' }, ...flattenCategories(data)]
-}
-
-const loadAssets = async () => {
+// Load Data
+const loadData = async () => {
   try {
-    const params: Record<string, unknown> = {}
-    const status = statusMap[activeStatus.value]
-    if (status) params.status = status
-    if (typeof activeCategory.value === 'number') params.categoryId = activeCategory.value
-    const data = await fetchAssets(params)
-    assets.value = data
-  } catch (error) {
-    showToast('获取资产数据失败，请稍后重试')
+    const res = await fetchAssets() // Fetch all for clientside calc
+    assets.value = res || []
+  } catch (e) {
+    console.error(e)
   }
 }
 
-const loadWishlist = async () => {
-  try {
-    const data = await fetchWishlist()
-    wishlist.value = data
-  } catch (error) {
-    showToast('加载心愿列表失败')
-  }
-}
-
-const totalValue = computed(() =>
-  assets.value.reduce((sum, item) => sum + (item.totalInvest || 0), 0).toFixed(2)
-)
-
-const avgCost = computed(() => {
-  if (!assets.value.length) return '0.00'
-  const sum = assets.value.reduce((acc, item) => acc + (item.avgCostPerDay || 0), 0)
-  return (sum / assets.value.length).toFixed(2)
+// Computeds
+const totalValue = computed(() => {
+  return assets.value.reduce((sum, item) => sum + (item.totalInvest || 0), 0).toFixed(0)
 })
 
 const statusStats = computed(() => {
-  const active = assets.value.filter((item) => item.status === '使用中').length
-  const retired = assets.value.filter((item) => item.status === '已闲置').length
-  const sold = assets.value.filter((item) => item.status === '已出售').length
-  return { active, retired, sold }
+  const active = assets.value.filter(a => a.status === '使用中').length
+  const idle = assets.value.filter(a => a.status === '已闲置').length
+  return { active, idle }
 })
 
-const filteredAssets = computed(() => {
-  const list = [...assets.value]
-  if (sortLabel.value === '按价值排序') {
-    return list.sort((a, b) => b.totalInvest - a.totalInvest)
-  }
-  const toTimestamp = (value?: string) => (value ? new Date(value).getTime() : 0)
-  return list.sort((a, b) => toTimestamp(b.purchaseDate) - toTimestamp(a.purchaseDate))
+const activeRatio = computed(() => {
+  const { active, idle } = statusStats.value
+  const total = active + idle
+  return total > 0 ? (active / total) * 100 : 0
 })
 
-const wishlistPreview = computed(() => wishlist.value.slice(0, 3))
-const wishlistCount = computed(() => wishlist.value.length)
-const wishlistTotalValue = computed(() =>
-  wishlist.value.reduce((sum, item) => sum + (item.expectedPrice || 0), 0).toFixed(2)
-)
-
-const quickStatus = computed(() => [
-  { label: '服役中', count: statusStats.value.active, color: '#0ea15c', description: '正在服役中的资产' },
-  { label: '已退役', count: statusStats.value.retired, color: '#64748b', description: '暂未配置的资产' },
-  { label: '已卖出', count: statusStats.value.sold, color: '#475569', description: '已完成出售记录' }
-])
-
-const flattenCategories = (nodes: CategoryNode[]) => {
-  const result: Array<{ id: number; name: string }> = []
-  const traverse = (list: CategoryNode[], prefix = '') => {
-    list.forEach((node) => {
-      result.push({ id: node.id, name: prefix ? `${prefix} / ${node.name}` : node.name })
-      if (node.children?.length) {
-        traverse(node.children, prefix ? `${prefix} / ${node.name}` : node.name)
-      }
+const currentMonthSpending = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  
+  return assets.value
+    .filter(a => {
+      if (!a.purchaseDate) return false
+      const d = new Date(a.purchaseDate)
+      return d.getFullYear() === year && d.getMonth() === month
     })
-  }
-  traverse(nodes)
-  return result
+    .reduce((sum, item) => sum + (item.totalInvest || 0), 0)
+    .toFixed(0)
+})
+
+const recentAssets = computed(() => {
+  // Sort by purchase date desc, take top 5
+  return [...assets.value]
+    .sort((a, b) => new Date(b.purchaseDate || 0).getTime() - new Date(a.purchaseDate || 0).getTime())
+    .slice(0, 5)
+})
+
+// Navigation
+const goDetail = (id: number) => router.push({ name: 'mobileAssetDetail', params: { id } })
+const goAssets = () => router.push('/mobile/search')
+const goSearch = () => router.push('/mobile/search')
+const goWishlist = () => router.push('/mobile/wishlist')
+const goStats = () => router.push('/mobile/stats')
+const openQuickAdd = () => {
+  // Emit event or route to quick add
+  // For now using the fab trigger logic or just same route
 }
 
-const changeCategory = (id: number | 'all') => {
-  activeCategory.value = id
-}
-
-const changeStatus = (status: (typeof statusChips)[number]) => {
-  activeStatus.value = status
-}
-
-const toggleSort = () => {
-  sortLabel.value = sortLabel.value === '按最新添加' ? '按价值排序' : '按最新添加'
-}
-
-const goAsset = (id: number) => {
-  router.push({ name: 'assetDetail', params: { id } })
-}
-
-const goSearch = () => {
-  router.push({ name: 'mobileSearch' })
-}
-
-const goWishlist = () => {
-  router.push({ name: 'mobileWishlist' })
-}
-
-const goStats = () => {
-  router.push({ name: 'mobileStats' })
-}
-
-const openEditor = (type: 'asset' | 'wishlist') => {
-  router.push({ name: 'mobileEditor', query: { type } })
-}
-
-const goAssets = () => {
-  router.push({ name: 'assets' })
-}
-
-watch([activeCategory, activeStatus], loadAssets)
-
-onMounted(async () => {
-  await loadCategories()
-  await Promise.all([loadAssets(), loadWishlist()])
+onMounted(() => {
+  loadData()
 })
 </script>
+
+<style scoped>
+.page-home {
+  padding: env(safe-area-inset-top) 20px 20px 20px;
+}
+
+.home-header {
+  margin-bottom: 24px;
+}
+
+.logo-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-top: 12px;
+}
+
+.app-logo {
+  font-family: var(--dl-font-mono);
+  font-size: 20px;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #fff, var(--dl-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dl-text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Stats Scroll */
+.stats-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px; /* hide scrollbar spacing */
+  margin: 0 -20px;
+  padding: 0 20px;
+  scrollbar-width: none;
+}
+.stats-scroll::-webkit-scrollbar { display: none; }
+
+.stat-card {
+  min-width: 140px;
+  background: var(--dl-bg-surface-light);
+  border-radius: var(--dl-radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  scroll-snap-align: start;
+}
+
+.primary-card {
+  background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(188, 19, 254, 0.1));
+  border: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--dl-text-muted);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--dl-font-mono);
+  color: var(--dl-text-primary);
+}
+
+.stat-trend {
+  font-size: 11px;
+  color: var(--dl-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--dl-primary);
+  border-radius: 2px;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-header h2 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--dl-text-primary);
+}
+
+.section-header .link {
+  font-size: 12px;
+  color: var(--dl-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  color: var(--dl-text-muted);
+  font-size: 13px;
+  background: var(--dl-bg-surface-light);
+  border-radius: var(--dl-radius-lg);
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--dl-text-secondary);
+  font-size: 11px;
+  padding: 0;
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--dl-bg-surface-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.neon-cyan { color: var(--dl-primary); }
+.neon-purple { color: var(--dl-secondary); }
+.neon-green { color: var(--dl-success); }
+.neon-yellow { color: var(--dl-warning); }
+</style>
