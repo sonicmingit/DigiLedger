@@ -1,0 +1,41 @@
+@import './variables.css';
+
+body {
+    background-color: var(--dl-bg-base);
+    color: var(--dl-text-primary);
+    font-family: var(--dl-font-sans);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Common Utilities */
+.text-neon {
+    color: var(--dl-primary);
+    text-shadow: 0 0 5px var(--dl-primary-dim);
+}
+
+.bg-surface {
+    background-color: var(--dl-bg-surface);
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.full-screen {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Reset Element Plus variables for mobile dark mode */
+:root {
+    --el-color-primary: var(--dl-primary);
+    --el-bg-color: var(--dl-bg-surface);
+    --el-text-color-primary: var(--dl-text-primary);
+}
