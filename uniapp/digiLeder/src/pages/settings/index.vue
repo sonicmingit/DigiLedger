@@ -1,36 +1,36 @@
 <template>
-	<div class="settings-page">
-		<div class="header">
-			<h1>设置</h1>
-		</div>
+	<view class="settings-page">
+		<view class="header">
+			<text>设置</text>
+		</view>
 		
-		<div class="card">
-			<div class="card-title">服务器配置</div>
+		<view class="card">
+			<view class="card-title">服务器配置</view>
 			
-			<div class="form-item">
-				<label>主服务器地址</label>
+			<view class="form-item">
+				<text>主服务器地址</text>
 				<input type="text" v-model="config.primaryUrl" placeholder="例如 http://192.168.1.100:8080/api" />
-			</div>
+			</view>
 			
-			<div class="form-item">
-				<label>备用服务器地址</label>
+			<view class="form-item">
+				<text>备用服务器地址</text>
 				<input type="text" v-model="config.backupUrl" placeholder="例如 http://localhost:8080/api" />
-			</div>
+			</view>
 			
-			<div class="form-item switch-item">
-				<label>使用备用服务器</label>
+			<view class="form-item switch-item">
+				<text>使用备用服务器</text>
 				<switch :checked="config.useBackup" @change="onSwitchChange" color="#00f3ff" />
-			</div>
+			</view>
 			
-			<div class="actions">
+			<view class="actions">
 				<button class="btn-save" @click="save">保存配置</button>
-			</div>
-		</div>
+			</view>
+		</view>
 		
-		<div class="info">
-			<p>当前API地址: {{ currentApiUrl }}</p>
-		</div>
-	</div>
+		<view class="info">
+			<text>当前API地址: {{ currentApiUrl }}</text>
+		</view>
+	</view>
 </template>
 
 <script>
@@ -77,7 +77,7 @@
 	
 	.header {
 		margin-bottom: 40rpx;
-		h1 {
+		text {
 			font-size: 48rpx;
 			font-weight: bold;
 			color: $uni-text-primary;
@@ -100,7 +100,7 @@
 	.form-item {
 		margin-bottom: 30rpx;
 		
-		label {
+		text {
 			display: block;
 			font-size: 28rpx;
 			color: $uni-text-secondary;
@@ -126,7 +126,7 @@
 			justify-content: space-between;
 			align-items: center;
 			
-			label { margin-bottom: 0; }
+			text { margin-bottom: 0; }
 		}
 	}
 	

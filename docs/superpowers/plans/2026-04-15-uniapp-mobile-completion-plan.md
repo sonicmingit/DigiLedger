@@ -18,10 +18,10 @@
 
 ## Execution Contract (Must Follow)
 
-- [ ] 严格串行：Task 1 完成并验收后，才可进入 Task 2。
-- [ ] 每个 Task 都必须包含：代码完成 + 构建通过 + 手测通过 + 变更记录。
-- [ ] 不引入与当前 Task 无关的重构。
-- [ ] 若出现阻塞（后端契约冲突/运行环境故障），先记录 blocker，再最小化绕行，不改变任务顺序。
+- [x] 严格串行：Task 1 完成并验收后，才可进入 Task 2。
+- [x] 每个 Task 都必须包含：代码完成 + 构建通过 + 手测通过 + 变更记录。
+- [x] 不引入与当前 Task 无关的重构。
+- [x] 若出现阻塞（后端契约冲突/运行环境故障），先记录 blocker，再最小化绕行，不改变任务顺序。
 
 ## Scope Baseline
 
@@ -226,3 +226,17 @@
 - 手测结果：
 - 阻塞项：
 - 下一步：
+
+
+## Appendix: 接口映射表（2026-04-15）
+
+| 模块 | 旧路径/调用 | 新路径/调用 | 说明 |
+|---|---|---|---|
+| 心愿单列表 | `/wishlists` | `/wishlist` | 单数路径统一 |
+| 心愿单创建 | `POST /wishlists` | `POST /wishlist` | 单数路径统一 |
+| 心愿单删除 | `DELETE /wishlists/{id}` | `DELETE /wishlist/{id}` | 单数路径统一 |
+| 心愿转资产 | `POST /wishlists/{id}/convert`(空body) | `POST /wishlist/{id}/convert`(最简body) | 增加请求体构造器 |
+| 字典 | 分散 hardcode | `/dict/categories|platforms|tags` | 增加缓存层 |
+| 购买记录 | 无 | `/purchases` CRUD | 详情页可增删改 |
+| 附件 | 上传后仅封面 | `/attachments` 列表/新增/删除 | 支持 bizType+bizId |
+| 封面推荐 | 无 | `/assets/{id}/cover/suggestions` + `/cover/from-url` | 一键应用并刷新 |

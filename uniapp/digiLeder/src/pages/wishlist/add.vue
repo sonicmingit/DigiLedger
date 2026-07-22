@@ -102,7 +102,7 @@
 </template>
 
 <script>
-	import request from '@/utils/request.js';
+	import request, { API_PATHS } from '@/utils/request.js';
 
 	export default {
 		data() {
@@ -138,7 +138,7 @@
 					};
 
 					await request({
-						url: '/wishlists',
+						url: API_PATHS.wishlist,
 						method: 'POST',
 						data: payload
 					});

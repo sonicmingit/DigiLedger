@@ -129,7 +129,7 @@
 </template>
 
 <script>
-	import request from '@/utils/request.js';
+	import request, { API_PATHS } from '@/utils/request.js';
 
 	export default {
 		data() {
@@ -153,7 +153,7 @@
 					// 从物品列表聚合统计，与 /dashboard/stats 接口对接皆可
 					const [assets, wishes] = await Promise.allSettled([
 						request({ url: '/assets' }),
-						request({ url: '/wishlists' })
+						request({ url: API_PATHS.wishlist })
 					]);
 
 					const list = assets.status === 'fulfilled' ? (assets.value || []) : [];

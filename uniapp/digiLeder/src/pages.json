@@ -64,6 +64,12 @@
 			"style": {
 				"navigationBarTitleText": "服务器设置"
 			}
+		},
+		{
+			"path": "pages/wishlist/detail",
+			"style": {
+				"navigationBarTitleText": "心愿详情"
+			}
 		}
 	],
 	"globalStyle": {

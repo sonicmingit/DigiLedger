@@ -87,7 +87,8 @@
 </template>
 
 <script>
-	import request from '@/utils/request.js';
+	import request, { API_PATHS } from '@/utils/request.js';
+	import { buildWishlistConvertPayload } from '@/utils/wishlist-convert.js';
 
 	export default {
 		data() {
@@ -103,7 +104,7 @@
 			async loadData() {
 				this.loading = true;
 				try {
-					const res = await request({ url: '/wishlists' });
+					const res = await request({ url: API_PATHS.wishlist });
 					this.list = res || [];
 				} catch (e) {
 					console.error('获取心愿单失败', e);
@@ -115,7 +116,8 @@
 				uni.navigateTo({ url: '/pages/wishlist/add' });
 			},
 			goDetail(item) {
-				// 当前版本心愿单无独立详情，点击直连编辑（可扩展）
+				if (!item?.id) return;
+			uni.navigateTo({ url: `/pages/wishlist/detail?id=${item.id}` });
 			},
 			async convertItem(item) {
 				uni.showModal({
@@ -125,8 +127,9 @@
 						if (res.confirm) {
 							try {
 								await request({
-									url: `/wishlists/${item.id}/convert`,
-									method: 'POST'
+									url: `${API_PATHS.wishlist}/${item.id}/convert`,
+									method: 'POST',
+									data: buildWishlistConvertPayload(item)
 								});
 								uni.showToast({ title: '已加入物品柜', icon: 'success' });
 								this.loadData();
@@ -146,7 +149,7 @@
 						if (res.confirm) {
 							try {
 								await request({
-									url: `/wishlists/${item.id}`,
+									url: `${API_PATHS.wishlist}/${item.id}`,
 									method: 'DELETE'
 								});
 								uni.showToast({ title: '已删除', icon: 'success' });
