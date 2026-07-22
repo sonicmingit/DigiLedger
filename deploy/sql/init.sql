@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS sys_setting (
   storage_secret_key VARCHAR(128) COMMENT '对象存储 SecretKey',
   storage_base_url VARCHAR(255) COMMENT '对象存储基础访问 URL',
   default_cover_provider VARCHAR(64) DEFAULT NULL COMMENT '默认智能找图服务',
+  date_format VARCHAR(32) NOT NULL DEFAULT 'YYYY-MM-DD' COMMENT '日期展示格式',
+  auto_backup_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否启用自动备份',
+  auto_backup_time VARCHAR(5) NOT NULL DEFAULT '02:00' COMMENT '自动备份时间 HH:mm',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) COMMENT='系统设置表';
@@ -155,6 +158,8 @@ CREATE TABLE IF NOT EXISTS wishlist (
   brand_id BIGINT COMMENT '目标品牌ID',
   model VARCHAR(200) COMMENT '期望型号',
   expected_price DECIMAL(12,2) COMMENT '期望价格',
+  current_price DECIMAL(12,2) COMMENT '最近观测价格',
+  last_price_at DATETIME COMMENT '最近价格采集时间',
   image_url VARCHAR(500) COMMENT '商品图片',
   status ENUM('未购买','已购买') NOT NULL DEFAULT '未购买' COMMENT '购买状态',
   link VARCHAR(500) COMMENT '参考链接',
@@ -169,6 +174,16 @@ CREATE TABLE IF NOT EXISTS wishlist (
   CONSTRAINT fk_wishlist_brand FOREIGN KEY (brand_id) REFERENCES dict_brand(id),
   CONSTRAINT fk_wishlist_asset FOREIGN KEY (converted_asset_id) REFERENCES device_asset(id)
 ) COMMENT='心愿单记录表';
+
+CREATE TABLE IF NOT EXISTS wishlist_price_history (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  wishlist_id BIGINT NOT NULL,
+  price DECIMAL(12,2) NOT NULL,
+  captured_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_wishlist_price_time (wishlist_id, captured_at),
+  CONSTRAINT fk_wishlist_price_wishlist FOREIGN KEY (wishlist_id) REFERENCES wishlist(id) ON DELETE CASCADE
+) COMMENT='心愿价格观测历史';
 
 CREATE TABLE IF NOT EXISTS wishlist_tag_map (
   wishlist_id BIGINT NOT NULL COMMENT '心愿ID',
@@ -202,6 +217,8 @@ CREATE TABLE IF NOT EXISTS equip_upgrade_route (
   name VARCHAR(200) NOT NULL COMMENT '路线名称',
   root_asset_id BIGINT DEFAULT NULL COMMENT '起点资产ID',
   remark TEXT COMMENT '备注',
+  plan_year INT COMMENT '计划年份',
+  annual_budget DECIMAL(12,2) COMMENT '年度预算',
   is_deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
@@ -212,11 +229,17 @@ CREATE TABLE IF NOT EXISTS equip_upgrade_route (
 CREATE TABLE IF NOT EXISTS equip_upgrade_node (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   route_id BIGINT NOT NULL COMMENT '所属路线ID',
-  asset_id BIGINT NOT NULL COMMENT '关联资产ID',
+  asset_id BIGINT DEFAULT NULL COMMENT '关联资产ID；纯计划节点可为空',
   level INT DEFAULT 1 COMMENT '层级',
   sort INT DEFAULT 0 COMMENT '排序',
   label VARCHAR(200) DEFAULT NULL COMMENT '节点标签',
   remark TEXT COMMENT '备注',
+  title VARCHAR(200) COMMENT '计划标题',
+  target_name VARCHAR(200) COMMENT '目标物品名称',
+  period_label VARCHAR(50) COMMENT '计划周期标签',
+  planned_budget DECIMAL(12,2) COMMENT '计划预算',
+  expected_recovery DECIMAL(12,2) COMMENT '预计回收',
+  status VARCHAR(20) NOT NULL DEFAULT 'PLANNED' COMMENT '计划状态',
   is_deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -243,3 +266,11 @@ CREATE TABLE IF NOT EXISTS equip_upgrade_link (
   CONSTRAINT fk_upgrade_link_from FOREIGN KEY (from_node_id) REFERENCES equip_upgrade_node(id) ON DELETE CASCADE,
   CONSTRAINT fk_upgrade_link_to FOREIGN KEY (to_node_id) REFERENCES equip_upgrade_node(id) ON DELETE CASCADE
 ) COMMENT='装备升级关系表';
+
+CREATE TABLE IF NOT EXISTS dashboard_monthly_snapshot (
+  snapshot_month CHAR(7) PRIMARY KEY COMMENT '月份 YYYY-MM',
+  total_value DECIMAL(14,2) NOT NULL DEFAULT 0,
+  avg_daily_cost DECIMAL(14,2) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) COMMENT='总览按月快照';

@@ -11,6 +11,12 @@
         <result column="sort" property="sort" />
         <result column="label" property="label" />
         <result column="remark" property="remark" />
+        <result column="title" property="title" />
+        <result column="target_name" property="targetName" />
+        <result column="period_label" property="periodLabel" />
+        <result column="planned_budget" property="plannedBudget" />
+        <result column="expected_recovery" property="expectedRecovery" />
+        <result column="status" property="status" />
         <result column="is_deleted" property="isDeleted" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
@@ -31,9 +37,20 @@
     </select>
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.EquipUpgradeNode" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO equip_upgrade_node (route_id, asset_id, level, sort, label, remark)
-        VALUES (#{routeId}, #{assetId}, #{level}, #{sort}, #{label}, #{remark})
+        INSERT INTO equip_upgrade_node (route_id, asset_id, level, sort, label, remark,
+                                        title, target_name, period_label, planned_budget, expected_recovery, status)
+        VALUES (#{routeId}, #{assetId}, #{level}, #{sort}, #{label}, #{remark},
+                #{title}, #{targetName}, #{periodLabel}, #{plannedBudget}, #{expectedRecovery}, #{status})
     </insert>
+
+    <update id="update" parameterType="com.digiledger.backend.model.entity.EquipUpgradeNode">
+        UPDATE equip_upgrade_node
+        SET asset_id = #{assetId}, level = #{level}, sort = #{sort}, label = #{label}, remark = #{remark},
+            title = #{title}, target_name = #{targetName}, period_label = #{periodLabel},
+            planned_budget = #{plannedBudget}, expected_recovery = #{expectedRecovery}, status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND route_id = #{routeId} AND is_deleted = 0
+    </update>
 
     <update id="softDelete" parameterType="long">
         UPDATE equip_upgrade_node

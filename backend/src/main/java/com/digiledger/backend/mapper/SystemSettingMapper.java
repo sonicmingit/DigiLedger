@@ -12,4 +12,6 @@ public interface SystemSettingMapper {
     void insertDefaultProvider(@Param("provider") String provider);
 
     void updateDefaultProvider(@Param("id") Long id, @Param("provider") String provider);
+    void insertPreferences(SystemSetting setting);
+    void updatePreferences(SystemSetting setting);
 }

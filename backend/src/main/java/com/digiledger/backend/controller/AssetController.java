@@ -10,6 +10,7 @@ import com.digiledger.backend.model.dto.asset.SaleDTO;
 import com.digiledger.backend.service.AssetService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +42,22 @@ public class AssetController {
                                                          @RequestParam(name = "view", required = false) String view) {
         String search = keyword != null ? keyword : q;
         return ApiResponse.success(assetService.listAssets(status, search, categoryId, platformId, tagIds));
+    }
+
+    @GetMapping("/page")
+    public ApiResponse<com.digiledger.backend.model.dto.asset.AssetPageDTO> pageAssets(
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "category_id", required = false) Long categoryId,
+            @RequestParam(name = "platform_id", required = false) Long platformId,
+            @RequestParam(name = "tag_ids", required = false) List<Long> tagIds,
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "page_size", defaultValue = "20") @Min(1) @Max(100) int pageSize,
+            @RequestParam(name = "sort_by", defaultValue = "purchaseDate") String sortBy,
+            @RequestParam(name = "sort_order", defaultValue = "desc") String sortOrder) {
+        String search = keyword != null ? keyword : q;
+        return ApiResponse.success(assetService.pageAssets(status, search, categoryId, platformId, tagIds, page, pageSize, sortBy, sortOrder));
     }
 
     /**

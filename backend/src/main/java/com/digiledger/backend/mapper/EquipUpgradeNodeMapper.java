@@ -14,6 +14,7 @@ public interface EquipUpgradeNodeMapper {
     EquipUpgradeNode findById(@Param("id") Long id);
 
     int insert(EquipUpgradeNode node);
+    int update(EquipUpgradeNode node);
 
     int softDelete(@Param("id") Long id);
 

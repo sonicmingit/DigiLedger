@@ -8,6 +8,7 @@ import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.WishlistMapper;
 import com.digiledger.backend.mapper.WishlistTagMapMapper;
+import com.digiledger.backend.mapper.WishlistPriceHistoryMapper;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.asset.TagDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistAssetRefDTO;
@@ -18,6 +19,9 @@ import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.DictTag;
 import com.digiledger.backend.model.entity.WishlistItem;
 import com.digiledger.backend.model.entity.WishlistTagMap;
+import com.digiledger.backend.model.entity.WishlistPriceHistory;
+import com.digiledger.backend.model.dto.wishlist.WishlistPriceRequest;
+import com.digiledger.backend.model.dto.wishlist.WishlistPriceHistoryDTO;
 import com.digiledger.backend.service.AssetService;
 import com.digiledger.backend.service.WishlistService;
 import com.digiledger.backend.util.StoragePathHelper;
@@ -37,6 +41,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 /**
  * 心愿单服务实现，可转化资产。
@@ -55,6 +62,7 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistTagMapMapper wishlistTagMapMapper;
     private final AssetService assetService;
     private final StoragePathHelper storagePathHelper;
+    private final WishlistPriceHistoryMapper priceHistoryMapper;
 
     public WishlistServiceImpl(WishlistMapper wishlistMapper,
                                DictCategoryMapper dictCategoryMapper,
@@ -63,7 +71,8 @@ public class WishlistServiceImpl implements WishlistService {
                                WishlistTagMapMapper wishlistTagMapMapper,
                                AssetService assetService,
                                StoragePathHelper storagePathHelper,
-                               AssetMapper assetMapper) {
+                               AssetMapper assetMapper,
+                               WishlistPriceHistoryMapper priceHistoryMapper) {
         this.wishlistMapper = wishlistMapper;
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictBrandMapper = dictBrandMapper;
@@ -72,6 +81,7 @@ public class WishlistServiceImpl implements WishlistService {
         this.assetService = assetService;
         this.storagePathHelper = storagePathHelper;
         this.assetMapper = assetMapper;
+        this.priceHistoryMapper = priceHistoryMapper;
     }
 
     @Override
@@ -193,6 +203,40 @@ public class WishlistServiceImpl implements WishlistService {
         return assetId;
     }
 
+    @Override
+    @Transactional
+    public void updatePrice(Long id, WishlistPriceRequest request) {
+        Optional.ofNullable(wishlistMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
+        LocalDateTime capturedAt = request.capturedAt() == null
+                ? LocalDateTime.now()
+                : request.capturedAt().toLocalDateTime();
+        WishlistPriceHistory history = new WishlistPriceHistory();
+        history.setWishlistId(id);
+        history.setPrice(request.currentPrice());
+        history.setCapturedAt(capturedAt);
+        // 历史记录先落库，再同步当前值；事务确保两者不会出现半成功状态。
+        priceHistoryMapper.insert(history);
+        wishlistMapper.updateCurrentPrice(id, request.currentPrice(), capturedAt);
+    }
+
+    @Override
+    public List<WishlistPriceHistoryDTO> getPriceHistory(Long id) {
+        Optional.ofNullable(wishlistMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
+        return priceHistoryMapper.findByWishlistId(id).stream()
+                .map(item -> new WishlistPriceHistoryDTO(item.getPrice(), item.getCapturedAt()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void markPurchased(Long id) {
+        Optional.ofNullable(wishlistMapper.findById(id))
+                .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
+        wishlistMapper.markPurchased(id);
+    }
+
     private WishlistItem buildEntity(WishlistRequest request, String status) {
         WishlistItem item = new WishlistItem();
         item.setName(request.getName());
@@ -221,6 +265,8 @@ public class WishlistServiceImpl implements WishlistService {
 
     private WishlistDTO toDto(WishlistItem item, String brandName, String categoryName,
                               List<TagDTO> tags, List<WishlistAssetRefDTO> relatedAssets) {
+        List<WishlistPriceHistory> priceHistory = priceHistoryMapper.findByWishlistId(item.getId());
+        BigDecimal changeRate = calculatePriceChangeRate(item.getCurrentPrice(), priceHistory);
         return new WishlistDTO(
                 item.getId(),
                 item.getName(),
@@ -230,6 +276,9 @@ public class WishlistServiceImpl implements WishlistService {
                 brandName,
                 item.getModel(),
                 item.getExpectedPrice(),
+                item.getCurrentPrice(),
+                changeRate,
+                item.getLastPriceAt(),
                 storagePathHelper.toFullUrl(item.getImageUrl()),
                 item.getStatus(),
                 item.getLink(),
@@ -241,6 +290,18 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getCreatedAt(),
                 item.getUpdatedAt()
         );
+    }
+
+    private BigDecimal calculatePriceChangeRate(BigDecimal current, List<WishlistPriceHistory> history) {
+        if (current == null || history == null || history.size() < 2) {
+            return null;
+        }
+        if (history.get(1).getPrice() == null || history.get(1).getPrice().signum() == 0) {
+            return null;
+        }
+        BigDecimal previous = history.get(1).getPrice();
+        return current.subtract(previous).multiply(BigDecimal.valueOf(100))
+                .divide(previous, 2, RoundingMode.HALF_UP);
     }
 
     private Map<Long, DeviceAsset> loadAssetMap(List<Long> assetIds) {

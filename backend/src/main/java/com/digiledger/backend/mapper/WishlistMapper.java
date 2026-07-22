@@ -5,6 +5,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 心愿单 Mapper。
@@ -22,6 +24,9 @@ public interface WishlistMapper {
 
     int delete(@Param("id") Long id);
     int markConverted(@Param("id") Long id, @Param("assetId") Long assetId);
+    int updateCurrentPrice(@Param("id") Long id, @Param("price") BigDecimal price,
+                           @Param("capturedAt") LocalDateTime capturedAt);
+    int markPurchased(@Param("id") Long id);
 
     long countByBrand(@Param("brandId") Long brandId);
 }

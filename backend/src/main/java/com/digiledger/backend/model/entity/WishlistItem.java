@@ -22,6 +22,10 @@ public class WishlistItem {
     private String model;
     /** 期望价格 */
     private BigDecimal expectedPrice;
+    /** 最近一次观测价格；历史数据允许为空。 */
+    private BigDecimal currentPrice;
+    /** 最近一次价格采集时间。 */
+    private LocalDateTime lastPriceAt;
     /** 心愿图片 */
     private String imageUrl;
     /** 商品链接 */

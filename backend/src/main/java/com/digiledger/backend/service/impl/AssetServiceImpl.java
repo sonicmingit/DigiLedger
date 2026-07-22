@@ -116,6 +116,26 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
+    public AssetPageDTO pageAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds,
+                                   int page, int pageSize, String sortBy, String sortOrder) {
+        List<AssetSummaryDTO> all = new ArrayList<>(listAssets(status, keyword, categoryId, platformId, tagIds));
+        Comparator<AssetSummaryDTO> comparator = switch (sortBy == null ? "purchaseDate" : sortBy) {
+            case "name" -> Comparator.comparing(AssetSummaryDTO::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "status" -> Comparator.comparing(AssetSummaryDTO::status, Comparator.nullsLast(String::compareTo));
+            case "useDays" -> Comparator.comparing(AssetSummaryDTO::useDays, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "avgCostPerDay" -> Comparator.comparing(AssetSummaryDTO::avgCostPerDay, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "totalInvest" -> Comparator.comparing(AssetSummaryDTO::totalInvest, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(AssetSummaryDTO::purchaseDate, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
+        if (!"asc".equalsIgnoreCase(sortOrder)) comparator = comparator.reversed();
+        all.sort(comparator.thenComparing(AssetSummaryDTO::id, Comparator.reverseOrder()));
+        long total = all.size();
+        int from = Math.min((page - 1) * pageSize, all.size());
+        int to = Math.min(from + pageSize, all.size());
+        return new AssetPageDTO(all.subList(from, to), total, page, pageSize);
+    }
+
+    @Override
     public AssetDetailDTO getAssetDetail(Long id) {
         DeviceAsset asset = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));

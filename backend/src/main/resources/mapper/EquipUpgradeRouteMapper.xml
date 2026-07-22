@@ -8,6 +8,8 @@
         <result column="name" property="name" />
         <result column="root_asset_id" property="rootAssetId" />
         <result column="remark" property="remark" />
+        <result column="plan_year" property="planYear" />
+        <result column="annual_budget" property="annualBudget" />
         <result column="is_deleted" property="isDeleted" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
@@ -28,8 +30,8 @@
     </select>
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.EquipUpgradeRoute" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO equip_upgrade_route (name, root_asset_id, remark)
-        VALUES (#{name}, #{rootAssetId}, #{remark})
+        INSERT INTO equip_upgrade_route (name, root_asset_id, remark, plan_year, annual_budget)
+        VALUES (#{name}, #{rootAssetId}, #{remark}, #{planYear}, #{annualBudget})
     </insert>
 
     <update id="update" parameterType="com.digiledger.backend.model.entity.EquipUpgradeRoute">
@@ -37,6 +39,8 @@
         SET name = #{name},
             root_asset_id = #{rootAssetId},
             remark = #{remark},
+            plan_year = #{planYear},
+            annual_budget = #{annualBudget},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id} AND is_deleted = 0
     </update>

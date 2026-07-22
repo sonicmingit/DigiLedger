@@ -26,6 +26,9 @@ public class SystemSetting {
     private String storageBaseUrl;
     /** 默认智能找图服务 */
     private String defaultCoverProvider;
+    private String dateFormat;
+    private Boolean autoBackupEnabled;
+    private String autoBackupTime;
     /** 创建时间 */
     private LocalDateTime createdAt;
     /** 更新时间 */

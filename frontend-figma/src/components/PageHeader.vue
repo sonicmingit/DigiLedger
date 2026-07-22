@@ -1,0 +1,10 @@
+<template>
+  <header class="page-header">
+    <div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
+    <div class="page-actions"><slot /></div>
+  </header>
+</template>
+<script setup lang="ts">
+/** Shared page header keeps the six Figma canvases on the same baseline. */
+defineProps<{ title: string; subtitle: string }>()
+</script>

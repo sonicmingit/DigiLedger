@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: DigiLedger API
-  version: 0.3.6
+  version: 0.4.1
   description: |
     DigiLedger 后端接口，统一返回体为 `{code,data,msg}`。
 servers:
@@ -523,6 +523,79 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseVoid'
 
+
+  /api/wishlist/{id}/price:
+    patch:
+      summary: 记录心愿单当前价格
+      parameters: [{ $ref: '#/components/parameters/WishlistId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WishlistPriceRequest' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseVoid' } } } }
+  /api/wishlist/{id}/price-history:
+    get:
+      summary: 查询心愿单价格历史（按采集时间倒序）
+      parameters: [{ $ref: '#/components/parameters/WishlistId' }]
+      responses:
+        '200': { description: 价格历史, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponsePriceHistory' } } } }
+  /api/wishlist/{id}/mark-purchased:
+    post:
+      summary: 标记心愿为已购买（不强制创建物品）
+      parameters: [{ $ref: '#/components/parameters/WishlistId' }]
+      responses:
+        '200': { description: 标记成功, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseVoid' } } } }
+  /api/dashboard/summary:
+    get:
+      summary: 获取资产总览、分布、趋势与最近更新
+      responses:
+        '200': { description: 聚合总览, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseDashboardSummary' } } } }
+  /api/upgrade-routes:
+    get:
+      summary: 升级路线列表（含预算和状态汇总）
+      responses:
+        '200': { description: 路线列表 }
+    post:
+      summary: 新增升级路线
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpgradeRouteRequest' } } } }
+      responses:
+        '200': { description: 路线 ID, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseLong' } } } }
+  /api/upgrade-routes/{routeId}:
+    put:
+      summary: 更新升级路线
+      parameters:
+        - { name: routeId, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpgradeRouteRequest' } } } }
+      responses:
+        '200': { description: 更新成功 }
+  /api/upgrade-routes/{routeId}/nodes/{nodeId}:
+    put:
+      summary: 更新升级节点
+      parameters:
+        - { name: routeId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: nodeId, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpgradeNodeRequest' } } } }
+      responses:
+        '200': { description: 更新成功 }
+  /api/settings/preferences:
+    get:
+      summary: 获取展示和自动备份偏好
+      responses:
+        '200': { description: 当前偏好, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponsePreferences' } } } }
+    put:
+      summary: 更新展示和自动备份偏好
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Preferences' } } } }
+      responses:
+        '200': { description: 更新成功 }
+  /api/data/export:
+    get:
+      summary: 导出资产数据；内容仍包装在统一 ApiResponse.data 中
+      parameters:
+        - { name: format, in: query, schema: { type: string, enum: [json, csv], default: json } }
+      responses:
+        '200': { description: 导出内容, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseDataExport' } } } }
 
 components:
   parameters:
@@ -1136,6 +1209,16 @@ components:
           type: number
           format: double
           nullable: true
+        currentPrice:
+          type: number
+          nullable: true
+        priceChangeRate:
+          type: number
+          nullable: true
+        lastPriceAt:
+          type: string
+          format: date-time
+          nullable: true
         image_url:
           type: string
           nullable: true
@@ -1162,6 +1245,94 @@ components:
         updated_at:
           type: string
           format: date-time
+    WishlistPriceRequest:
+      type: object
+      required: [currentPrice]
+      properties:
+        currentPrice: { type: number, minimum: 0 }
+        capturedAt: { type: string, format: date-time, nullable: true }
+    ApiResponsePriceHistory:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              price: { type: number }
+              capturedAt: { type: string, format: date-time }
+        msg: { type: string }
+    ApiResponseDashboardSummary:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/DashboardSummary' }
+        msg: { type: string }
+    DashboardSummary:
+      type: object
+      properties:
+        totalAssetValue: { type: number }
+        assetCount: { type: integer }
+        activeCount: { type: integer }
+        idleCount: { type: integer }
+        pendingSaleCount: { type: integer }
+        avgDailyCost: { type: number }
+        monthValueChangeRate: { type: number, nullable: true }
+        monthCostChangeRate: { type: number, nullable: true }
+        statusDistribution: { type: array, items: { type: object } }
+        categoryDistribution: { type: array, items: { type: object } }
+        valueTrend: { type: array, items: { type: object } }
+        recentAssets: { type: array, items: { type: object } }
+    UpgradeRouteRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200 }
+        rootAssetId: { type: integer, format: int64, nullable: true }
+        remark: { type: string, nullable: true }
+        planYear: { type: integer, minimum: 2000, maximum: 2200, nullable: true }
+        annualBudget: { type: number, minimum: 0, nullable: true }
+    UpgradeNodeRequest:
+      type: object
+      properties:
+        assetId: { type: integer, format: int64, nullable: true }
+        title: { type: string, nullable: true }
+        targetName: { type: string, nullable: true }
+        periodLabel: { type: string, nullable: true }
+        plannedBudget: { type: number, minimum: 0, nullable: true }
+        expectedRecovery: { type: number, minimum: 0, nullable: true }
+        status: { type: string, enum: [PLANNED, READY, EXECUTING, COMPLETED, CANCELLED] }
+        level: { type: integer, minimum: 1 }
+        sort: { type: integer }
+        label: { type: string, nullable: true }
+        remark: { type: string, nullable: true }
+    Preferences:
+      type: object
+      required: [currency, dateFormat, autoBackupEnabled, autoBackupTime]
+      properties:
+        currency: { type: string, example: CNY }
+        dateFormat: { type: string, example: YYYY-MM-DD }
+        autoBackupEnabled: { type: boolean }
+        autoBackupTime: { type: string, example: '02:00' }
+    ApiResponsePreferences:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/Preferences' }
+        msg: { type: string }
+    ApiResponseDataExport:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        data:
+          type: object
+          properties:
+            format: { type: string, enum: [json, csv] }
+            filename: { type: string }
+            contentType: { type: string }
+            content: {}
+        msg: { type: string }
     WishlistReq:
       type: object
       required: [name]

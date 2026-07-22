@@ -1,0 +1,41 @@
+{
+  "name": "DigiLedger",
+  "appid": "__UNI__DIGILEDGER_FIGMA",
+  "description": "个人物品账本",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "vueVersion": "3",
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "distribute": {
+      "android": {
+        "packagename": "com.example.digiledger",
+        "icons": {
+          "72": "static/app-icon.png",
+          "96": "static/app-icon.png",
+          "144": "static/app-icon.png",
+          "192": "static/app-icon.png"
+        },
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>"
+        ]
+      },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
+  "h5": { "title": "DigiLedger", "router": { "mode": "hash" } },
+  "uniStatistics": { "enable": false }
+}

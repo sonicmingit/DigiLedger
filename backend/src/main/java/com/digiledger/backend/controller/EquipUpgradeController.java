@@ -79,6 +79,15 @@ public class EquipUpgradeController {
         return ApiResponse.success(equipUpgradeService.addNode(routeId, request));
     }
 
+    /** 完整更新节点；保留 POST 新增语义，避免旧客户端受影响。 */
+    @PutMapping("/{routeId}/nodes/{nodeId}")
+    public ApiResponse<Void> updateNode(@PathVariable("routeId") @Min(1) Long routeId,
+                                        @PathVariable("nodeId") @Min(1) Long nodeId,
+                                        @RequestBody @Valid EquipUpgradeNodeRequest request) {
+        equipUpgradeService.updateNode(routeId, nodeId, request);
+        return ApiResponse.success();
+    }
+
     /**
      * 删除节点及关联关系。
      */

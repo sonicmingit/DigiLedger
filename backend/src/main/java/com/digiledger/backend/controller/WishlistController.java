@@ -4,6 +4,8 @@ import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.wishlist.WishlistDTO;
 import com.digiledger.backend.model.dto.wishlist.WishlistRequest;
+import com.digiledger.backend.model.dto.wishlist.WishlistPriceRequest;
+import com.digiledger.backend.model.dto.wishlist.WishlistPriceHistoryDTO;
 import com.digiledger.backend.service.WishlistService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -57,5 +59,23 @@ public class WishlistController {
     public ApiResponse<Long> convert(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                      @RequestBody @Valid AssetCreateRequest request) {
         return ApiResponse.success(wishlistService.convertToAsset(id, request));
+    }
+
+    @PatchMapping("/{id}/price")
+    public ApiResponse<Void> updatePrice(@PathVariable("id") @Min(1) Long id,
+                                         @RequestBody @Valid WishlistPriceRequest request) {
+        wishlistService.updatePrice(id, request);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/{id}/price-history")
+    public ApiResponse<List<WishlistPriceHistoryDTO>> priceHistory(@PathVariable("id") @Min(1) Long id) {
+        return ApiResponse.success(wishlistService.getPriceHistory(id));
+    }
+
+    @PostMapping("/{id}/mark-purchased")
+    public ApiResponse<Void> markPurchased(@PathVariable("id") @Min(1) Long id) {
+        wishlistService.markPurchased(id);
+        return ApiResponse.success();
     }
 }

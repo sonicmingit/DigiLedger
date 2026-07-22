@@ -25,6 +25,7 @@ import com.digiledger.backend.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -76,14 +77,28 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
         return routes.stream()
-                .map(route -> new EquipUpgradeRouteDTO(
+                .map(route -> {
+                    List<EquipUpgradeNode> nodes = nodeMapper.findByRouteId(route.getId());
+                    BigDecimal planned = nodes.stream().map(EquipUpgradeNode::getPlannedBudget)
+                            .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal recovery = nodes.stream().map(EquipUpgradeNode::getExpectedRecovery)
+                            .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Map<String, Long> statuses = nodes.stream().collect(Collectors.groupingBy(
+                            node -> Optional.ofNullable(node.getStatus()).orElse("PLANNED"), Collectors.counting()));
+                    return new EquipUpgradeRouteDTO(
                         route.getId(),
                         route.getName(),
                         route.getRootAssetId(),
                         resolveAssetName(assetMap.get(route.getRootAssetId())),
                         route.getRemark(),
+                        route.getPlanYear(),
+                        route.getAnnualBudget(),
+                        planned,
+                        recovery,
+                        statuses,
                         route.getUpdatedAt()
-                ))
+                    );
+                })
                 .toList();
     }
 
@@ -98,6 +113,8 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         route.setName(request.getName());
         route.setRootAssetId(root != null ? root.getId() : null);
         route.setRemark(request.getRemark());
+        route.setPlanYear(request.getPlanYear());
+        route.setAnnualBudget(request.getAnnualBudget());
         route.setIsDeleted(0);
         routeMapper.insert(route);
         return route.getId();
@@ -113,6 +130,8 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         route.setName(request.getName());
         route.setRootAssetId(request.getRootAssetId());
         route.setRemark(request.getRemark());
+        route.setPlanYear(request.getPlanYear());
+        route.setAnnualBudget(request.getAnnualBudget());
         routeMapper.update(route);
     }
 
@@ -129,17 +148,44 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
     @Transactional
     public Long addNode(Long routeId, EquipUpgradeNodeRequest request) {
         requireRoute(routeId);
-        requireAsset(request.getAssetId());
+        if (request.getAssetId() != null) {
+            requireAsset(request.getAssetId());
+        }
         EquipUpgradeNode node = new EquipUpgradeNode();
         node.setRouteId(routeId);
+        applyNodeRequest(node, request);
+        node.setIsDeleted(0);
+        nodeMapper.insert(node);
+        return node.getId();
+    }
+
+    @Override
+    @Transactional
+    public void updateNode(Long routeId, Long nodeId, EquipUpgradeNodeRequest request) {
+        requireRoute(routeId);
+        EquipUpgradeNode node = requireNodeInRoute(nodeId, routeId);
+        if (request.getAssetId() != null) {
+            requireAsset(request.getAssetId());
+        }
+        applyNodeRequest(node, request);
+        nodeMapper.update(node);
+    }
+
+    private void applyNodeRequest(EquipUpgradeNode node, EquipUpgradeNodeRequest request) {
+        if (request.getAssetId() == null && !StringUtils.hasText(request.getTargetName())) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "关联资产与目标物品名称至少填写一项");
+        }
         node.setAssetId(request.getAssetId());
         node.setLevel(Optional.ofNullable(request.getLevel()).orElse(1));
         node.setSort(Optional.ofNullable(request.getSort()).orElse(0));
         node.setLabel(request.getLabel());
         node.setRemark(request.getRemark());
-        node.setIsDeleted(0);
-        nodeMapper.insert(node);
-        return node.getId();
+        node.setTitle(request.getTitle());
+        node.setTargetName(request.getTargetName());
+        node.setPeriodLabel(request.getPeriodLabel());
+        node.setPlannedBudget(request.getPlannedBudget());
+        node.setExpectedRecovery(request.getExpectedRecovery());
+        node.setStatus(Optional.ofNullable(request.getStatus()).orElse("PLANNED"));
     }
 
     @Override
@@ -199,9 +245,11 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         List<EquipUpgradeNode> nodes = nodeMapper.findByRouteId(routeId);
         List<EquipUpgradeLink> links = linkMapper.findByRouteId(routeId);
         if (CollectionUtils.isEmpty(nodes)) {
-            return new UpgradeRouteGraphDTO(route.getId(), route.getName(), route.getRemark(), Collections.emptyList(), Collections.emptyList());
+            return new UpgradeRouteGraphDTO(route.getId(), route.getName(), route.getRemark(),
+                    route.getPlanYear(), route.getAnnualBudget(), Collections.emptyList(), Collections.emptyList());
         }
-        Map<Long, DeviceAsset> assetMap = loadAssets(nodes.stream().map(EquipUpgradeNode::getAssetId).collect(Collectors.toSet()));
+        Map<Long, DeviceAsset> assetMap = loadAssets(nodes.stream().map(EquipUpgradeNode::getAssetId)
+                .filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<Long, BigDecimal> investMap = buildInvestMap(assetMap.keySet());
         Map<Long, Sale> saleMap = buildSaleMap(assetMap.keySet());
         Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, n -> n));
@@ -220,7 +268,8 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                         link.getRemark()
                 ))
                 .toList();
-        return new UpgradeRouteGraphDTO(route.getId(), route.getName(), route.getRemark(), nodeDTOs, linkDTOs);
+        return new UpgradeRouteGraphDTO(route.getId(), route.getName(), route.getRemark(),
+                route.getPlanYear(), route.getAnnualBudget(), nodeDTOs, linkDTOs);
     }
 
     private EquipUpgradeRoute requireRoute(Long id) {
@@ -275,8 +324,16 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                                           Map<Long, DeviceAsset> assetMap,
                                           Map<Long, BigDecimal> investMap,
                                           Map<Long, Sale> saleMap) {
-        DeviceAsset asset = Optional.ofNullable(assetMap.get(node.getAssetId()))
-                .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND, "节点关联资产不存在"));
+        DeviceAsset asset = node.getAssetId() == null ? null : assetMap.get(node.getAssetId());
+        if (node.getAssetId() != null && asset == null) {
+            throw new BizException(ErrorCode.ASSET_NOT_FOUND, "节点关联资产不存在");
+        }
+        if (asset == null) {
+            return new UpgradeGraphNodeDTO(node.getId(), null, node.getTargetName(), null,
+                    BigDecimal.ZERO, BigDecimal.ZERO, false, null, null, node.getLevel(), node.getSort(),
+                    node.getLabel(), node.getRemark(), node.getTitle(), node.getTargetName(), node.getPeriodLabel(),
+                    node.getPlannedBudget(), node.getExpectedRecovery(), node.getStatus());
+        }
         BigDecimal purchasePrice = investMap.getOrDefault(asset.getId(), BigDecimal.ZERO);
         Sale sale = saleMap.get(asset.getId());
         BigDecimal salePrice = sale == null ? BigDecimal.ZERO : Optional.ofNullable(sale.getSalePrice()).orElse(BigDecimal.ZERO);
@@ -294,7 +351,13 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                 node.getLevel(),
                 node.getSort(),
                 node.getLabel(),
-                node.getRemark()
+                node.getRemark(),
+                node.getTitle(),
+                node.getTargetName(),
+                node.getPeriodLabel(),
+                node.getPlannedBudget(),
+                node.getExpectedRecovery(),
+                node.getStatus()
         );
     }
 
@@ -308,8 +371,13 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         if (fromNode == null || toNode == null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "升级关系关联的节点已失效");
         }
-        DeviceAsset fromAsset = Optional.ofNullable(assetMap.get(fromNode.getAssetId()))
-                .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND, "前代资产不存在"));
+        DeviceAsset fromAsset = assetMap.get(fromNode.getAssetId());
+        if (fromAsset == null || toNode.getAssetId() == null) {
+            // 纯计划节点没有实际成交数据，使用计划预算/回收值提供可解释的预估差额。
+            return Optional.ofNullable(toNode.getPlannedBudget()).orElse(BigDecimal.ZERO)
+                    .subtract(Optional.ofNullable(fromNode.getExpectedRecovery()).orElse(BigDecimal.ZERO))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
         BigDecimal targetInvest = investMap.getOrDefault(toNode.getAssetId(), BigDecimal.ZERO);
         Sale sale = saleMap.get(fromAsset.getId());
         boolean sold = sale != null || "已出售".equals(fromAsset.getStatus());

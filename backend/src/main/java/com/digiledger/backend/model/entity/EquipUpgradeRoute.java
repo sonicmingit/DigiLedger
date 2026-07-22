@@ -3,6 +3,7 @@ package com.digiledger.backend.model.entity;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 /**
  * 装备升级路线主表实体。
@@ -17,6 +18,8 @@ public class EquipUpgradeRoute {
     private Long rootAssetId;
     /** 备注 */
     private String remark;
+    private Integer planYear;
+    private BigDecimal annualBudget;
     /** 删除标记 */
     private Integer isDeleted;
     /** 创建时间 */

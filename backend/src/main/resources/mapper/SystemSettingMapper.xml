@@ -14,6 +14,9 @@
         <result column="storage_secret_key" property="storageSecretKey" />
         <result column="storage_base_url" property="storageBaseUrl" />
         <result column="default_cover_provider" property="defaultCoverProvider" />
+        <result column="date_format" property="dateFormat" />
+        <result column="auto_backup_enabled" property="autoBackupEnabled" />
+        <result column="auto_backup_time" property="autoBackupTime" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
@@ -31,6 +34,17 @@
         UPDATE sys_setting
         SET default_cover_provider = #{provider}
         WHERE id = #{id}
+    </update>
+
+    <insert id="insertPreferences">
+        INSERT INTO sys_setting (currency, date_format, auto_backup_enabled, auto_backup_time)
+        VALUES (#{currency}, #{dateFormat}, #{autoBackupEnabled}, #{autoBackupTime})
+    </insert>
+
+    <update id="updatePreferences">
+        UPDATE sys_setting SET currency = #{currency}, date_format = #{dateFormat},
+            auto_backup_enabled = #{autoBackupEnabled}, auto_backup_time = #{autoBackupTime},
+            updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
     </update>
 
 </mapper>

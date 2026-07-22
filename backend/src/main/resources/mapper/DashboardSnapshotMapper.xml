@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.DashboardSnapshotMapper">
+    <resultMap id="snapshotMap" type="com.digiledger.backend.model.entity.DashboardSnapshot">
+        <result column="snapshot_month" property="snapshotMonth"/>
+        <result column="total_value" property="totalValue"/>
+        <result column="avg_daily_cost" property="avgDailyCost"/>
+    </resultMap>
+    <insert id="upsert">
+        INSERT INTO dashboard_monthly_snapshot (snapshot_month, total_value, avg_daily_cost)
+        VALUES (#{snapshotMonth}, #{totalValue}, #{avgDailyCost})
+        ON DUPLICATE KEY UPDATE total_value = VALUES(total_value), avg_daily_cost = VALUES(avg_daily_cost),
+                                updated_at = CURRENT_TIMESTAMP
+    </insert>
+    <select id="findRecent" resultMap="snapshotMap">
+        SELECT snapshot_month, total_value, avg_daily_cost FROM dashboard_monthly_snapshot
+        ORDER BY snapshot_month DESC LIMIT 12
+    </select>
+</mapper>

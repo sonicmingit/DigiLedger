@@ -17,3 +17,13 @@ frontend/dist/
 
 uniapp/digiLeder/node_modules
 uniapp/digiLeder/dist/
+
+# Figma rebuild clients
+frontend-figma/node_modules/
+frontend-figma/dist/
+frontend-figma/.playwright-cli/
+frontend-figma/output/
+uniapp-figma/node_modules/
+uniapp-figma/dist/
+uniapp-figma/.playwright-cli/
+uniapp-figma/output/

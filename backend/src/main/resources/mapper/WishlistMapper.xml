@@ -10,6 +10,8 @@
         <result column="brand_id" property="brandId" />
         <result column="model" property="model" />
         <result column="expected_price" property="expectedPrice" />
+        <result column="current_price" property="currentPrice" />
+        <result column="last_price_at" property="lastPriceAt" />
         <result column="image_url" property="imageUrl" />
         <result column="status" property="status" />
         <result column="link" property="link" />
@@ -74,6 +76,16 @@
             status = '已购买',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
+    </update>
+
+    <update id="updateCurrentPrice">
+        UPDATE wishlist
+        SET current_price = #{price}, last_price_at = #{capturedAt}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="markPurchased">
+        UPDATE wishlist SET status = '已购买', updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
     </update>
 
     <select id="countByBrand" resultType="long">

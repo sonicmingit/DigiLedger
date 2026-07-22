@@ -1,7 +1,9 @@
 package com.digiledger.backend.model.dto.upgrade;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Pattern;
+import java.math.BigDecimal;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -9,7 +11,6 @@ import jakarta.validation.constraints.Size;
  */
 public class EquipUpgradeNodeRequest {
 
-    @NotNull(message = "关联资产必填")
     private Long assetId;
 
     @Min(value = 1, message = "层级至少为1")
@@ -22,6 +23,13 @@ public class EquipUpgradeNodeRequest {
 
     @Size(max = 2000, message = "备注长度需在2000字以内")
     private String remark;
+    @Size(max = 200) private String title;
+    @Size(max = 200) private String targetName;
+    @Size(max = 50) private String periodLabel;
+    @DecimalMin("0.00") private BigDecimal plannedBudget;
+    @DecimalMin("0.00") private BigDecimal expectedRecovery;
+    @Pattern(regexp = "PLANNED|READY|EXECUTING|COMPLETED|CANCELLED")
+    private String status = "PLANNED";
 
     public Long getAssetId() {
         return assetId;
@@ -62,4 +70,16 @@ public class EquipUpgradeNodeRequest {
     public void setRemark(String remark) {
         this.remark = remark;
     }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getTargetName() { return targetName; }
+    public void setTargetName(String targetName) { this.targetName = targetName; }
+    public String getPeriodLabel() { return periodLabel; }
+    public void setPeriodLabel(String periodLabel) { this.periodLabel = periodLabel; }
+    public BigDecimal getPlannedBudget() { return plannedBudget; }
+    public void setPlannedBudget(BigDecimal plannedBudget) { this.plannedBudget = plannedBudget; }
+    public BigDecimal getExpectedRecovery() { return expectedRecovery; }
+    public void setExpectedRecovery(BigDecimal expectedRecovery) { this.expectedRecovery = expectedRecovery; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

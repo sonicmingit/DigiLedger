@@ -18,6 +18,7 @@ public interface EquipUpgradeService {
     void deleteRoute(Long id);
 
     Long addNode(Long routeId, EquipUpgradeNodeRequest request);
+    void updateNode(Long routeId, Long nodeId, EquipUpgradeNodeRequest request);
 
     void deleteNode(Long routeId, Long nodeId);
 

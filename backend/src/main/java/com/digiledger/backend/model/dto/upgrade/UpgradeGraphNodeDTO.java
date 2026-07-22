@@ -10,7 +10,7 @@ public record UpgradeGraphNodeDTO(
         Long nodeId,
         Long assetId,
         String name,
-        String status,
+        String assetStatus,
         BigDecimal purchasePrice,
         BigDecimal salePrice,
         boolean sold,
@@ -19,6 +19,12 @@ public record UpgradeGraphNodeDTO(
         Integer level,
         Integer sort,
         String label,
-        String remark
+        String remark,
+        String title,
+        String targetName,
+        String periodLabel,
+        BigDecimal plannedBudget,
+        BigDecimal expectedRecovery,
+        String status
 ) {
 }

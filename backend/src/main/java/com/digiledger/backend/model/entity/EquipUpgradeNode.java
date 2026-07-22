@@ -3,6 +3,7 @@ package com.digiledger.backend.model.entity;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 /**
  * 装备升级节点实体。
@@ -23,6 +24,12 @@ public class EquipUpgradeNode {
     private String label;
     /** 备注 */
     private String remark;
+    private String title;
+    private String targetName;
+    private String periodLabel;
+    private BigDecimal plannedBudget;
+    private BigDecimal expectedRecovery;
+    private String status;
     /** 删除标记 */
     private Integer isDeleted;
     /** 创建时间 */
