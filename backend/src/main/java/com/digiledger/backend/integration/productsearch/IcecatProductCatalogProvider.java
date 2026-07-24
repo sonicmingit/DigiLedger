@@ -1,0 +1,3 @@
+package com.digiledger.backend.integration.productsearch;
+import com.digiledger.backend.integration.externalapi.service.ExternalApiConfigService; import org.springframework.core.annotation.Order; import org.springframework.stereotype.Component;
+@Component @Order(5) public class IcecatProductCatalogProvider extends CatalogPlaceholderProvider { public IcecatProductCatalogProvider(ExternalApiConfigService c){super(c);} public String getName(){return "ICECAT_PRODUCT_CATALOG";} public String getDisplayName(){return "Icecat 产品目录";} public String getDescription(){return "数码产品官方规格与产品图目录；请以“品牌 + 型号”搜索。";} }
