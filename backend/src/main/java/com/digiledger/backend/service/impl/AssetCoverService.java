@@ -5,6 +5,7 @@ import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.mapper.AssetMapper;
 import com.digiledger.backend.model.dto.attachment.AttachmentResponse;
 import com.digiledger.backend.model.dto.asset.CoverApplyResponse;
+import com.digiledger.backend.integration.removebg.BackgroundRemovalService;
 import com.digiledger.backend.service.AttachmentService;
 import com.digiledger.backend.service.FileService;
 import com.digiledger.backend.util.StoragePathHelper;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -30,6 +32,9 @@ import java.util.Map;
  */
 @Service
 public class AssetCoverService {
+
+    private static final int MAX_REMOTE_IMAGE_REDIRECTS = 3;
+    private static final int MAX_REMOTE_IMAGE_BYTES = 15 * 1024 * 1024;
 
     private final AssetMapper assetMapper;
     private final AttachmentService attachmentService;
@@ -89,28 +94,79 @@ public class AssetCoverService {
         }
     }
 
-    private MultipartFile downloadRemoteImage(String sourceUrl) {
+    public MultipartFile downloadRemoteImage(String sourceUrl) {
         try {
             URL url = new URL(sourceUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(6_000);
-            connection.setReadTimeout(10_000);
-            try (InputStream inputStream = connection.getInputStream();
-                 ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                byte[] chunk = new byte[8192];
-                int read;
-                while ((read = inputStream.read(chunk)) != -1) {
-                    buffer.write(chunk, 0, read);
+            for (int redirect = 0; redirect <= MAX_REMOTE_IMAGE_REDIRECTS; redirect++) {
+                validateRemoteImageUrl(url);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(6_000);
+                connection.setReadTimeout(10_000);
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestProperty("User-Agent", "DigiLedger/1.0");
+                try {
+                    int status = connection.getResponseCode();
+                    if (status >= 300 && status < 400) {
+                        String location = connection.getHeaderField("Location");
+                        if (!StringUtils.hasText(location)) {
+                            throw new BizException(ErrorCode.INTERNAL_ERROR, "远程图片跳转地址无效");
+                        }
+                        url = new URL(url, location);
+                        continue;
+                    }
+                    if (status < 200 || status >= 300) {
+                        throw new BizException(ErrorCode.INTERNAL_ERROR, "下载远程封面失败（HTTP " + status + "）");
+                    }
+                    String contentType = connection.getContentType();
+                    if (StringUtils.hasText(contentType) && !contentType.toLowerCase().startsWith("image/")) {
+                        throw new BizException(ErrorCode.VALIDATION_ERROR, "远程地址不是图片");
+                    }
+                    if (connection.getContentLengthLong() > MAX_REMOTE_IMAGE_BYTES) {
+                        throw new BizException(ErrorCode.VALIDATION_ERROR, "图片不能超过 15MB");
+                    }
+                    try (InputStream inputStream = connection.getInputStream();
+                         ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                        byte[] chunk = new byte[8192];
+                        int read;
+                        while ((read = inputStream.read(chunk)) != -1) {
+                            buffer.write(chunk, 0, read);
+                            if (buffer.size() > MAX_REMOTE_IMAGE_BYTES) {
+                                throw new BizException(ErrorCode.VALIDATION_ERROR, "图片不能超过 15MB");
+                            }
+                        }
+                        if (!StringUtils.hasText(contentType)) {
+                            contentType = "image/jpeg";
+                        }
+                        String fileName = extractFileName(url);
+                        return new InMemoryMultipartFile("file", fileName, contentType, buffer.toByteArray());
+                    }
+                } finally {
+                    connection.disconnect();
                 }
-                String contentType = connection.getContentType();
-                if (!StringUtils.hasText(contentType)) {
-                    contentType = "image/jpeg";
-                }
-                String fileName = extractFileName(url);
-                return new InMemoryMultipartFile("file", fileName, contentType, buffer.toByteArray());
             }
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "远程图片跳转次数过多");
+        } catch (BizException ex) {
+            throw ex;
         } catch (Exception ex) {
-            throw new BizException(ErrorCode.INTERNAL_ERROR, "下载远程封面失败: " + ex.getMessage());
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "下载远程封面失败");
+        }
+    }
+
+    private void validateRemoteImageUrl(URL url) throws Exception {
+        if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "仅支持 HTTP 或 HTTPS 图片地址");
+        }
+        validatePublicHost(url);
+    }
+
+    private void validatePublicHost(URL url) throws Exception {
+        if (!StringUtils.hasText(url.getHost())) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "图片地址无效");
+        }
+        for (InetAddress address : InetAddress.getAllByName(url.getHost())) {
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress() || address.isSiteLocalAddress()) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "不支持内网图片地址");
+            }
         }
     }
 

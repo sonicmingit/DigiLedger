@@ -3,14 +3,14 @@ package com.digiledger.backend.service.impl;
 import com.digiledger.backend.mapper.AssetMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.PurchaseMapper;
+import com.digiledger.backend.integration.cover.ImageSearchProvider;
+import com.digiledger.backend.integration.cover.ProductLinkResolver;
 import com.digiledger.backend.model.cover.CoverCandidate;
 import com.digiledger.backend.model.cover.ProductInfo;
 import com.digiledger.backend.model.dto.asset.CoverSuggestionDTO;
 import com.digiledger.backend.model.entity.DeviceAsset;
 import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.Purchase;
-import com.digiledger.backend.service.cover.ImageSearchProvider;
-import com.digiledger.backend.service.cover.ProductLinkResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,17 +40,20 @@ public class CoverSuggestionService {
     private final DictCategoryMapper dictCategoryMapper;
     private final List<ProductLinkResolver> productLinkResolvers;
     private final List<ImageSearchProvider> imageSearchProviders;
+    private final ImageSearchPreferenceService imageSearchPreferenceService;
 
     public CoverSuggestionService(AssetMapper assetMapper,
                                   PurchaseMapper purchaseMapper,
                                   DictCategoryMapper dictCategoryMapper,
                                   List<ProductLinkResolver> productLinkResolvers,
-                                  List<ImageSearchProvider> imageSearchProviders) {
+                                  List<ImageSearchProvider> imageSearchProviders,
+                                  ImageSearchPreferenceService imageSearchPreferenceService) {
         this.assetMapper = assetMapper;
         this.purchaseMapper = purchaseMapper;
         this.dictCategoryMapper = dictCategoryMapper;
         this.productLinkResolvers = productLinkResolvers == null ? List.of() : productLinkResolvers;
         this.imageSearchProviders = imageSearchProviders == null ? List.of() : imageSearchProviders;
+        this.imageSearchPreferenceService = imageSearchPreferenceService;
     }
 
     public List<CoverCandidate> getCoverCandidatesForAsset(Long assetId, String manualQuery, String providerName) {
@@ -103,7 +106,8 @@ public class CoverSuggestionService {
             return List.of();
         }
         if (!StringUtils.hasText(providerName)) {
-            return imageSearchProviders;
+            Set<String> enabled = new LinkedHashSet<>(imageSearchPreferenceService.getEnabledProviders());
+            return imageSearchProviders.stream().filter(provider -> enabled.contains(provider.getName())).toList();
         }
         String target = providerName.trim();
         return imageSearchProviders.stream()

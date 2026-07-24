@@ -27,3 +27,29 @@ export const http = {
   patch: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) => unwrap<T>(client.patch(url, data, config)),
   delete: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(client.delete(url, config))
 }
+
+/** 用于图片等非 ApiEnvelope 二进制响应，同时保留统一的错误提示。 */
+export async function postBlob(url: string, data?: unknown): Promise<Blob> {
+  try {
+    const response = await client.post<ArrayBuffer>(url, data, { responseType: 'arraybuffer' })
+    const contentType = String(response.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    if (!contentType.startsWith('image/')) {
+      const message = new TextDecoder().decode(response.data)
+      throw new ApiError(message || '服务未返回图片', response.status)
+    }
+    return new Blob([response.data], { type: contentType })
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    const axiosError = error as AxiosError<Blob>
+    let message = axiosError.message || '网络连接失败'
+    if (axiosError.response?.data instanceof Blob) {
+      try {
+        const body = JSON.parse(await axiosError.response.data.text()) as { msg?: string }
+        message = body.msg || message
+      } catch {
+        // 非 JSON 错误体时保留网络错误描述。
+      }
+    }
+    throw new ApiError(message, axiosError.response?.status)
+  }
+}

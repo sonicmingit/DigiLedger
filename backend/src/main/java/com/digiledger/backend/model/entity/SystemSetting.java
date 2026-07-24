@@ -26,6 +26,8 @@ public class SystemSetting {
     private String storageBaseUrl;
     /** 默认智能找图服务 */
     private String defaultCoverProvider;
+    /** 允许在物品封面搜图中使用的外接服务编码（JSON 数组） */
+    private String imageSearchProviderCodes;
     private String dateFormat;
     private Boolean autoBackupEnabled;
     private String autoBackupTime;

@@ -14,6 +14,7 @@
         <result column="storage_secret_key" property="storageSecretKey" />
         <result column="storage_base_url" property="storageBaseUrl" />
         <result column="default_cover_provider" property="defaultCoverProvider" />
+        <result column="image_search_provider_codes" property="imageSearchProviderCodes" />
         <result column="date_format" property="dateFormat" />
         <result column="auto_backup_enabled" property="autoBackupEnabled" />
         <result column="auto_backup_time" property="autoBackupTime" />
@@ -33,6 +34,17 @@
     <update id="updateDefaultProvider">
         UPDATE sys_setting
         SET default_cover_provider = #{provider}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insertImageSearchProviders">
+        INSERT INTO sys_setting (image_search_provider_codes)
+        VALUES (CAST(#{providers} AS JSON))
+    </insert>
+
+    <update id="updateImageSearchProviders">
+        UPDATE sys_setting
+        SET image_search_provider_codes = CAST(#{providers} AS JSON)
         WHERE id = #{id}
     </update>
 

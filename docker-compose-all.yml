@@ -23,8 +23,6 @@ services:
       MYSQL_DATABASE: digiledger
     volumes:
       - db_data:/var/lib/mysql
-      - ./backend/src/main/resources/sql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
-      - ./backend/src/main/resources/sql/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s

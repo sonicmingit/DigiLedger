@@ -589,6 +589,40 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Preferences' } } } }
       responses:
         '200': { description: 更新成功 }
+  /api/external-api-configs:
+    get:
+      summary: 获取外接 API 配置列表（凭据脱敏）
+      responses:
+        '200': { description: 配置列表, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseExternalApiConfigs' } } } }
+  /api/external-api-configs/{apiCode}:
+    get:
+      summary: 获取单个外接 API 配置（凭据脱敏）
+      parameters: [{ name: apiCode, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: 配置详情, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseExternalApiConfig' } } } }
+    put:
+      summary: 保存外接 API 配置
+      parameters: [{ name: apiCode, in: path, required: true, schema: { type: string }, example: MT_PHOTOS }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ExternalApiConfigRequest' } } } }
+      responses:
+        '200': { description: 保存后的脱敏配置, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseExternalApiConfig' } } } }
+  /api/external-api-configs/MT_PHOTOS/test-search:
+    post:
+      summary: 测试 MT Photos 搜索连接
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MtPhotosSearchRequest' } } } }
+      responses:
+        '200': { description: 搜索结果, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseMtPhotosSearch' } } } }
+  /api/external-api-configs/MT_PHOTOS/thumbnail/{fileId}:
+    get:
+      summary: 获取 MT Photos 文件的小缩略图（后端代理）
+      parameters:
+        - { name: fileId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: h220 缩略图二进制流；浏览器可直接作为 img src 使用
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
   /api/data/export:
     get:
       summary: 导出资产数据；内容仍包装在统一 ApiResponse.data 中
@@ -704,6 +738,69 @@ components:
         description:
           type: string
           nullable: true
+    ExternalApiConfigRequest:
+      type: object
+      required: [displayName, baseUrl]
+      properties:
+        displayName: { type: string }
+        baseUrl: { type: string, format: uri }
+        authType: { type: string, example: API_KEY }
+        apiKey: { type: string, writeOnly: true, description: 留空时保留已保存密钥 }
+        configJson: { type: string, nullable: true }
+        timeoutMs: { type: integer, default: 15000 }
+        enabled: { type: boolean, default: true }
+    ExternalApiConfig:
+      type: object
+      properties:
+        apiCode: { type: string, example: MT_PHOTOS }
+        displayName: { type: string }
+        baseUrl: { type: string, format: uri }
+        authType: { type: string }
+        apiKeyConfigured: { type: boolean }
+        maskedApiKey: { type: string, nullable: true }
+        configJson: { type: string, nullable: true }
+        timeoutMs: { type: integer }
+        enabled: { type: boolean }
+    MtPhotosSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+        mode: { type: string, enum: [KEYWORD, CLIP], default: KEYWORD }
+        page: { type: integer, minimum: 1, default: 1 }
+    MtPhotosSearchResponse:
+      type: object
+      properties:
+        mode: { type: string, enum: [KEYWORD, CLIP] }
+        totalCount: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer, example: 10 }
+        totalPages: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              fileName: { type: string, nullable: true }
+              capturedAt: { type: string, nullable: true }
+              fileType: { type: string, nullable: true }
+              thumbnailUrl: { type: string, description: DigiLedger 缩略图代理地址 }
+    ApiResponseExternalApiConfig:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data: { $ref: '#/components/schemas/ExternalApiConfig' }
+    ApiResponseExternalApiConfigs:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/ExternalApiConfig' } }
+    ApiResponseMtPhotosSearch:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponseVoid'
+      properties:
+        data: { $ref: '#/components/schemas/MtPhotosSearchResponse' }
     UpdateDefaultImageSearchProviderRequest:
       type: object
       properties:

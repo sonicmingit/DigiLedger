@@ -18,7 +18,7 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 ```
 ├── backend/                 # Spring Boot 后端工程
 │   ├── src/main/java        # 核心代码（控制器、服务、Mapper、实体）
-│   ├── src/main/resources   # MyBatis XML、配置文件、schema & seed SQL
+│   ├── src/main/resources   # MyBatis XML、配置文件、Flyway 迁移脚本
 │   ├── src/test/java        # 单元测试样例
 │   └── Dockerfile           # 后端容器镜像构建文件
 ├── frontend/                # Vue3 前端项目
@@ -36,7 +36,7 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 ### 本地开发
 
 1. 安装 JDK 17 与 Maven。
-2. 启动 MySQL 8，并导入 `backend/src/main/resources/sql/schema.sql` 与 `seed.sql`。
+2. 启动 MySQL 8；后端启动时会自动执行 Flyway 数据库迁移，初始化基线为 `backend/src/main/resources/db/migration/V1__init.sql`。
 3. 修改 `backend/src/main/resources/application.yml` 中的数据源配置或通过环境变量覆盖。
 4. 在 `backend/` 目录运行：
 
@@ -45,6 +45,12 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
    ```
 
 5. 默认监听端口为 `http://localhost:8080`，REST 接口返回统一结构 `{ code, data, msg }`，错误码对齐设计文档 5.8。
+
+后续任何数据库结构或初始数据调整，都必须新增版本化脚本，例如 `backend/src/main/resources/db/migration/V2__add_example_table.sql`。已执行的迁移不得修改或删除。
+
+### 外接服务配置
+
+MT Photos、Bing 图片搜索、Google CSE 与 remove.bg 的地址、密钥和超时均保存在 `external_api_config` 表，不再从 `application.yml` 读取。首次启动会执行 `V2__seed_external_api_configs.sql` 创建默认禁用记录；在“系统设置 → 外接 API”中保存凭据并启用后，可直接进行搜索或配置测试。
 
 ### 单元测试
 
@@ -87,7 +93,7 @@ npm run preview
 
 仓库根目录提供 `docker-compose.yml`，包含以下服务：
 
-- `mysql`：MySQL 8.3，自动挂载 schema 与种子数据。
+- `mysql`：MySQL 8.3；数据库结构由后端启动时的 Flyway 自动迁移。
 - `minio`：对象存储，端口 `9000/9001`，用于物品封面及附件上传。
 - `backend`：Spring Boot 应用，读取环境变量连接数据库。
 - `frontend`：Vue 编译产物，通过 `npx serve` 输出静态页面。

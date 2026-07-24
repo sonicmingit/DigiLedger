@@ -5,5 +5,5 @@ import java.util.List;
 /**
  * 智能找图服务列表响应
  */
-public record ImageSearchProvidersResponse(List<ImageSearchProviderDTO> providers, String defaultProvider) {
+public record ImageSearchProvidersResponse(List<ImageSearchProviderDTO> providers, List<String> enabledProviders, String defaultProvider) {
 }

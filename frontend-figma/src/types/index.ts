@@ -66,3 +66,26 @@ export interface TagNode { id: number; name: string; parentId: number | null; co
 export interface BrandItem { id: number; name: string; alias?: string; initial?: string; sort?: number }
 export interface PlatformItem { id: number; name: string; link?: string; sort: number }
 export interface Preferences { currency: string; dateFormat: string; autoBackupEnabled: boolean; autoBackupTime: string }
+export interface ExternalApiConfig {
+  apiCode: string; displayName: string; baseUrl: string; authType: string; apiKeyConfigured: boolean
+  maskedApiKey?: string | null; configJson?: string | null; timeoutMs: number; enabled: boolean
+}
+export interface MtPhotosSearchResponse {
+  mode: 'KEYWORD' | 'CLIP'; totalCount: number; page: number; pageSize: number; totalPages: number
+  items: MtPhotosSearchItem[]
+}
+export interface MtPhotosSearchItem {
+  id: number; fileName?: string | null; capturedAt?: string | null; fileType?: string | null; thumbnailUrl: string
+}
+export interface ExternalApiTestItem {
+  thumbnailUrl?: string | null; originalUrl?: string | null; title?: string | null; sourceUrl?: string | null
+}
+export interface ExternalApiTestResponse {
+  apiCode: string; success: boolean; message: string; resultCount: number; items: ExternalApiTestItem[]
+}
+export interface ImageSearchProvider {
+  name: string; displayName: string; description: string; available: boolean
+}
+export interface ImageSearchProvidersResponse {
+  providers: ImageSearchProvider[]; enabledProviders: string[]; defaultProvider?: string | null
+}

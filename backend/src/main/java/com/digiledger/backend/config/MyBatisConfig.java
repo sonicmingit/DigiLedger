@@ -11,10 +11,13 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import javax.sql.DataSource;
 
 @Configuration
-@MapperScan("com.digiledger.backend.mapper")
+@MapperScan({
+        "com.digiledger.backend.mapper",
+        "com.digiledger.backend.integration.externalapi.persistence"
+})
 public class MyBatisConfig {
 
-    private static final String MAPPER_LOCATION_PATTERN = "classpath:/mapper/*.xml";
+    private static final String MAPPER_LOCATION_PATTERN = "classpath*:mapper/**/*.xml";
 
     @Bean
     public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {

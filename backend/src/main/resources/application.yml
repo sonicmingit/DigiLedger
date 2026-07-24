@@ -2,6 +2,13 @@ server:
   port: ${DL_SERVER_PORT:8080}
 
 spring:
+  flyway:
+    enabled: ${DL_FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    # 兼容已部署但尚未纳入 Flyway 管理的数据库，避免重建已有数据。
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: pre-flyway-schema
   datasource:
     url: jdbc:mysql://${DL_DB_HOST:mysql}:${DL_DB_PORT:3306}/${DL_DB_NAME:digiledger}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8
     username: ${DL_DB_USER:root}
@@ -15,7 +22,7 @@ spring:
       max-request-size: 50MB
 
 mybatis:
-  mapper-locations: classpath:/mapper/*.xml
+  mapper-locations: classpath*:mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
 
@@ -39,26 +46,3 @@ app:
     access-key: ${DL_STORAGE_ACCESS_KEY:minioadmin}
     secret-key: ${DL_STORAGE_SECRET_KEY:minioadmin}
     base-url: ${DL_STORAGE_BASE_URL:http://localhost:9000}
-  remove-bg:
-    api-key: ${DL_REMOVE_BG_API_KEY:}
-    endpoint: ${DL_REMOVE_BG_ENDPOINT:https://api.remove.bg/v1.0/removebg}
-    timeout-ms: ${DL_REMOVE_BG_TIMEOUT_MS:120000}
-    external:
-      bing:
-        image-search:
-          api-key: ${DL_BING_IMAGE_API_KEY:}
-          endpoint: ${DL_BING_IMAGE_ENDPOINT:https://api.bing.microsoft.com/v7.0/images/search}
-          timeout-ms: ${DL_BING_IMAGE_TIMEOUT_MS:10000}
-          market: ${DL_BING_IMAGE_MARKET:zh-CN}
-          safe-search: ${DL_BING_IMAGE_SAFE_SEARCH:Moderate}
-          default-count: ${DL_BING_IMAGE_DEFAULT_COUNT:12}
-          max-count: ${DL_BING_IMAGE_MAX_COUNT:20}
-      google:
-        custom-search:
-          api-key: ${DL_GOOGLE_CSE_API_KEY:}
-          cse-id: ${DL_GOOGLE_CSE_ID:}
-          endpoint: ${DL_GOOGLE_CSE_ENDPOINT:https://www.googleapis.com/customsearch/v1}
-          enabled: ${DL_GOOGLE_CSE_ENABLED:true}
-          max-results: ${DL_GOOGLE_CSE_MAX_RESULTS:8}
-          timeout-ms: ${DL_GOOGLE_CSE_TIMEOUT_MS:10000}
-          safe: ${DL_GOOGLE_CSE_SAFE:off}

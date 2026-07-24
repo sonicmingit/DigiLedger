@@ -1,5 +1,5 @@
 import { http } from './http'
-import type { BrandItem, CategoryNode, PlatformItem, Preferences, TagNode } from '@/types'
+import type { BrandItem, CategoryNode, ExternalApiConfig, ExternalApiTestResponse, ImageSearchProvidersResponse, MtPhotosSearchResponse, PlatformItem, Preferences, TagNode } from '@/types'
 export const fetchCategories = () => http.get<CategoryNode[]>('/dict/categories/tree')
 export const createCategory = (payload: { name: string; parentId?: number | null; sort?: number }) => http.post<number>('/dict/categories', payload)
 export const updateCategory = (id: number, payload: { name: string; parentId?: number | null; sort?: number }) => http.put<void>(`/dict/categories/${id}`, payload)
@@ -19,3 +19,13 @@ export const deletePlatform = (id: number) => http.delete<void>(`/dict/platforms
 export const fetchPreferences = () => http.get<Preferences>('/settings/preferences')
 export const savePreferences = (payload: Preferences) => http.put<void>('/settings/preferences', payload)
 export const exportUrl = (format: 'json' | 'csv') => `${import.meta.env.VITE_API_BASE || '/api'}/data/export?format=${format}`
+export const fetchExternalApiConfigs = () => http.get<ExternalApiConfig[]>('/external-api-configs')
+export const saveExternalApiConfig = (apiCode: string, payload: {
+  displayName: string; baseUrl: string; authType?: string; apiKey?: string; configJson?: string; timeoutMs?: number; enabled?: boolean
+}) => http.put<ExternalApiConfig>(`/external-api-configs/${apiCode}`, payload)
+export const testMtPhotosSearch = (payload: { query: string; mode: 'KEYWORD' | 'CLIP'; page?: number }) =>
+  http.post<MtPhotosSearchResponse>('/external-api-configs/MT_PHOTOS/test-search', payload)
+export const testExternalApiConfig = (apiCode: string, payload?: { query?: string }) =>
+  http.post<ExternalApiTestResponse>(`/external-api-configs/${apiCode}/test`, payload || {})
+export const fetchImageSearchProviders = () => http.get<ImageSearchProvidersResponse>('/image-search/providers')
+export const saveImageSearchProviders = (providers: string[]) => http.put<void>('/image-search/providers', { providers })

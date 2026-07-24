@@ -27,3 +27,6 @@ uniapp-figma/node_modules/
 uniapp-figma/dist/
 uniapp-figma/.playwright-cli/
 uniapp-figma/output/
+
+# API配置
+/backend/api_configs.sql

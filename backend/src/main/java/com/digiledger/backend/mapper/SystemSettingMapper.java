@@ -12,6 +12,8 @@ public interface SystemSettingMapper {
     void insertDefaultProvider(@Param("provider") String provider);
 
     void updateDefaultProvider(@Param("id") Long id, @Param("provider") String provider);
+    void insertImageSearchProviders(@Param("providers") String providers);
+    void updateImageSearchProviders(@Param("id") Long id, @Param("providers") String providers);
     void insertPreferences(SystemSetting setting);
     void updatePreferences(SystemSetting setting);
 }

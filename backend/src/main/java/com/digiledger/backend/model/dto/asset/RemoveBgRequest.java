@@ -1,13 +1,10 @@
 package com.digiledger.backend.model.dto.asset;
 
-import jakarta.validation.constraints.NotNull;
-
 /**
  * 抠图请求参数
  */
 public class RemoveBgRequest {
 
-    @NotNull(message = "资产编号不能为空")
     private Long assetId;
 
     private Long attachmentId;

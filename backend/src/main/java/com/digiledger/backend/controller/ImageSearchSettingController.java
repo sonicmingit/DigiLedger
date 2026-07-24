@@ -4,6 +4,7 @@ import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.model.dto.setting.ImageSearchProviderDTO;
 import com.digiledger.backend.model.dto.setting.ImageSearchProvidersResponse;
 import com.digiledger.backend.model.dto.setting.UpdateDefaultImageSearchProviderRequest;
+import com.digiledger.backend.model.dto.setting.UpdateImageSearchProvidersRequest;
 import com.digiledger.backend.service.impl.ImageSearchPreferenceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -30,7 +31,13 @@ public class ImageSearchSettingController {
     public ApiResponse<ImageSearchProvidersResponse> providers() {
         List<ImageSearchProviderDTO> providers = preferenceService.listProviders();
         String defaultProvider = preferenceService.getDefaultProvider().orElse(null);
-        return ApiResponse.success(new ImageSearchProvidersResponse(providers, defaultProvider));
+        return ApiResponse.success(new ImageSearchProvidersResponse(providers, preferenceService.getEnabledProviders(), defaultProvider));
+    }
+
+    @PutMapping("/providers")
+    public ApiResponse<Void> updateProviders(@RequestBody(required = false) UpdateImageSearchProvidersRequest request) {
+        preferenceService.updateEnabledProviders(request == null ? List.of() : request.providers());
+        return ApiResponse.success();
     }
 
     @PutMapping("/providers/default")
