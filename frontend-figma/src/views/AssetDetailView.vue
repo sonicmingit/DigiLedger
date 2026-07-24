@@ -2,6 +2,7 @@
   <div class="page detail-page">
     <PageHeader title="物品详情" subtitle="查看物品档案、使用成本与完整交易记录。">
       <button class="pill-button dark-button" :disabled="!asset" @click="edit">编辑物品</button>
+      <button class="pill-button sale-wizard-button" :disabled="!canStartSale" :title="canStartSale ? '登记出售交易' : '物品已出售，不能再次创建出售记录'" @click="openCreateSale">出售向导</button>
       <PrimaryButton label="变更状态" :disabled="!asset" @click="statusDialog = true" />
     </PageHeader>
 
@@ -94,7 +95,7 @@
         <section class="card records-card sale-records">
           <div class="card-heading">
             <div><h3>出售记录</h3><span>按出售时间正序排列</span></div>
-            <button class="secondary-button" @click="openCreateSale">＋ 登记出售</button>
+            <button class="secondary-button" :disabled="!canStartSale" :title="canStartSale ? '登记出售交易' : '物品已出售，不能再次创建出售记录'" @click="openCreateSale">＋ 出售向导</button>
           </div>
           <div v-if="saleRecords.length" class="table-scroll">
             <table>
@@ -124,7 +125,7 @@
 
     <el-dialog v-model="statusDialog" title="变更物品状态" width="430px">
       <el-form label-position="top" class="dialog-form"><el-form-item label="新状态"><el-select v-model="nextStatus"><el-option v-for="s in statuses" :key="s" :label="s" :value="s" /></el-select></el-form-item></el-form>
-      <template #footer><button class="secondary-button" @click="statusDialog=false">取消</button><PrimaryButton label="确认变更" :loading="saving" @click="saveStatus" /></template>
+      <template #footer><div class="dialog-footer-actions"><button class="secondary-button" @click="statusDialog=false">取消</button><PrimaryButton label="确认变更" :loading="saving" @click="saveStatus" /></div></template>
     </el-dialog>
 
     <el-dialog v-model="purchaseDialog" :title="purchase.id ? '编辑购买记录' : '添加购买记录'" width="720px">
@@ -132,20 +133,20 @@
         <div class="dialog-grid">
           <el-form-item label="类型"><el-select v-model="purchase.type"><el-option label="主商品" value="PRIMARY" /><el-option label="配件" value="ACCESSORY" /><el-option label="服务" value="SERVICE" /></el-select></el-form-item>
           <el-form-item label="名称"><el-input v-model="purchase.name" :placeholder="purchase.type === 'PRIMARY' ? asset?.name : '配件或服务名称'" /></el-form-item>
-          <el-form-item label="平台"><el-select v-model="purchase.platformId" clearable><el-option v-for="p in platforms" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item>
+          <el-form-item label="平台"><el-select v-model="purchase.platformId" clearable placeholder="请选择平台"><el-option v-for="p in platforms" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item>
           <el-form-item label="卖家"><el-input v-model="purchase.seller" /></el-form-item>
           <el-form-item label="金额"><el-input-number v-model="purchase.price" :min="0" :precision="2" /></el-form-item>
           <el-form-item label="运费"><el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" /></el-form-item>
           <el-form-item label="数量"><el-input-number v-model="purchase.quantity" :min="1" :precision="0" /></el-form-item>
-          <el-form-item label="购买日期"><el-date-picker v-model="purchase.purchaseDate" value-format="YYYY-MM-DD" /></el-form-item>
+          <el-form-item label="购买日期"><el-date-picker v-model="purchase.purchaseDate" value-format="YYYY-MM-DD" placeholder="请选择购买日期" :shortcuts="dateShortcuts" /></el-form-item>
           <el-form-item label="质保月数"><el-input-number v-model="purchase.warrantyMonths" :min="0" :precision="0" /></el-form-item>
-          <el-form-item label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable /></el-form-item>
+          <el-form-item label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable placeholder="请选择质保到期日" :shortcuts="dateShortcuts" /></el-form-item>
         </div>
         <el-form-item label="商品链接"><el-input v-model="purchase.productLink" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="purchase.notes" type="textarea" :rows="2" /></el-form-item>
         <el-form-item label="附件">
           <div class="attachment-editor">
-            <el-upload :show-file-list="false" :http-request="uploadPurchaseAttachment"><span class="secondary-button upload-trigger">上传附件</span></el-upload>
+            <AttachmentDropzone compact @files="uploadPurchaseAttachments" />
             <span v-for="(item, index) in purchase.attachments || []" :key="`${item}-${index}`" class="attachment-chip">
               附件 {{ index + 1 }}
               <button type="button" @click="removeAttachment(purchase, item)">×</button>
@@ -153,18 +154,18 @@
           </div>
         </el-form-item>
       </el-form>
-      <template #footer><button class="secondary-button" @click="purchaseDialog=false">取消</button><PrimaryButton label="保存记录" :loading="saving" @click="savePurchase" /></template>
+      <template #footer><div class="dialog-footer-actions"><button class="secondary-button" @click="purchaseDialog=false">取消</button><PrimaryButton label="保存记录" :loading="saving" @click="savePurchase" /></div></template>
     </el-dialog>
 
-    <el-dialog v-model="sellDialog" :title="sale.id ? '编辑出售记录' : '登记出售'" width="720px">
+    <el-dialog v-model="sellDialog" :title="sale.id ? '编辑出售记录' : '出售向导'" width="720px">
       <el-form label-position="top" class="dialog-form">
         <div class="dialog-grid">
           <el-form-item label="出售范围"><el-select v-model="sale.saleScope"><el-option label="主商品" value="ASSET" /><el-option label="配件" value="ACCESSORY" /></el-select></el-form-item>
           <el-form-item v-if="sale.saleScope === 'ACCESSORY'" label="关联配件"><el-select v-model="sale.purchaseId" clearable><el-option v-for="p in accessoryPurchases" :key="p.id" :label="recordName(p)" :value="p.id" /></el-select></el-form-item>
-          <el-form-item label="平台"><el-select v-model="sale.platformId" clearable><el-option v-for="p in platforms" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item>
+          <el-form-item label="平台"><el-select v-model="sale.platformId" clearable placeholder="请选择平台"><el-option v-for="p in platforms" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item>
           <el-form-item label="买家"><el-input v-model="sale.buyer" /></el-form-item>
           <el-form-item label="出售金额"><el-input-number v-model="sale.salePrice" :min="0" :precision="2" /></el-form-item>
-          <el-form-item label="出售日期"><el-date-picker v-model="sale.saleDate" value-format="YYYY-MM-DD" /></el-form-item>
+          <el-form-item label="出售日期"><el-date-picker v-model="sale.saleDate" value-format="YYYY-MM-DD" placeholder="请选择出售日期" :shortcuts="dateShortcuts" /></el-form-item>
           <el-form-item label="手续费"><el-input-number v-model="sale.fee" :min="0" :precision="2" /></el-form-item>
           <el-form-item label="运费"><el-input-number v-model="sale.shippingCost" :min="0" :precision="2" /></el-form-item>
           <el-form-item label="其他费用"><el-input-number v-model="sale.otherCost" :min="0" :precision="2" /></el-form-item>
@@ -172,7 +173,7 @@
         <el-form-item label="备注"><el-input v-model="sale.notes" type="textarea" :rows="2" /></el-form-item>
         <el-form-item label="附件">
           <div class="attachment-editor">
-            <el-upload :show-file-list="false" :http-request="uploadSaleAttachment"><span class="secondary-button upload-trigger">上传附件</span></el-upload>
+            <AttachmentDropzone compact @files="uploadSaleAttachments" />
             <span v-for="(item, index) in sale.attachments || []" :key="`${item}-${index}`" class="attachment-chip">
               附件 {{ index + 1 }}
               <button type="button" @click="removeAttachment(sale, item)">×</button>
@@ -180,7 +181,7 @@
           </div>
         </el-form-item>
       </el-form>
-      <template #footer><button class="secondary-button" @click="sellDialog=false">取消</button><PrimaryButton label="保存出售" :loading="saving" @click="saveSale" /></template>
+      <template #footer><div class="dialog-footer-actions"><button class="secondary-button" @click="sellDialog=false">取消</button><PrimaryButton label="保存出售" :loading="saving" @click="saveSale" /></div></template>
     </el-dialog>
 
     <el-dialog v-model="attachmentDialog.visible" :title="attachmentDialog.title" width="760px" @closed="resetAttachmentDialog">
@@ -217,7 +218,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type UploadRequestOptions } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   createPurchase,
   deletePurchase,
@@ -236,6 +237,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import PageHeader from '@/components/PageHeader.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import AsyncState from '@/components/AsyncState.vue'
+import AttachmentDropzone from '@/components/AttachmentDropzone.vue'
 
 type EditablePurchase = PurchaseRecord & { assetId?: number }
 type EditableSale = SellPayload & { id?: number; attachments: string[] }
@@ -255,12 +257,14 @@ const sellDialog = ref(false)
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 const nextStatus = ref<AssetStatus>('使用中')
 const today = () => new Date().toISOString().slice(0, 10)
-const blankPurchase = (): EditablePurchase => ({ type: 'ACCESSORY', name: '', price: 0, shippingCost: 0, quantity: 1, purchaseDate: today(), attachments: [] })
+const dateShortcuts = [{ text: '今天', value: () => new Date() }]
+const blankPurchase = (): EditablePurchase => ({ type: 'ACCESSORY', name: '', price: 0, shippingCost: 0, quantity: 1, purchaseDate: today(), warrantyMonths: 12, attachments: [] })
 const blankSale = (): EditableSale => ({ saleScope: 'ASSET', salePrice: 0, saleDate: today(), buyer: '', fee: 0, shippingCost: 0, otherCost: 0, attachments: [], notes: '' })
 const purchase = reactive<EditablePurchase>(blankPurchase())
 const sale = reactive<EditableSale>(blankSale())
 
 const primaryPurchase = computed(() => asset.value?.purchases?.find(record => record.type === 'PRIMARY'))
+const canStartSale = computed(() => Boolean(asset.value && asset.value.status !== '已出售'))
 const purchaseRecords = computed(() => [...(asset.value?.purchases || [])].sort((a, b) => dateValue(a.purchaseDate) - dateValue(b.purchaseDate)))
 const saleRecords = computed(() => [...(asset.value?.sales || [])].sort((a, b) => dateValue(a.saleDate) - dateValue(b.saleDate)))
 const accessoryPurchases = computed(() => purchaseRecords.value.filter(record => record.type === 'ACCESSORY' && record.id))
@@ -376,6 +380,10 @@ async function confirmDeletePurchase(record: PurchaseRecord) {
 }
 
 function openCreateSale() {
+  if (!canStartSale.value) {
+    ElMessage.warning('该物品已出售，不能再次创建出售记录')
+    return
+  }
   Object.assign(sale, blankSale())
   sellDialog.value = true
 }
@@ -414,19 +422,18 @@ async function confirmDeleteSale(record: SaleRecord) {
   await execute(() => deleteSale(asset.value!.id, record.id), () => undefined, '出售记录已删除')
 }
 
-async function uploadAttachment(options: UploadRequestOptions, target: { attachments?: string[] }) {
+async function uploadAttachments(files: File[], target: { attachments?: string[] }) {
   try {
-    const result = await uploadFile(options.file)
     if (!target.attachments) target.attachments = []
-    target.attachments.push(result.url)
-    options.onSuccess(result)
-    ElMessage.success('附件上传成功')
+    const results = await Promise.all(files.map(uploadFile))
+    target.attachments.push(...results.map(result => result.url))
+    ElMessage.success(`已上传 ${results.length} 个附件`)
   } catch (e) {
     ElMessage.error((e as Error).message)
   }
 }
-const uploadPurchaseAttachment = (options: UploadRequestOptions) => uploadAttachment(options, purchase)
-const uploadSaleAttachment = (options: UploadRequestOptions) => uploadAttachment(options, sale)
+const uploadPurchaseAttachments = (files: File[]) => uploadAttachments(files, purchase)
+const uploadSaleAttachments = (files: File[]) => uploadAttachments(files, sale)
 function removeAttachment(target: { attachments?: string[] }, item: string) {
   target.attachments = (target.attachments || []).filter(value => value !== item)
 }
@@ -464,6 +471,6 @@ onMounted(load)
 
 <style scoped>
 .back-button{margin:-12px 0 20px;padding:0;border:0;background:none;color:var(--dl-text-secondary);font-size:12px;font-weight:600;cursor:pointer}.detail-top{display:grid;grid-template-columns:470px 1fr;gap:40px}.product-visual{position:relative;height:410px;display:grid;place-items:center;overflow:hidden;border-radius:var(--dl-radius-lg);background:var(--dl-accent-soft);box-shadow:var(--dl-shadow)}.product-visual>img{width:100%;height:100%;object-fit:cover}.product-visual>.tag{position:absolute;top:24px;right:30px}.product-orbit{width:270px;height:270px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 30px rgba(183,255,60,.4)}.product-orbit strong{font-size:70px}.detail-info{min-width:0}.detail-title{height:88px;display:flex;align-items:flex-start;justify-content:space-between;padding-top:4px}.detail-title h2{margin:0;font-size:30px}.detail-title p{margin:8px 0;color:var(--dl-text-secondary);font-size:13px}.detail-title>strong{font-size:22px}.info-card{min-height:322px;padding:19px 22px}.info-card h3,.records-card h3{margin:0;font-size:17px}.category-line{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:13px 14px;border-radius:22px;background:#f5f6f2}.category-pill,.asset-tag{display:inline-flex;min-height:28px;align-items:center;border:1px solid transparent;border-radius:999px;padding:0 12px;font-size:11px;font-weight:700;white-space:nowrap}.tag-list{min-width:0;display:flex;justify-content:flex-end;gap:8px;overflow:hidden}.asset-tag.empty{background:#eceee9;color:var(--dl-muted)}.tag-icon{margin-right:5px}.info-card dl{display:grid;grid-template-columns:1fr 1fr;gap:13px 42px;margin-top:18px}.info-card dl div{min-width:0;display:flex;flex-direction:column;gap:5px}.info-card dl .wide{grid-column:1/-1}.info-card dt{color:var(--dl-text-secondary);font-size:10px}.info-card dd{margin:0;overflow:hidden;color:var(--dl-text);font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.info-card .wide dd{white-space:normal;line-height:1.7}.detail-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px}.metric-block{min-height:116px;padding:17px 19px}.metric-block span{color:var(--dl-text-secondary);font-size:12px}.metric-block strong{display:block;margin-top:8px;font-size:23px}.metric-block small{display:block;margin-top:7px;color:var(--dl-muted);font-size:10px}.records-card{margin-top:24px;padding:20px 22px}.card-heading{display:flex;justify-content:space-between;align-items:center}.card-heading>div{display:flex;flex-direction:column;gap:5px}.card-heading span{color:var(--dl-muted);font-size:10px}.table-scroll{margin-top:18px;overflow-x:auto}.records-card table{width:100%;min-width:920px;border-collapse:collapse;font-size:11px}.sale-records table{min-width:960px}.records-card th{padding:10px 8px;border-bottom:1px solid #dfe2db;color:var(--dl-text-secondary);font-size:10px;font-weight:600;text-align:left;white-space:nowrap}.records-card td{padding:13px 8px;border-bottom:1px solid #eceee9;color:var(--dl-text-secondary);vertical-align:middle;white-space:nowrap}.records-card tbody tr:last-child td{border-bottom:0}.records-card td strong,.records-card td b{color:var(--dl-text)}.records-card a{color:var(--dl-text);font-weight:600;text-decoration:none}.records-card a:hover{text-decoration:underline}.record-tag{display:inline-flex;min-height:25px;align-items:center;padding:0 9px;border-radius:999px;background:var(--dl-bg-alt);color:var(--dl-text-secondary);font-size:10px;font-weight:600}.record-tag.primary{background:var(--dl-accent-soft);color:var(--dl-text)}.record-tag.sale{background:#fff1df;color:#a96a00}.income{color:var(--dl-success)!important}.cost-metrics{display:flex;flex-direction:column;gap:3px}.cost-metrics span{color:var(--dl-muted);font-size:9px}.cost-metrics .loss{color:var(--dl-danger)}.cost-metrics .gain{color:var(--dl-success)}.cost-metrics .neutral{color:var(--dl-text-secondary)}.row-actions{display:flex;align-items:center;gap:8px}.inline-empty{height:88px;display:grid;place-items:center;color:var(--dl-muted);font-size:12px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.dialog-form :deep(.el-input-number),.dialog-form :deep(.el-date-editor),.dialog-form :deep(.el-select){width:100%}.attachment-editor{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.attachment-chip{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;border-radius:999px;background:#f1f3ee;color:var(--dl-text-secondary);font-size:11px;font-weight:700}.attachment-chip button{width:18px;height:18px;border:0;border-radius:50%;background:#fff;color:var(--dl-danger);cursor:pointer}.attachment-viewer{display:grid;grid-template-columns:170px 1fr;gap:18px;min-height:430px}.attachment-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto}.attachment-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e1e4dd;border-radius:18px;background:#f7f8f5;color:var(--dl-text-secondary);cursor:pointer;text-align:left}.attachment-list-item.active{border-color:var(--dl-accent);background:var(--dl-accent-soft);color:var(--dl-text)}.attachment-list-item span{font-size:10px}.attachment-list-item strong{font-size:12px}.attachment-preview{min-width:0;height:430px;display:grid;place-items:center;overflow:hidden;border-radius:24px;background:#f5f6f2}.preview-image{width:100%;height:100%;display:grid;place-items:center}.preview-image :deep(img){max-width:100%;max-height:430px;object-fit:contain}.preview-frame{width:100%;height:100%;border:0;background:#fff}
-.detail-title{height:54px}.title-category-line{margin:0 0 16px}.info-card{min-height:0}.sale-records table{min-width:900px;font-size:10px}.sale-records th,.sale-records td{padding-left:5px;padding-right:5px}.record-tag.sale-primary{background:var(--dl-accent-soft);color:#4b6d09}.record-tag.sale-accessory{background:#fff1df;color:#a96a00}
+.detail-title{height:54px}.title-category-line{margin:0 0 16px}.info-card{min-height:0}.sale-records table{min-width:900px;font-size:10px}.sale-records th,.sale-records td{padding-left:5px;padding-right:5px}.record-tag.sale-primary{background:var(--dl-accent-soft);color:#4b6d09}.record-tag.sale-accessory{background:#fff1df;color:#a96a00}.sale-wizard-button{background:#0f1410;color:#fff}.sale-wizard-button:hover:not(:disabled){background:#2b3528}.dialog-footer-actions{display:flex;justify-content:flex-end;gap:10px}.dialog-footer-actions :deep(button){display:inline-flex;justify-content:center;align-items:center;box-sizing:border-box;min-width:94px;height:36px;padding:0 14px;font-size:12px}.attachment-editor{align-items:stretch}.attachment-editor :deep(.attachment-dropzone){flex:1 1 100%}
 @media (max-width:1100px){.detail-top{grid-template-columns:1fr}.product-visual{height:360px}.detail-metrics{grid-template-columns:repeat(2,1fr)}}@media (max-width:760px){.detail-metrics,.info-card dl,.dialog-grid,.attachment-viewer{grid-template-columns:1fr}.category-line{align-items:flex-start;flex-direction:column}.tag-list{justify-content:flex-start;flex-wrap:wrap}.attachment-preview{height:320px}.preview-image :deep(img){max-height:320px}}
 </style>
