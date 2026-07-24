@@ -30,3 +30,9 @@ uniapp-figma/output/
 
 # API配置
 /backend/api_configs.sql
+
+# Local deployment files are generated from committed templates and can hold secrets.
+/deploy/v1/config.env
+/deploy/v1/docker-compose.yml
+/deploy/v2/config.env
+/deploy/v2/docker-compose.yml

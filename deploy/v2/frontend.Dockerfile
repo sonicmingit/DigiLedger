@@ -7,5 +7,5 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist/ /usr/share/nginx/html/
-COPY deploy/figma/pc.nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY deploy/v2/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

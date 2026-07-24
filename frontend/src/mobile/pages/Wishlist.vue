@@ -53,19 +53,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { fetchWishlist, createWishlistItem } from '@/api/wishlist' // Verify API exists
+import { fetchWishlist, createWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const statuses = ['待购买', '已完成']
-const currentStatus = ref('待购买')
+const statuses = ['未购买', '已购买'] as const
+const currentStatus = ref<(typeof statuses)[number]>('未购买')
 const wishlist = ref<WishlistItem[]>([])
 
 const loadWishlist = async () => {
   try {
-    // API might support filtering, or we filter client-side
-    // Checking src/api/wishlist.ts...
-    // Assuming fetchWishlist accepts status
     const res = await fetchWishlist({ status: currentStatus.value })
     wishlist.value = res || []
   } catch (e) {
@@ -90,7 +87,7 @@ const addWish = async () => {
     })
     
     if (value) {
-      await createWishlistItem({ name: value, status: '待购买' })
+      await createWishlist({ name: value })
       ElMessage.success('已添加')
       loadWishlist()
     }

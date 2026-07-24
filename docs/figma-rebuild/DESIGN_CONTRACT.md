@@ -13,7 +13,7 @@
 - 新 PC：`frontend-figma/`
 - 新 H5 / Android：`uniapp-figma/`
 - 后端扩展：`backend/`
-- 新部署资料：`deploy/figma/`
+- 新部署资料：`deploy/v2/`（后端 + `frontend-figma`）
 - 禁止修改旧前端：`frontend/`、`uniapp/digiLeder/`
 
 ## 3. 设计变量

@@ -663,136 +663,20 @@ src
 - `DL_SERVER_PORT`（默认 `8080`）
 - **对象存储**：`DL_STORAGE_PROVIDER`、`DL_STORAGE_ENDPOINT`、`DL_STORAGE_REGION`、`DL_STORAGE_BUCKET`、`DL_STORAGE_ACCESS_KEY`、`DL_STORAGE_SECRET_KEY`、`DL_STORAGE_BASE_URL`
 
-### 9.2 Dockerfile（后端示例）
+### 9.2 当前部署方案
 
-```dockerfile
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY target/digiledger-backend.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java","-Duser.timezone=Asia/Shanghai","-jar","/app/app.jar"]
-```
+实际部署文件集中于 `deploy/`，不再使用仓库根目录 Compose 文件：
 
-### 9.3 Dockerfile（前端示例）
+- `deploy/v1/`：后端 + `frontend`；
+- `deploy/v2/`：后端 + `frontend-figma`。
 
-```dockerfile
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+每个版本均提交 `config.env.template` 与 `docker-compose.template.yml`。
+部署脚本首次运行时从模板生成本地配置，随后拉取代码、检测更新并按确认重建。
+编译步骤位于对应版本的 `frontend.Dockerfile` 与 `backend/Dockerfile` 中。
 
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-```
+Linux/macOS：`./deploy/v1/deploy.sh --force`
 
-### 9.4 Nginx 前端反代（`frontend/nginx.conf`）
-
-```nginx
-server {
-  listen 80;
-  server_name _;
-  root /usr/share/nginx/html;
-  index index.html;
-
-  location /api/ {
-    proxy_pass http://backend:8080/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-}
-```
-
-### 9.5 docker-compose.yml（集成 MinIO）
-
-```yaml
-version: "3.9"
-services:
-  db:
-    image: mysql:8.0
-    container_name: dl-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: digiledger
-      MYSQL_USER: dl_user
-      MYSQL_PASSWORD: dl_pass
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./deploy/sql:/docker-entrypoint-initdb.d
-    command: ["mysqld","--character-set-server=utf8mb4","--collation-server=utf8mb4_0900_ai_ci"]
-
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-
-  backend:
-    build: ./backend
-    image: digiledger/backend:latest
-    container_name: dl-backend
-    environment:
-      DL_DB_HOST: db
-      DL_DB_PORT: 3306
-      DL_DB_NAME: digiledger
-      DL_DB_USER: dl_user
-      DL_DB_PASS: dl_pass
-      DL_STORAGE_PROVIDER: minio
-      DL_STORAGE_ENDPOINT: http://minio:9000
-      DL_STORAGE_BUCKET: digiledger
-      DL_STORAGE_ACCESS_KEY: minioadmin
-      DL_STORAGE_SECRET_KEY: minioadmin
-      DL_STORAGE_BASE_URL: http://localhost:9000/digiledger
-    depends_on:
-      - db
-      - minio
-
-  frontend:
-    build: ./frontend
-    image: digiledger/frontend:latest
-    container_name: dl-frontend
-    depends_on:
-      - backend
-    ports:
-      - "8088:80"
-
-volumes:
-  db_data:
-  minio_data:
-```
-
-### 9.6 部署步骤
-
-1. **准备目录结构**
-
-```
-DigiLedger/
-├─ backend/
-├─ frontend/
-└─ deploy/
-   └─ sql/  # init.sql, seed.sql
-```
-
-1. **后端打包**：`cd backend && mvn -DskipTests package`
-2. **前端构建**：`cd frontend && npm ci && npm run build`
-3. **Compose 启动**：在项目根目录执行 `docker compose up -d --build`
-4. 访问前端：`http://<host>:8088`
+Windows PowerShell：`.\\deploy\\v1\\deploy.ps1 -Force`
 
 ------
 

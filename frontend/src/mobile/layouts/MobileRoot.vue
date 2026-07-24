@@ -68,7 +68,7 @@ import { ref, reactive } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import TabBar from '@/mobile/components/TabBar.vue'
 import '@/mobile/styles/main.css'
-import { createAsset } from '@/api/asset'
+import { createAsset, type AssetPayload } from '@/api/asset'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -106,16 +106,13 @@ const submit = async () => {
   
   submitting.value = true
   try {
-    // Basic payload for quick add
-    await createAsset({
+    const payload: AssetPayload = {
       name: form.name,
       status: '使用中',
-      totalCostStrategy: 'CUSTOM', // or PRICE
+      targetCostStrategy: 'CUSTOM',
       targetCostValue: form.price,
       categoryId: form.categoryId,
       purchaseDate: new Date().toISOString().split('T')[0],
-       // We might need to construct a Purchase object if the backend requires it for the price to show up as cost
-       // But AssetPayload has targetCostValue which might be enough for summary
       purchases: [
         {
           type: 'PRIMARY',
@@ -124,7 +121,8 @@ const submit = async () => {
           quantity: 1
         }
       ]
-    })
+    }
+    await createAsset(payload)
     
     ElMessage.success('添加成功')
     closeQuickAdd()

@@ -21,12 +21,12 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 │   ├── src/main/resources   # MyBatis XML、配置文件、Flyway 迁移脚本
 │   ├── src/test/java        # 单元测试样例
 │   └── Dockerfile           # 后端容器镜像构建文件
-├── frontend/                # Vue3 前端项目
+├── frontend/                # Vue3 前端项目（部署版本 1）
 │   ├── src                  # 页面、组件与 API 封装
 │   ├── public               # 静态资源
-│   └── Dockerfile           # 前端容器镜像构建文件
-├── deploy/nginx/nginx.conf  # Nginx 反向代理配置
-├── docker-compose.yml       # 一键启动编排（MySQL + MinIO + 后端 + 前端 + Nginx）
+├── frontend-figma/          # Figma 重构前端（部署版本 2）
+├── deploy/v1/               # 后端 + frontend 一键部署
+├── deploy/v2/               # 后端 + frontend-figma 一键部署
 ├── README.md                # 项目说明
 └── 设计文档.md               # 业务与架构设计说明
 ```
@@ -89,51 +89,30 @@ npm run preview
 
 ## Docker 部署
 
-### 一体化启动
+部署资料集中在 `deploy/`，两套方案均会编译后端和对应前端源码，并启动
+MySQL、MinIO、后端与前端反向代理：
 
-仓库根目录提供 `docker-compose.yml`，包含以下服务：
+- 版本 1：`deploy/v1`，后端 + `frontend`。
+- 版本 2：`deploy/v2`，后端 + `frontend-figma`。
 
-- `mysql`：MySQL 8.3；数据库结构由后端启动时的 Flyway 自动迁移。
-- `minio`：对象存储，端口 `9000/9001`，用于物品封面及附件上传。
-- `backend`：Spring Boot 应用，读取环境变量连接数据库。
-- `frontend`：Vue 编译产物，通过 `npx serve` 输出静态页面。
-- `nginx`：统一暴露 80 端口，`/api` 反向代理至后端，`/` 转发到前端。
-
-执行以下命令即可完成一体化启动：
+在已克隆的仓库中选择一个版本执行：
 
 ```bash
-docker compose up --build -d
+chmod +x deploy/deploy.sh deploy/v1/deploy.sh
+./deploy/v1/deploy.sh --force
 ```
 
-启动完成后访问 `http://localhost` 即可浏览前端页面，后端接口通过 `http://localhost/api` 访问；MinIO 控制台位于 `http://localhost:9001`。
+Windows PowerShell 可执行：
 
-### 单独部署后端
-
-```bash
-cd backend
-docker build -t digiledger-backend:latest .
-docker run -d --name digiledger-backend \
-  -e DL_DB_HOST=<mysql-host> \
-  -e DL_DB_PORT=3306 \
-  -e DL_DB_NAME=digiledger \
-  -e DL_DB_USER=root \
-  -e DL_DB_PASS=root \
-  -p 8080:8080 \
-  digiledger-backend:latest
+```powershell
+.\deploy\v1\deploy.ps1 -Force
 ```
 
-### 单独部署前端
-
-```bash
-cd frontend
-docker build -t digiledger-frontend:latest .
-docker run -d --name digiledger-frontend \
-  -e VITE_API_BASE=/api \
-  -p 4173:4173 \
-  digiledger-frontend:latest
-```
-
-可搭配任意 Nginx/Traefik 代理将 `/api` 指向后端服务。
+首次执行会生成不提交到 Git 的 `config.env` 和 `docker-compose.yml`；两者的
+模板均已提交。修改生成的 `config.env` 中的密码和 `DL_STORAGE_BASE_URL` 后，
+使用 `--force` 完成首次部署。日常执行部署脚本时会先更新 Git 代码；发现更新
+后会询问是否重新构建部署。详细说明见 [版本 1](deploy/v1/README.md) 与
+[版本 2](deploy/v2/README.md)。
 
 ## 环境变量一览
 
@@ -152,7 +131,6 @@ docker run -d --name digiledger-frontend \
 | `DL_STORAGE_SECRET_KEY` | minioadmin  | 存储 SecretKey                |
 | `DL_STORAGE_BASE_URL` | http://localhost:9000 | 文件访问基础 URL   |
 | `DL_BING_IMAGE_API_KEY` | (空)        | Bing 图片搜索 API Key，用于智能找图 |
-| `VITE_API_BASE`       | /api          | 前端访问后端的基础路径         |
 
 ## 下一步计划
 
