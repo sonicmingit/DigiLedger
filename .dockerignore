@@ -1,10 +1,15 @@
-.git
-.gitignore
-.idea
-.vscode
-**/node_modules
-**/dist
-**/target
-**/.playwright-cli
-**/output
-参考
+# The deployment frontend images build from the repository root. Keep the
+# context ASCII-only: some BuildKit versions reject non-ASCII ignore patterns.
+*
+!frontend/
+!frontend/**
+frontend/node_modules/
+frontend/dist/
+!frontend-figma/
+!frontend-figma/**
+frontend-figma/node_modules/
+frontend-figma/dist/
+frontend-figma/.playwright-cli/
+frontend-figma/output/
+!deploy/
+!deploy/**
