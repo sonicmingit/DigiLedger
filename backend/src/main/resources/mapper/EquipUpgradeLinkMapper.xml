@@ -8,6 +8,7 @@
         <result column="route_id" property="routeId" />
         <result column="from_node_id" property="fromNodeId" />
         <result column="to_node_id" property="toNodeId" />
+        <result column="relation_type" property="relationType" />
         <result column="remark" property="remark" />
         <result column="is_deleted" property="isDeleted" />
         <result column="created_at" property="createdAt" />
@@ -29,8 +30,8 @@
     </select>
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.EquipUpgradeLink" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO equip_upgrade_link (route_id, from_node_id, to_node_id, remark)
-        VALUES (#{routeId}, #{fromNodeId}, #{toNodeId}, #{remark})
+        INSERT INTO equip_upgrade_link (route_id, from_node_id, to_node_id, relation_type, remark)
+        VALUES (#{routeId}, #{fromNodeId}, #{toNodeId}, #{relationType}, #{remark})
     </insert>
 
     <update id="softDelete" parameterType="long">
@@ -52,5 +53,15 @@
         SET is_deleted = 1,
             updated_at = CURRENT_TIMESTAMP
         WHERE route_id = #{routeId}
+    </update>
+
+    <update id="retargetSequenceLinks">
+        UPDATE equip_upgrade_link
+        SET to_node_id = #{newToNodeId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE route_id = #{routeId}
+          AND to_node_id = #{oldToNodeId}
+          AND relation_type = 'SEQUENCE'
+          AND is_deleted = 0
     </update>
 </mapper>

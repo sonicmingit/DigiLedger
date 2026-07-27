@@ -33,5 +33,5 @@ async function save() {
 </script>
 
 <style scoped>
-.quick-select{display:flex;min-width:0;gap:7px}.quick-select :deep(.el-select){display:block;flex:1 1 0;min-width:0;width:auto}.quick-select :deep(.el-select__wrapper){min-width:0}.quick-add{flex:none;width:42px;height:42px;border:1px solid #dce3d5;border-radius:12px;background:#f2f7eb;color:#567819;font-size:23px;line-height:1;cursor:pointer}.quick-add:hover{border-color:#94d72d;background:var(--dl-accent-soft)}.quick-dialog-actions{display:flex;justify-content:flex-end;gap:10px}.quick-dialog-actions :deep(button){min-width:94px;height:36px;padding:0 14px;font-size:12px}
+.quick-select{display:flex;align-items:center;min-width:0;gap:7px}.quick-select :deep(.el-select){display:block;flex:1 1 0;min-width:0;width:auto}.quick-select :deep(.el-select__wrapper){min-width:0}.quick-add{flex:none;width:36px;height:36px;padding:0;border:1px solid #dce3d5;border-radius:10px;background:#f2f7eb;color:#567819;font-size:21px;line-height:1;cursor:pointer;transition:.16s ease}.quick-add:hover{border-color:#94d72d;background:var(--dl-accent-soft);transform:translateY(-1px)}.quick-dialog-actions{display:flex;justify-content:flex-end;gap:10px}.quick-dialog-actions :deep(button){min-width:94px;height:36px;padding:0 14px;font-size:12px}
 </style>

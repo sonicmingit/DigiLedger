@@ -20,4 +20,9 @@ public interface EquipUpgradeLinkMapper {
     int softDeleteByNodeId(@Param("nodeId") Long nodeId);
 
     int softDeleteByRoute(@Param("routeId") Long routeId);
+
+    /** 将原指向锚点的前后代关系改接至新插入的节点。 */
+    int retargetSequenceLinks(@Param("routeId") Long routeId,
+                              @Param("oldToNodeId") Long oldToNodeId,
+                              @Param("newToNodeId") Long newToNodeId);
 }

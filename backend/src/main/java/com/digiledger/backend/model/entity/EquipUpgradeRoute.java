@@ -16,10 +16,16 @@ public class EquipUpgradeRoute {
     private String name;
     /** 起点资产ID */
     private Long rootAssetId;
+    /** 当前正在使用的主物品；必须已经被挂入当前路线。 */
+    private Long mainAssetId;
     /** 备注 */
     private String remark;
     private Integer planYear;
     private BigDecimal annualBudget;
+    /** 路线类型：ACTUAL、PLAN、MIXED。 */
+    private String routeType;
+    /** 路线状态：ACTIVE、COMPLETED、ARCHIVED。 */
+    private String status;
     /** 删除标记 */
     private Integer isDeleted;
     /** 创建时间 */

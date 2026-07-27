@@ -10,6 +10,11 @@ public record UpgradeGraphLinkDTO(
         Long fromNodeId,
         Long toNodeId,
         BigDecimal stepCost,
-        String remark
+        String remark,
+        String relationType,
+        Long purchaseGapDays,
+        BigDecimal purchasePriceDelta,
+        BigDecimal replacementNetOutflow,
+        String calculationStatus
 ) {
 }

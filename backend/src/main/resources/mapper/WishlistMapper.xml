@@ -13,12 +13,16 @@
         <result column="current_price" property="currentPrice" />
         <result column="last_price_at" property="lastPriceAt" />
         <result column="image_url" property="imageUrl" />
+        <result column="source" property="source" />
         <result column="status" property="status" />
         <result column="link" property="link" />
         <result column="status" property="status" />
         <result column="notes" property="notes" />
         <result column="priority" property="priority" />
         <result column="converted_asset_id" property="convertedAssetId" />
+        <result column="purchased_at" property="purchasedAt" />
+        <result column="purchased_price" property="purchasedPrice" />
+        <result column="purchase_price_diff" property="purchasePriceDiff" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
@@ -40,11 +44,11 @@
 
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.WishlistItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO wishlist (
-            name, category_id, brand_id, model, expected_price,
-            image_url, link, status, notes, priority, converted_asset_id
+            name, category_id, brand_id, model, expected_price, current_price, last_price_at,
+            image_url, link, source, status, notes, priority, converted_asset_id
         ) VALUES (
-            #{name}, #{categoryId}, #{brandId}, #{model}, #{expectedPrice},
-            #{imageUrl}, #{link}, #{status}, #{notes}, #{priority}, #{convertedAssetId}
+            #{name}, #{categoryId}, #{brandId}, #{model}, #{expectedPrice}, #{currentPrice}, #{lastPriceAt},
+            #{imageUrl}, #{link}, #{source}, #{status}, #{notes}, #{priority}, #{convertedAssetId}
         )
     </insert>
 
@@ -56,6 +60,7 @@
             model = #{model},
             expected_price = #{expectedPrice},
             image_url = #{imageUrl},
+            source = #{source},
             status = #{status},
             link = #{link},
             status = #{status},
@@ -78,15 +83,19 @@
         WHERE id = #{id}
     </update>
 
+    <update id="updatePurchaseSummary">
+        UPDATE wishlist
+        SET purchased_at = #{purchasedAt}, purchased_price = #{purchasedPrice},
+            purchase_price_diff = #{purchasePriceDiff}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
     <update id="updateCurrentPrice">
         UPDATE wishlist
         SET current_price = #{price}, last_price_at = #{capturedAt}, updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
 
-    <update id="markPurchased">
-        UPDATE wishlist SET status = '已购买', updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
-    </update>
 
     <select id="countByBrand" resultType="long">
         SELECT COUNT(1)

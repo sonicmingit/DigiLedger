@@ -13,6 +13,10 @@ public record UpgradeRouteGraphDTO(
         Integer planYear,
         BigDecimal annualBudget,
         List<UpgradeGraphNodeDTO> nodes,
-        List<UpgradeGraphLinkDTO> links
+        List<UpgradeGraphLinkDTO> links,
+        EquipUpgradeRouteDTO route,
+        UpgradeActualSummaryDTO actualSummary,
+        UpgradePlanSummaryDTO planSummary,
+        List<String> warnings
 ) {
 }

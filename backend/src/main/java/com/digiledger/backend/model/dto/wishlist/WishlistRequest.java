@@ -33,6 +33,10 @@ public class WishlistRequest {
     @Size(max = 500, message = "链接过长")
     private String link;
 
+    /** 发现该心愿的渠道，例如朋友推荐、评测视频或线下体验。 */
+    @Size(max = 200, message = "心愿来源过长")
+    private String source;
+
     private String notes;
 
     @Min(value = 1, message = "优先级需在 1-5 之间")
@@ -44,6 +48,10 @@ public class WishlistRequest {
 
     @DecimalMin(value = "0", message = "期望价格需大于等于 0")
     private BigDecimal expectedPrice;
+
+    /** 创建时记录的第一笔关注价；与后续更新一样会写入价格历史。 */
+    @DecimalMin(value = "0", message = "关注价格需大于等于 0")
+    private BigDecimal currentPrice;
 
     @Pattern(regexp = "未购买|已购买", message = "状态非法")
     private String status = "未购买";

@@ -1,6 +1,15 @@
 export type AssetStatus = '使用中' | '已闲置' | '待出售' | '已出售' | '已丢弃'
 export type PurchaseType = 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
+/** 升级路线节点的执行状态；实际物品也可能直接复用物品状态。 */
 export type UpgradeNodeStatus = 'PLANNED' | 'READY' | 'EXECUTING' | 'COMPLETED' | 'CANCELLED'
+/** 路线的资料来源口径，避免未来计划与真实支出混算。 */
+export type UpgradeRouteType = 'ACTUAL' | 'PLAN' | 'MIXED'
+/** 路线生命周期状态。 */
+export type UpgradeRouteStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'
+/** 节点来源：真实物品或尚未购买的心愿物品；旧 PLANNED 仅为历史数据兼容。 */
+export type UpgradeNodeType = 'ASSET' | 'WISHLIST' | 'PLANNED'
+/** 路线边的业务语义。 */
+export type UpgradeRelationType = 'SEQUENCE' | 'ALTERNATIVE'
 
 export interface ApiEnvelope<T> { code: number; data: T; msg: string }
 export interface TagItem { id: number; name: string; color?: string; icon?: string }
@@ -42,25 +51,47 @@ export interface DashboardSummary {
 export interface WishlistItem {
   id: number; name: string; categoryId?: number; categoryName?: string; category?: string; brandId?: number
   brandName?: string; model?: string; expectedPrice?: number; currentPrice?: number; priceChangeRate?: number
-  lastPriceAt?: string; link?: string; notes?: string; priority?: number; status: '待购买' | '已完成' | '已购买'
-  imageUrl?: string; tags?: TagItem[]; convertedAssetId?: number; createdAt: string; updatedAt: string
+  lastPriceAt?: string; link?: string; source?: string; notes?: string; priority?: number; status: '未购买' | '待购买' | '已完成' | '已购买'
+  imageUrl?: string; tags?: TagItem[]; convertedAssetId?: number; purchasedAt?: string; purchasedPrice?: number; purchasePriceDiff?: number; createdAt: string; updatedAt: string
 }
 export interface WishlistPayload {
-  name: string; categoryId?: number; brandId?: number; model?: string; expectedPrice?: number; link?: string
-  notes?: string; priority?: number; imageUrl?: string; tagIds?: number[]; relatedAssetId?: number
+  name: string; categoryId?: number; brandId?: number; model?: string; expectedPrice?: number; currentPrice?: number; link?: string
+  source?: string; notes?: string; priority?: number; imageUrl?: string; tagIds?: number[]; relatedAssetId?: number
 }
 export interface PricePoint { price: number; capturedAt: string }
 export interface UpgradeRouteItem {
   id: number; name: string; rootAssetId?: number | null; rootAssetName?: string | null; remark?: string | null
+  mainAssetId?: number | null; periodStart?: string | null; periodEnd?: string | null; coverImageUrls?: string[]
   planYear?: number; annualBudget?: number; plannedBudget?: number; expectedRecovery?: number; updatedAt: string
+  /** total* 字段是服务端列表 DTO 的命名；旧页面仍可能返回简写字段。 */
+  totalPlannedBudget?: number; totalExpectedRecovery?: number
+  routeType?: UpgradeRouteType; status?: UpgradeRouteStatus; actualSummary?: UpgradeActualSummary; planSummary?: UpgradePlanSummary
 }
+/** 路线内真实物品的汇总，所有金额均来自物品与出售记录。 */
+export interface UpgradeActualSummary {
+  assetCount: number; totalSpend: number; primarySpend: number; extraSpend: number; totalIncome: number; netInvestment: number; dailyCost?: number
+}
+/** 计划物品的独立汇总，不参与真实净投入。 */
+export interface UpgradePlanSummary { plannedBudget: number; expectedRecovery: number; expectedNetInvestment?: number }
 export interface UpgradeGraphNode {
   nodeId: number; assetId?: number; name?: string; title?: string; targetName?: string; status: UpgradeNodeStatus | AssetStatus
   purchasePrice?: number; salePrice?: number; sold?: boolean; periodLabel?: string; plannedBudget?: number
   expectedRecovery?: number; level?: number; sort?: number; label?: string | null; remark?: string | null
+  nodeType?: UpgradeNodeType; brandName?: string; model?: string; coverImageUrl?: string; assetStatus?: AssetStatus
+  purchaseDate?: string; primaryPurchaseAmount?: number; totalInvest?: number; useDays?: number
+  mainSaleDate?: string; mainSalePrice?: number; mainSaleNetIncome?: number; dataWarnings?: string[]
+  wishlistId?: number; mainline?: boolean; alternativePurpose?: string
 }
-export interface UpgradeGraphLink { linkId: number; fromNodeId: number; toNodeId: number; stepCost?: number; remark?: string | null }
-export interface UpgradeRouteGraph { routeId: number; routeName: string; remark?: string | null; nodes: UpgradeGraphNode[]; links: UpgradeGraphLink[] }
+export interface UpgradeGraphLink {
+  linkId: number; fromNodeId: number; toNodeId: number; stepCost?: number; remark?: string | null
+  relationType?: UpgradeRelationType; purchaseGapDays?: number | null; purchasePriceDelta?: number | null
+  replacementNetOutflow?: number | null; calculationStatus?: string
+}
+/** 路线图接口。新字段均为可选，便于平滑读取旧后端返回。 */
+export interface UpgradeRouteGraph {
+  routeId: number; routeName: string; remark?: string | null; nodes: UpgradeGraphNode[]; links: UpgradeGraphLink[]
+  route?: UpgradeRouteItem; actualSummary?: UpgradeActualSummary; planSummary?: UpgradePlanSummary; warnings?: string[]
+}
 export interface CategoryNode { id: number; name: string; parentId: number | null; level: number; sort: number; children: CategoryNode[] }
 export interface TagNode { id: number; name: string; parentId: number | null; color?: string; icon?: string; sort: number; children: TagNode[] }
 export interface BrandItem { id: number; name: string; alias?: string; initial?: string; sort?: number }

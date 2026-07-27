@@ -11,6 +11,7 @@ public record EquipUpgradeRouteDTO(
         Long id,
         String name,
         Long rootAssetId,
+        Long mainAssetId,
         String rootAssetName,
         String remark,
         Integer planYear,
@@ -18,6 +19,13 @@ public record EquipUpgradeRouteDTO(
         BigDecimal totalPlannedBudget,
         BigDecimal totalExpectedRecovery,
         Map<String, Long> statusDistribution,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String routeType,
+        String status,
+        UpgradeActualSummaryDTO actualSummary,
+        UpgradePlanSummaryDTO planSummary,
+        java.time.LocalDate periodStart,
+        java.time.LocalDate periodEnd,
+        java.util.List<String> coverImageUrls
 ) {
 }

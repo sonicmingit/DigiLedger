@@ -7,4 +7,5 @@ export const deleteWishlist = (id: number) => http.delete<void>(`/wishlist/${id}
 export const convertWishlist = (id: number, payload: AssetPayload) => http.post<number>(`/wishlist/${id}/convert`, payload)
 export const updateWishlistPrice = (id: number, currentPrice: number) => http.patch<void>(`/wishlist/${id}/price`, { currentPrice, capturedAt: new Date().toISOString() })
 export const fetchPriceHistory = (id: number) => http.get<PricePoint[]>(`/wishlist/${id}/price-history`)
-export const markWishlistPurchased = (id: number) => http.post<void>(`/wishlist/${id}/mark-purchased`)
+/** 购买确认会创建主购买记录并返回对应物品 ID，心愿本身仍保留为已购买。 */
+export const markWishlistPurchased = (id: number, payload: AssetPayload) => http.post<number>(`/wishlist/${id}/mark-purchased`, payload)

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 心愿单接口，支持 CRUD 与转资产。
+ * 心愿单接口，支持 CRUD、价格观察和购买确认转物品。
  */
 @RestController
 @RequestMapping("/api/wishlist")
@@ -74,8 +74,8 @@ public class WishlistController {
     }
 
     @PostMapping("/{id}/mark-purchased")
-    public ApiResponse<Void> markPurchased(@PathVariable("id") @Min(1) Long id) {
-        wishlistService.markPurchased(id);
-        return ApiResponse.success();
+    public ApiResponse<Long> markPurchased(@PathVariable("id") @Min(1) Long id,
+                                           @RequestBody @Valid AssetCreateRequest request) {
+        return ApiResponse.success(wishlistService.markPurchased(id, request));
     }
 }

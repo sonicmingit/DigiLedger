@@ -7,6 +7,7 @@ import com.digiledger.backend.mapper.DictBrandMapper;
 import com.digiledger.backend.mapper.DictCategoryMapper;
 import com.digiledger.backend.mapper.DictTagMapper;
 import com.digiledger.backend.mapper.WishlistMapper;
+import com.digiledger.backend.mapper.EquipUpgradeNodeMapper;
 import com.digiledger.backend.mapper.WishlistTagMapMapper;
 import com.digiledger.backend.mapper.WishlistPriceHistoryMapper;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 /**
  * 心愿单服务实现，可转化资产。
@@ -55,6 +57,7 @@ public class WishlistServiceImpl implements WishlistService {
     private static final Set<String> ALLOWED_STATUSES = Set.of("未购买", "已购买");
 
     private final WishlistMapper wishlistMapper;
+    private final EquipUpgradeNodeMapper upgradeNodeMapper;
     private final DictCategoryMapper dictCategoryMapper;
     private final DictBrandMapper dictBrandMapper;
     private final DictTagMapper dictTagMapper;
@@ -72,8 +75,10 @@ public class WishlistServiceImpl implements WishlistService {
                                AssetService assetService,
                                StoragePathHelper storagePathHelper,
                                AssetMapper assetMapper,
-                               WishlistPriceHistoryMapper priceHistoryMapper) {
+                               WishlistPriceHistoryMapper priceHistoryMapper,
+                               EquipUpgradeNodeMapper upgradeNodeMapper) {
         this.wishlistMapper = wishlistMapper;
+        this.upgradeNodeMapper = upgradeNodeMapper;
         this.dictCategoryMapper = dictCategoryMapper;
         this.dictBrandMapper = dictBrandMapper;
         this.dictTagMapper = dictTagMapper;
@@ -136,6 +141,14 @@ public class WishlistServiceImpl implements WishlistService {
         List<Long> tagIds = validateTagIds(request.getTagIds());
         WishlistItem item = buildEntity(request, "未购买");
         wishlistMapper.insert(item);
+        // 新建时的首次关注价也作为价格曲线的起点，避免历史列表从第二次更新才开始。
+        if (item.getCurrentPrice() != null) {
+            WishlistPriceHistory history = new WishlistPriceHistory();
+            history.setWishlistId(item.getId());
+            history.setPrice(item.getCurrentPrice());
+            history.setCapturedAt(item.getLastPriceAt());
+            priceHistoryMapper.insert(history);
+        }
         persistTags(item.getId(), tagIds);
         return item.getId();
     }
@@ -200,6 +213,8 @@ public class WishlistServiceImpl implements WishlistService {
         }
         Long assetId = assetService.createAsset(request);
         wishlistMapper.markConverted(id, assetId);
+        // 路线节点保留原有 ID 与关系，心愿购买完成后仅替换其数据来源。
+        upgradeNodeMapper.bindWishlistNodesToAsset(id, assetId);
         return assetId;
     }
 
@@ -222,19 +237,34 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     public List<WishlistPriceHistoryDTO> getPriceHistory(Long id) {
-        Optional.ofNullable(wishlistMapper.findById(id))
+        WishlistItem item = Optional.ofNullable(wishlistMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
-        return priceHistoryMapper.findByWishlistId(id).stream()
-                .map(item -> new WishlistPriceHistoryDTO(item.getPrice(), item.getCapturedAt()))
+        List<WishlistPriceHistoryDTO> history = priceHistoryMapper.findByWishlistId(id).stream()
+                .map(point -> new WishlistPriceHistoryDTO(point.getPrice(), point.getCapturedAt()))
                 .toList();
+        // 兼容旧数据：曾只保存“当前价”而未落价格历史时，也能看到首次价格。
+        if (history.isEmpty() && item.getCurrentPrice() != null) {
+            return List.of(new WishlistPriceHistoryDTO(item.getCurrentPrice(),
+                    Optional.ofNullable(item.getLastPriceAt()).orElse(item.getCreatedAt())));
+        }
+        return history;
     }
 
     @Override
     @Transactional
-    public void markPurchased(Long id) {
-        Optional.ofNullable(wishlistMapper.findById(id))
+    public Long markPurchased(Long id, AssetCreateRequest request) {
+        // 购买确认复用转物品逻辑，主购买记录由前端仅填写的时间、价格和平台组成。
+        WishlistItem item = Optional.ofNullable(wishlistMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.WISHLIST_NOT_FOUND));
-        wishlistMapper.markPurchased(id);
+        Long assetId = convertToAsset(id, request);
+        BigDecimal purchasedPrice = request.getPurchases() == null || request.getPurchases().isEmpty()
+                ? null : request.getPurchases().get(0).getPrice();
+        LocalDate purchasedAt = request.getPurchaseDate();
+        BigDecimal difference = purchasedPrice == null || item.getExpectedPrice() == null
+                ? null : purchasedPrice.subtract(item.getExpectedPrice());
+        // 该快照不随之后编辑物品购买记录而变化，确保“心愿 → 购买”的复盘口径稳定。
+        wishlistMapper.updatePurchaseSummary(id, purchasedAt, purchasedPrice, difference);
+        return assetId;
     }
 
     private WishlistItem buildEntity(WishlistRequest request, String status) {
@@ -244,8 +274,11 @@ public class WishlistServiceImpl implements WishlistService {
         item.setBrandId(request.getBrandId());
         item.setModel(request.getModel());
         item.setExpectedPrice(request.getExpectedPrice());
+        item.setCurrentPrice(request.getCurrentPrice());
+        item.setLastPriceAt(request.getCurrentPrice() == null ? null : LocalDateTime.now());
         item.setImageUrl(storagePathHelper.toObjectKey(request.getImageUrl()));
         item.setLink(request.getLink());
+        item.setSource(request.getSource());
         item.setStatus(status);
         item.setNotes(request.getNotes());
         item.setPriority(Optional.ofNullable(request.getPriority()).orElse(3));
@@ -282,10 +315,14 @@ public class WishlistServiceImpl implements WishlistService {
                 storagePathHelper.toFullUrl(item.getImageUrl()),
                 item.getStatus(),
                 item.getLink(),
+                item.getSource(),
                 item.getNotes(),
                 item.getPriority(),
                 tags,
                 item.getConvertedAssetId(),
+                item.getPurchasedAt(),
+                item.getPurchasedPrice(),
+                item.getPurchasePriceDiff(),
                 relatedAssets,
                 item.getCreatedAt(),
                 item.getUpdatedAt()

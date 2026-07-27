@@ -7,9 +7,13 @@
         <id column="id" property="id" />
         <result column="route_id" property="routeId" />
         <result column="asset_id" property="assetId" />
+        <result column="wishlist_id" property="wishlistId" />
+        <result column="node_type" property="nodeType" />
+        <result column="is_mainline" property="mainline" />
         <result column="level" property="level" />
         <result column="sort" property="sort" />
         <result column="label" property="label" />
+        <result column="alternative_purpose" property="alternativePurpose" />
         <result column="remark" property="remark" />
         <result column="title" property="title" />
         <result column="target_name" property="targetName" />
@@ -36,16 +40,24 @@
         LIMIT 1
     </select>
 
+    <select id="findActiveByRouteAndAsset" resultMap="nodeResultMap">
+        SELECT *
+        FROM equip_upgrade_node
+        WHERE route_id = #{routeId} AND asset_id = #{assetId} AND is_deleted = 0
+        LIMIT 1
+    </select>
+
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.EquipUpgradeNode" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO equip_upgrade_node (route_id, asset_id, level, sort, label, remark,
+        INSERT INTO equip_upgrade_node (route_id, asset_id, wishlist_id, node_type, is_mainline, level, sort, label, alternative_purpose, remark,
                                         title, target_name, period_label, planned_budget, expected_recovery, status)
-        VALUES (#{routeId}, #{assetId}, #{level}, #{sort}, #{label}, #{remark},
+        VALUES (#{routeId}, #{assetId}, #{wishlistId}, #{nodeType}, #{mainline}, #{level}, #{sort}, #{label}, #{alternativePurpose}, #{remark},
                 #{title}, #{targetName}, #{periodLabel}, #{plannedBudget}, #{expectedRecovery}, #{status})
     </insert>
 
     <update id="update" parameterType="com.digiledger.backend.model.entity.EquipUpgradeNode">
         UPDATE equip_upgrade_node
-        SET asset_id = #{assetId}, level = #{level}, sort = #{sort}, label = #{label}, remark = #{remark},
+        SET asset_id = #{assetId}, wishlist_id = #{wishlistId}, node_type = #{nodeType}, is_mainline = #{mainline}, level = #{level}, sort = #{sort}, label = #{label},
+            alternative_purpose = #{alternativePurpose}, remark = #{remark},
             title = #{title}, target_name = #{targetName}, period_label = #{periodLabel},
             planned_budget = #{plannedBudget}, expected_recovery = #{expectedRecovery}, status = #{status},
             updated_at = CURRENT_TIMESTAMP
@@ -71,5 +83,33 @@
         SET is_deleted = 1,
             updated_at = CURRENT_TIMESTAMP
         WHERE asset_id = #{assetId}
+    </update>
+
+    <update id="increaseLevelFrom">
+        UPDATE equip_upgrade_node
+        SET level = level + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE route_id = #{routeId} AND level <![CDATA[ >= ]]> #{level} AND is_deleted = 0
+    </update>
+
+    <update id="bindWishlistNodesToAsset">
+        UPDATE equip_upgrade_node
+        SET asset_id = #{assetId}, wishlist_id = NULL, node_type = 'ASSET', updated_at = CURRENT_TIMESTAMP
+        WHERE wishlist_id = #{wishlistId} AND is_deleted = 0
+    </update>
+
+    <update id="updateLayout">
+        UPDATE equip_upgrade_node SET level = #{level}, sort = #{sort}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="setMainlineAtLevelExcept">
+        UPDATE equip_upgrade_node SET is_mainline = 0, updated_at = CURRENT_TIMESTAMP
+        WHERE route_id = #{routeId} AND level = #{level} AND id != #{nodeId} AND is_deleted = 0
+    </update>
+
+    <update id="softDeleteSequenceLinksByRoute">
+        UPDATE equip_upgrade_link SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP
+        WHERE route_id = #{routeId} AND relation_type = 'SEQUENCE' AND is_deleted = 0
     </update>
 </mapper>

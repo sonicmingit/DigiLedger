@@ -13,6 +13,27 @@ public class EquipUpgradeNodeRequest {
 
     private Long assetId;
 
+    @Pattern(regexp = "ASSET|WISHLIST|PLANNED", message = "节点类型仅支持 ASSET、WISHLIST 或 PLANNED")
+    private String nodeType;
+
+    /** 从心愿单选择的待购物品；购买完成后自动替换为真实物品。 */
+    @Min(value = 1, message = "心愿单ID必须大于0")
+    private Long wishlistId;
+
+    /** 同级节点是否作为该层主物品参与上下级计算。 */
+    private Boolean mainline;
+
+    /** 锚点节点；传入后由后端在同一事务中创建节点与关系。 */
+    @Min(value = 1, message = "锚点节点必须大于0")
+    private Long anchorNodeId;
+
+    @Pattern(regexp = "BEFORE|ALTERNATIVE|AFTER", message = "添加位置仅支持 BEFORE、ALTERNATIVE 或 AFTER")
+    private String position;
+
+    /** 当锚点已有前代时，BEFORE 必须明确选择 INSERT（插入）或 BRANCH（新分支）。 */
+    @Pattern(regexp = "INSERT|BRANCH", message = "上级关系处理仅支持 INSERT 或 BRANCH")
+    private String beforeMode;
+
     @Min(value = 1, message = "层级至少为1")
     private Integer level = 1;
 
@@ -20,6 +41,9 @@ public class EquipUpgradeNodeRequest {
 
     @Size(max = 200, message = "节点标签长度需在200字以内")
     private String label;
+
+    @Size(max = 100, message = "同级用途长度需在100字以内")
+    private String alternativePurpose;
 
     @Size(max = 2000, message = "备注长度需在2000字以内")
     private String remark;
@@ -38,6 +62,18 @@ public class EquipUpgradeNodeRequest {
     public void setAssetId(Long assetId) {
         this.assetId = assetId;
     }
+    public String getNodeType() { return nodeType; }
+    public void setNodeType(String nodeType) { this.nodeType = nodeType; }
+    public Long getWishlistId() { return wishlistId; }
+    public void setWishlistId(Long wishlistId) { this.wishlistId = wishlistId; }
+    public Boolean getMainline() { return mainline; }
+    public void setMainline(Boolean mainline) { this.mainline = mainline; }
+    public Long getAnchorNodeId() { return anchorNodeId; }
+    public void setAnchorNodeId(Long anchorNodeId) { this.anchorNodeId = anchorNodeId; }
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
+    public String getBeforeMode() { return beforeMode; }
+    public void setBeforeMode(String beforeMode) { this.beforeMode = beforeMode; }
 
     public Integer getLevel() {
         return level;
@@ -62,6 +98,8 @@ public class EquipUpgradeNodeRequest {
     public void setLabel(String label) {
         this.label = label;
     }
+    public String getAlternativePurpose() { return alternativePurpose; }
+    public void setAlternativePurpose(String alternativePurpose) { this.alternativePurpose = alternativePurpose; }
 
     public String getRemark() {
         return remark;

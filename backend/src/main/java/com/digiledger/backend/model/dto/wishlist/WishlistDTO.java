@@ -4,6 +4,7 @@ import com.digiledger.backend.model.dto.asset.TagDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -24,10 +25,14 @@ public record WishlistDTO(
         String imageUrl,
         String status,
         String link,
+        String source,
         String notes,
         Integer priority,
         List<TagDTO> tags,
         Long convertedAssetId,
+        LocalDate purchasedAt,
+        BigDecimal purchasedPrice,
+        BigDecimal purchasePriceDiff,
         List<WishlistAssetRefDTO> relatedAssets,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

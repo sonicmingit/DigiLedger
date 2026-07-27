@@ -17,6 +17,8 @@ public class EquipUpgradeLink {
     private Long fromNodeId;
     /** 后代节点ID */
     private Long toNodeId;
+    /** 关系类型：SEQUENCE 前后代，ALTERNATIVE 同级备选。 */
+    private String relationType;
     /** 备注 */
     private String remark;
     /** 删除标记 */

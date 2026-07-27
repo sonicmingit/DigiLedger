@@ -25,6 +25,19 @@ public record UpgradeGraphNodeDTO(
         String periodLabel,
         BigDecimal plannedBudget,
         BigDecimal expectedRecovery,
-        String status
+        String status,
+        String nodeType,
+        String brandName,
+        String model,
+        BigDecimal primaryPurchaseAmount,
+        BigDecimal totalInvest,
+        Long useDays,
+        LocalDate mainSaleDate,
+        BigDecimal mainSalePrice,
+        BigDecimal mainSaleNetIncome,
+        java.util.List<String> dataWarnings,
+        String alternativePurpose,
+        Long wishlistId,
+        boolean mainline
 ) {
 }

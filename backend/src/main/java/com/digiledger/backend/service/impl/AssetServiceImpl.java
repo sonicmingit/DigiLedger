@@ -334,6 +334,8 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
         asset.setSerialNo(request.getSerialNo());
         asset.setStatus(request.getStatus());
         asset.setPurchaseDate(request.getPurchaseDate());
+        // 历史库仍保留 enabled_date 的 NOT NULL 约束；新建物品以购买日作为启用日。
+        asset.setEnabledDate(request.getPurchaseDate());
         asset.setRetiredDate(request.getRetiredDate());
         asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
         asset.setNotes(request.getNotes());
