@@ -31,6 +31,10 @@ function Ensure-LocalDeploymentFiles {
         Copy-Item -LiteralPath $composeTemplate -Destination $composeFile
         Write-Host "Created $composeFile from its committed template."
     }
+    elseif ((Get-FileHash -LiteralPath $composeTemplate).Hash -ne (Get-FileHash -LiteralPath $composeFile).Hash) {
+        Copy-Item -LiteralPath $composeTemplate -Destination $composeFile -Force
+        Write-Host "Refreshed $composeFile from its committed template."
+    }
 }
 
 function Invoke-Deployment {

@@ -5,7 +5,7 @@
 > - 均摊成本：**按天计算**。
 > - 折旧：**不再计算折旧**（仅展示总投入、使用天数、日均成本）。
 > - 架构：**前后端分离**。后端 `Spring Boot + MyBatis + MySQL`；前端 `Vue3 + Vite + Element Plus`。
-> - 部署：**Docker/Compose 一键启动**（含 MySQL、后端、前端、Nginx 反代）。
+> - 部署：**Docker/Compose 一键启动**（后端、前端与 Nginx 反代；数据库和对象存储使用外部服务）。
 > - 接口返回体：统一为 `{ code, data, msg }`，`code=200` 表示成功。
 > - 版本：V0.3.8（心愿单关联跳转、出售成本指标、上传回显修复版）。
 

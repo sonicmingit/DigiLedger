@@ -45,6 +45,9 @@ ensure_local_files() {
   if [[ ! -f "$COMPOSE_FILE" ]]; then
     cp "$COMPOSE_TEMPLATE" "$COMPOSE_FILE"
     echo "Created $COMPOSE_FILE from its committed template."
+  elif ! cmp -s "$COMPOSE_TEMPLATE" "$COMPOSE_FILE"; then
+    cp "$COMPOSE_TEMPLATE" "$COMPOSE_FILE"
+    echo "Refreshed $COMPOSE_FILE from its committed template."
   fi
 }
 

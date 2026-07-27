@@ -1,6 +1,6 @@
 # DigiLedger V0.3.4
 
-DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿用 `asset` 命名）全生命周期管理系统。本仓库包含 **Spring Boot + MyBatis** 实现的后端服务与 **Vue 3 + Vite + Element Plus** 实现的前端界面，并提供一键启动的 Docker Compose（含 MinIO）编排。
+DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿用 `asset` 命名）全生命周期管理系统。本仓库包含 **Spring Boot + MyBatis** 实现的后端服务与 **Vue 3 + Vite + Element Plus** 实现的前端界面，并提供一键部署的 Docker Compose 编排。
 
 ## 核心特性
 
@@ -90,7 +90,7 @@ npm run preview
 ## Docker 部署
 
 部署资料集中在 `deploy/`，两套方案均会编译后端和对应前端源码，并启动
-MySQL、MinIO、后端与前端反向代理：
+后端与前端反向代理；MySQL、对象存储等依赖由外部服务提供：
 
 - 版本 1：`deploy/v1`，后端 + `frontend`。
 - 版本 2：`deploy/v2`，后端 + `frontend-figma`。
@@ -109,27 +109,30 @@ Windows PowerShell 可执行：
 ```
 
 首次执行会生成不提交到 Git 的 `config.env` 和 `docker-compose.yml`；两者的
-模板均已提交。修改生成的 `config.env` 中的密码和 `DL_STORAGE_BASE_URL` 后，
+模板均已提交。填写生成的 `config.env` 中的外部数据库与对象存储连接信息后，
 使用 `--force` 完成首次部署。日常执行部署脚本时会先更新 Git 代码；发现更新
 后会询问是否重新构建部署。详细说明见 [版本 1](deploy/v1/README.md) 与
 [版本 2](deploy/v2/README.md)。
+
+部署脚本会保留本地 `config.env`，并在每次执行时从已提交的模板刷新
+`docker-compose.yml`，使编排更新能自动生效。
 
 ## 环境变量一览
 
 | 变量名                | 默认值        | 说明                           |
 |-----------------------|---------------|--------------------------------|
-| `DL_DB_HOST`          | mysql         | 后端连接的 MySQL 主机          |
+| `DL_DB_HOST`          | -             | 外部 MySQL 主机                |
 | `DL_DB_PORT`          | 3306          | 后端连接的 MySQL 端口          |
 | `DL_DB_NAME`          | digiledger    | 数据库名称                     |
-| `DL_DB_USER`          | root          | 数据库用户名                   |
-| `DL_DB_PASS`          | root          | 数据库密码                     |
+| `DL_DB_USER`          | -             | 外部数据库用户名               |
+| `DL_DB_PASS`          | -             | 外部数据库密码                 |
 | `DL_SERVER_PORT`      | 8080          | Spring Boot 服务端口           |
 | `DL_STORAGE_PROVIDER` | minio         | 对象存储提供方                 |
-| `DL_STORAGE_ENDPOINT` | http://minio:9000 | 对象存储内部访问地址      |
+| `DL_STORAGE_ENDPOINT` | -             | 外部对象存储服务地址           |
 | `DL_STORAGE_BUCKET`   | digiledger    | 上传使用的桶名称               |
-| `DL_STORAGE_ACCESS_KEY` | minioadmin  | 存储 AccessKey                |
-| `DL_STORAGE_SECRET_KEY` | minioadmin  | 存储 SecretKey                |
-| `DL_STORAGE_BASE_URL` | http://localhost:9000 | 文件访问基础 URL   |
+| `DL_STORAGE_ACCESS_KEY` | -           | 存储 AccessKey                |
+| `DL_STORAGE_SECRET_KEY` | -           | 存储 SecretKey                |
+| `DL_STORAGE_BASE_URL` | -             | 对象存储的公网访问基础 URL     |
 | `DL_BING_IMAGE_API_KEY` | (空)        | Bing 图片搜索 API Key，用于智能找图 |
 
 ## 下一步计划
