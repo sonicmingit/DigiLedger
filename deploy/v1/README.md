@@ -19,7 +19,8 @@ Windows PowerShell：
 后端与 `frontend`，不会创建数据库、MinIO 或其他中间件。
 
 `config.env` 是本地配置，脚本不会覆盖；`docker-compose.yml` 每次运行都会按仓库中
-已提交的模板刷新，请将所有自定义连接信息保存在 `config.env`。
+已提交的模板刷新，请将所有可配置项（端口、数据库、对象存储、Flyway）保存在
+`config.env`。
 
 日常更新只需运行 `./deploy/v1/deploy.sh`：脚本会先执行 `git pull --ff-only`，
 检测到提交更新后询问是否重建并重启全部服务。需要无条件重建时使用 `--force`。

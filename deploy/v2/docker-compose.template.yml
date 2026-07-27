@@ -11,7 +11,8 @@ services:
       DL_DB_NAME: ${DL_DB_NAME}
       DL_DB_USER: ${DL_DB_USER}
       DL_DB_PASS: ${DL_DB_PASS}
-      DL_SERVER_PORT: 8080
+      DL_SERVER_PORT: ${DL_SERVER_PORT}
+      DL_FLYWAY_ENABLED: ${DL_FLYWAY_ENABLED}
       DL_STORAGE_PROVIDER: ${DL_STORAGE_PROVIDER}
       DL_STORAGE_ENDPOINT: ${DL_STORAGE_ENDPOINT}
       DL_STORAGE_REGION: ${DL_STORAGE_REGION}
@@ -19,9 +20,8 @@ services:
       DL_STORAGE_ACCESS_KEY: ${DL_STORAGE_ACCESS_KEY}
       DL_STORAGE_SECRET_KEY: ${DL_STORAGE_SECRET_KEY}
       DL_STORAGE_BASE_URL: ${DL_STORAGE_BASE_URL}
-      DL_BING_IMAGE_API_KEY: ${DL_BING_IMAGE_API_KEY}
     ports:
-      - "${BACKEND_PORT}:8080"
+      - "${BACKEND_PORT}:${DL_SERVER_PORT}"
 
   frontend:
     build:
@@ -30,5 +30,7 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    environment:
+      DL_SERVER_PORT: ${DL_SERVER_PORT}
     ports:
       - "${APP_PORT}:80"

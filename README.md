@@ -127,13 +127,13 @@ Windows PowerShell 可执行：
 | `DL_DB_USER`          | -             | 外部数据库用户名               |
 | `DL_DB_PASS`          | -             | 外部数据库密码                 |
 | `DL_SERVER_PORT`      | 8080          | Spring Boot 服务端口           |
+| `DL_FLYWAY_ENABLED`   | true          | 是否在启动时执行数据库迁移     |
 | `DL_STORAGE_PROVIDER` | minio         | 对象存储提供方                 |
 | `DL_STORAGE_ENDPOINT` | -             | 外部对象存储服务地址           |
 | `DL_STORAGE_BUCKET`   | digiledger    | 上传使用的桶名称               |
 | `DL_STORAGE_ACCESS_KEY` | -           | 存储 AccessKey                |
 | `DL_STORAGE_SECRET_KEY` | -           | 存储 SecretKey                |
 | `DL_STORAGE_BASE_URL` | -             | 对象存储的公网访问基础 URL     |
-| `DL_BING_IMAGE_API_KEY` | (空)        | Bing 图片搜索 API Key，用于智能找图 |
 
 ## 下一步计划
 
