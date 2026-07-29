@@ -35,6 +35,10 @@ public class DeviceAsset {
     private LocalDate retiredDate;
     /** 封面图 URL */
     private String coverImageUrl;
+    /** 相关链接 JSON */
+    private String relatedLinks;
+    /** 手动填写的使用时长（月） */
+    private Integer manualUseMonths;
     /** 备注 */
     private String notes;
     /** 创建时间 */

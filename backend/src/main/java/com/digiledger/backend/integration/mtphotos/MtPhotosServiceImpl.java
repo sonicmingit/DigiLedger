@@ -53,17 +53,21 @@ public class MtPhotosServiceImpl implements MtPhotosService {
         if ("CLIP".equals(mode)) body.put("count", 100);
         JsonNode root = requestJson(config, "POST", "CLIP".equals(mode) ? "/gateway/searchCLIP" : "/gateway/search", body);
         List<JsonNode> allMatches = extractFileNodes(root);
-        int totalCount = root.has("totalCount") && root.get("totalCount").canConvertToInt()
-                ? root.get("totalCount").asInt() : allMatches.size();
+        // MT Photos 的 totalCount 可能包含同一文件在不同匹配字段中的重复命中。
+        // 页面实际以文件 ID 展示，因此计数和分页也必须基于可展示的唯一文件 ID。
+        List<Long> fileIds = allMatches.stream()
+                .map(node -> readLong(node, "id", "ID"))
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        int totalCount = fileIds.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalCount / PAGE_SIZE));
         if (page > totalPages) page = totalPages;
 
-        int start = Math.min((page - 1) * PAGE_SIZE, allMatches.size());
-        int end = Math.min(start + PAGE_SIZE, allMatches.size());
+        int start = Math.min((page - 1) * PAGE_SIZE, totalCount);
+        int end = Math.min(start + PAGE_SIZE, totalCount);
         List<MtPhotosSearchItem> items = new ArrayList<>();
-        for (JsonNode node : allMatches.subList(start, end)) {
-            Long id = readLong(node, "id", "ID");
-            if (id == null) continue;
+        for (Long id : fileIds.subList(start, end)) {
             FileInfo info = getFileInfo(config, id);
             items.add(new MtPhotosSearchItem(id, info.fileName(), info.capturedAt(), info.fileType(), thumbnailUrl(id)));
         }
@@ -198,7 +202,18 @@ public class MtPhotosServiceImpl implements MtPhotosService {
     }
 
     private static Long readLong(JsonNode node, String... names) {
-        for (String name : names) if (node.hasNonNull(name) && node.get(name).canConvertToLong()) return node.get(name).asLong();
+        for (String name : names) {
+            if (!node.hasNonNull(name)) continue;
+            JsonNode value = node.get(name);
+            if (value.canConvertToLong()) return value.asLong();
+            if (value.isTextual()) {
+                try {
+                    return Long.parseLong(value.asText().trim());
+                } catch (NumberFormatException ignored) {
+                    // 继续尝试其他兼容字段。
+                }
+            }
+        }
         return null;
     }
 

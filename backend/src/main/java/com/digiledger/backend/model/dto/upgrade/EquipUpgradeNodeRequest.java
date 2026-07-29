@@ -35,9 +35,13 @@ public class EquipUpgradeNodeRequest {
     private String beforeMode;
 
     @Min(value = 1, message = "层级至少为1")
-    private Integer level = 1;
+    /**
+     * 仅旧版独立创建接口可显式传入；编辑节点时为空，服务层必须保留原代际。
+     */
+    private Integer level;
 
-    private Integer sort = 0;
+    /** 编辑节点时为空，避免缺省值把纵向顺序重置为 0。 */
+    private Integer sort;
 
     @Size(max = 200, message = "节点标签长度需在200字以内")
     private String label;

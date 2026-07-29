@@ -34,6 +34,11 @@ public interface EquipUpgradeNodeMapper {
     int setMainlineAtLevelExcept(@Param("routeId") Long routeId, @Param("level") Integer level,
                                  @Param("nodeId") Long nodeId);
 
+    /**
+     * 修正同级节点的主物品归属。用于兼容历史数据中同一同级关系两端都被标记为主物品的情况。
+     */
+    int updateMainline(@Param("id") Long id, @Param("mainline") boolean mainline);
+
     int softDeleteSequenceLinksByRoute(@Param("routeId") Long routeId);
 
     /** 在插入前代时整体下移世代层级，确保代际标签连续可解释。 */

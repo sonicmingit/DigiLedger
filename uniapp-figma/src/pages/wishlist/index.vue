@@ -1,11 +1,25 @@
 <template>
   <view class="page"
-    ><AppHeader title="心愿单" subtitle="把想买的先放这里，等合适时机"
-      ><view class="round-add touch" @click="openEditor()"
+    ><AppHeader title="心愿单" subtitle="记录计划购买的物品"
+      ><view class="round-add touch" @click="openEditor"
         ><image src="/static/icons/plus.svg" /></view></AppHeader
     ><view class="budget"
       ><text>计划预算</text><text class="budget-value">{{ money(total) }}</text
       ><view class="badge">{{ items.length }} 件物品</view></view
+    ><view class="search card"
+      ><image src="/static/icons/search.svg" /><input
+        v-model="keyword"
+        placeholder="搜索名称、品牌或来源"
+      /></view
+    ><view class="status-pills"
+      ><view
+        v-for="item in statuses"
+        :key="item.value"
+        class="pill"
+        :class="{ active: status === item.value }"
+        @click="status = item.value"
+        >{{ item.label }}</view
+      ></view
     ><text class="section-label">优先级</text
     ><view class="pills"
       ><view
@@ -23,7 +37,7 @@
       v-for="(item, index) in filtered"
       :key="item.id"
       class="wish card touch"
-      @click="actions(item)"
+      @click="openDetail(item.id)"
       ><view class="visual" :class="{ soft: index % 2 === 0 }"
         ><image
           v-if="item.imageUrl"
@@ -44,25 +58,48 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { onLoad, onPullDownRefresh } from "@dcloudio/uni-app";
+import { onLoad, onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import AppHeader from "@/components/AppHeader.vue";
 import BottomNav from "@/components/BottomNav.vue";
 import { api, type Wishlist } from "@/services/api";
 const items = ref<Wishlist[]>([]),
   loading = ref(false),
   error = ref(""),
-  priority = ref(0);
+  priority = ref(0),
+  keyword = ref(""),
+  status = ref<"all" | "pending" | "purchased">("all");
 const priorities = [
     { label: "全部", value: 0 },
     { label: "高", value: 3 },
     { label: "中", value: 2 },
     { label: "低", value: 1 },
   ],
-  filtered = computed(() =>
-    priority.value
-      ? items.value.filter((x) => x.priority === priority.value)
-      : items.value,
-  ),
+  statuses = [
+    { label: "全部", value: "all" as const },
+    { label: "计划中", value: "pending" as const },
+    { label: "已购买", value: "purchased" as const },
+  ],
+  filtered = computed(() => {
+    const query = keyword.value.trim().toLocaleLowerCase();
+    return items.value.filter((item) => {
+      const matchesPriority = !priority.value || item.priority === priority.value;
+      const purchased = item.status === "已购买";
+      const matchesStatus =
+        status.value === "all" ||
+        (status.value === "purchased" ? purchased : !purchased);
+      const searchable = [
+        item.name,
+        item.brandName,
+        item.model,
+        item.source,
+        item.categoryName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase();
+      return matchesPriority && matchesStatus && (!query || searchable.includes(query));
+    });
+  }),
   total = computed(() =>
     items.value.reduce(
       (n, x) => n + Number(x.currentPrice || x.expectedPrice || 0),
@@ -83,63 +120,13 @@ async function load() {
     uni.stopPullDownRefresh();
   }
 }
-function openEditor(item?: Wishlist) {
-  const existing = item;
-  let name = existing?.name || "",
-    price = String(existing?.expectedPrice || "");
-  uni.showModal({
-    title: existing ? "编辑心愿" : "新增心愿",
-    editable: true,
-    placeholderText: "心愿名称",
-    content: name,
-    success: (r) => {
-      if (r.confirm && r.content) {
-        uni.showModal({
-          title: "预算",
-          editable: true,
-          placeholderText: "预计价格",
-          content: price,
-          success: async (p) => {
-            if (!p.confirm) return;
-            const payload = {
-              name: r.content,
-              expectedPrice: Number(p.content || 0),
-              priority: existing?.priority || 2,
-            };
-            existing
-              ? await api.updateWishlist(existing.id, payload)
-              : await api.createWishlist(payload);
-            load();
-          },
-        });
-      }
-    },
-  });
-}
-function actions(item: Wishlist) {
-  uni.showActionSheet({
-    itemList: ["编辑", "标记已购", "转为物品", "删除"],
-    success: async (r) => {
-      if (r.tapIndex === 0) return openEditor(item);
-      if (r.tapIndex === 1) await api.markPurchased(item.id);
-      if (r.tapIndex === 2) {
-        const today = new Date().toISOString().slice(0, 10);
-        await api.convertWishlist(item.id, {
-          name: item.name,
-          categoryId: (item as any).categoryId || 1,
-          status: "使用中",
-          purchaseDate: today,
-          targetCostValue: Number(item.currentPrice || item.expectedPrice || 0),
-          targetCostStrategy: "WISHLIST_BUDGET",
-        });
-        uni.showToast({ title: "已转为物品", icon: "success" });
-      }
-      if (r.tapIndex === 3) await api.deleteWishlist(item.id);
-      load();
-    },
-  });
-}
+const openEditor = () => uni.navigateTo({ url: "/pages/wishlist/editor" }),
+  openDetail = (id: number) =>
+    uni.navigateTo({ url: `/pages/wishlist/detail?id=${id}` });
 onLoad(load);
+onShow(() => {
+  if (items.value.length) load();
+});
 onPullDownRefresh(load);
 </script>
 <style scoped>
@@ -189,6 +176,30 @@ onPullDownRefresh(load);
   margin: 24px 0 9px;
   font-size: 13px;
   color: var(--dl-text-secondary);
+}
+.search {
+  min-height: 50px;
+  margin-top: 14px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: none;
+}
+.search image {
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+  opacity: 0.65;
+}
+.search input {
+  flex: 1;
+  min-height: 50px;
+  font-size: 13px;
+}
+.status-pills {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
 }
 .pills {
   display: flex;

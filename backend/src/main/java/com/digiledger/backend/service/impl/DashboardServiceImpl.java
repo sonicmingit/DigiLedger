@@ -32,7 +32,7 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional
     public DashboardSummaryDTO getSummary() {
-        List<AssetSummaryDTO> assets = assetService.listAssets(null, null, null, null, null);
+        List<AssetSummaryDTO> assets = assetService.listAssets(null, null, null, null, null, null);
         BigDecimal total = assets.stream().map(AssetSummaryDTO::totalInvest).filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
         BigDecimal avgDaily = assets.stream().map(AssetSummaryDTO::avgCostPerDay).filter(Objects::nonNull)

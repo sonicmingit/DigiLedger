@@ -11,9 +11,9 @@ import java.util.List;
 
 public interface AssetService {
 
-    List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds);
+    List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long brandId, Long platformId, List<Long> tagIds);
 
-    AssetPageDTO pageAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds,
+    AssetPageDTO pageAssets(String status, String keyword, Long categoryId, Long brandId, Long platformId, List<Long> tagIds,
                             int page, int pageSize, String sortBy, String sortOrder);
 
     AssetDetailDTO getAssetDetail(Long id);

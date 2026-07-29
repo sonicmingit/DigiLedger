@@ -24,7 +24,8 @@ function requestOnce<T>(
   return new Promise((resolve, reject) =>
     uni.request({
       url,
-      method,
+      // 当前 uni-app 运行时支持 PATCH，但项目锁定的旧版类型声明尚未列出该方法。
+      method: method as any,
       data: data as any,
       header: { "Content-Type": "application/json", ...header },
       timeout,

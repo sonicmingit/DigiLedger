@@ -18,6 +18,8 @@
         <result column="enabled_date" property="enabledDate" />
         <result column="retired_date" property="retiredDate" />
         <result column="cover_image_url" property="coverImageUrl" />
+        <result column="related_links" property="relatedLinks" />
+        <result column="manual_use_months" property="manualUseMonths" />
         <result column="notes" property="notes" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
@@ -26,7 +28,7 @@
     <sql id="baseColumns">
         id, name, category_id, category_path, brand_id, brand, model, serial_no, status,
         purchase_id, purchase_date, enabled_date, retired_date,
-        cover_image_url, notes, created_at, updated_at
+        cover_image_url, related_links, manual_use_months, notes, created_at, updated_at
     </sql>
 
     <select id="findAll" resultMap="assetResultMap">
@@ -63,6 +65,9 @@
                     <if test="categoryPathSuffix != null">OR da.category_path LIKE #{categoryPathSuffix}</if>
                 )
             </if>
+            <if test="brandId != null">
+                AND da.brand_id = #{brandId}
+            </if>
             <if test="platformId != null">
                 AND EXISTS (
                     SELECT 1 FROM purchase p
@@ -81,11 +86,11 @@
         INSERT INTO device_asset (
             name, category_id, category_path, brand_id, brand, model, serial_no, status,
             purchase_id, purchase_date, enabled_date, retired_date,
-            cover_image_url, notes
+            cover_image_url, related_links, manual_use_months, notes
         ) VALUES (
             #{name}, #{categoryId}, #{categoryPath}, #{brandId}, #{brand}, #{model}, #{serialNo}, #{status},
             #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
-            #{coverImageUrl}, #{notes}
+            #{coverImageUrl}, #{relatedLinks}, #{manualUseMonths}, #{notes}
         )
     </insert>
 
@@ -105,6 +110,8 @@
             <if test="enabledDate != null">enabled_date = #{enabledDate},</if>
             <if test="retiredDate != null">retired_date = #{retiredDate},</if>
             <if test="coverImageUrl != null">cover_image_url = #{coverImageUrl},</if>
+            related_links = #{relatedLinks},
+            manual_use_months = #{manualUseMonths},
             <if test="notes != null">notes = #{notes},</if>
             updated_at = CURRENT_TIMESTAMP
         </set>

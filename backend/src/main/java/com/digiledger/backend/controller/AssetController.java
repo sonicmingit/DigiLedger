@@ -37,11 +37,12 @@ public class AssetController {
                                                          @RequestParam(name = "keyword", required = false) String keyword,
                                                          @RequestParam(name = "q", required = false) String q,
                                                          @RequestParam(name = "category_id", required = false) Long categoryId,
+                                                         @RequestParam(name = "brand_id", required = false) Long brandId,
                                                          @RequestParam(name = "platform_id", required = false) Long platformId,
                                                          @RequestParam(name = "tag_ids", required = false) List<Long> tagIds,
                                                          @RequestParam(name = "view", required = false) String view) {
         String search = keyword != null ? keyword : q;
-        return ApiResponse.success(assetService.listAssets(status, search, categoryId, platformId, tagIds));
+        return ApiResponse.success(assetService.listAssets(status, search, categoryId, brandId, platformId, tagIds));
     }
 
     @GetMapping("/page")
@@ -50,6 +51,7 @@ public class AssetController {
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "category_id", required = false) Long categoryId,
+            @RequestParam(name = "brand_id", required = false) Long brandId,
             @RequestParam(name = "platform_id", required = false) Long platformId,
             @RequestParam(name = "tag_ids", required = false) List<Long> tagIds,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
@@ -57,7 +59,7 @@ public class AssetController {
             @RequestParam(name = "sort_by", defaultValue = "purchaseDate") String sortBy,
             @RequestParam(name = "sort_order", defaultValue = "desc") String sortOrder) {
         String search = keyword != null ? keyword : q;
-        return ApiResponse.success(assetService.pageAssets(status, search, categoryId, platformId, tagIds, page, pageSize, sortBy, sortOrder));
+        return ApiResponse.success(assetService.pageAssets(status, search, categoryId, brandId, platformId, tagIds, page, pageSize, sortBy, sortOrder));
     }
 
     /**

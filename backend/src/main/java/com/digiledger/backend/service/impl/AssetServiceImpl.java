@@ -91,7 +91,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds) {
+    public List<AssetSummaryDTO> listAssets(String status, String keyword, Long categoryId, Long brandId, Long platformId, List<Long> tagIds) {
         if (categoryId != null) {
             Optional.ofNullable(dictCategoryMapper.findById(categoryId))
                     .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "类别不存在"));
@@ -100,11 +100,15 @@ public class AssetServiceImpl implements AssetService {
             Optional.ofNullable(dictPlatformMapper.findById(platformId))
                     .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "平台不存在"));
         }
+        if (brandId != null) {
+            Optional.ofNullable(dictBrandMapper.findById(brandId))
+                    .orElseThrow(() -> new BizException(ErrorCode.VALIDATION_ERROR, "品牌不存在"));
+        }
         List<Long> normalizedTagIds = tagIds == null ? null : validateTagIds(tagIds);
         String categoryLike = buildCategoryLikePattern(categoryId, true);
         String categorySuffix = buildCategoryLikePattern(categoryId, false);
         List<DeviceAsset> assets = assetMapper.findAll(status, keyword, categoryId, categoryLike, categorySuffix,
-                platformId, normalizedTagIds, normalizedTagIds == null ? null : normalizedTagIds.size());
+                brandId, platformId, normalizedTagIds, normalizedTagIds == null ? null : normalizedTagIds.size());
         return assets.stream()
                 .map(asset -> {
                     List<Purchase> purchases = purchaseMapper.findByAssetId(asset.getId());
@@ -116,9 +120,9 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public AssetPageDTO pageAssets(String status, String keyword, Long categoryId, Long platformId, List<Long> tagIds,
+    public AssetPageDTO pageAssets(String status, String keyword, Long categoryId, Long brandId, Long platformId, List<Long> tagIds,
                                    int page, int pageSize, String sortBy, String sortOrder) {
-        List<AssetSummaryDTO> all = new ArrayList<>(listAssets(status, keyword, categoryId, platformId, tagIds));
+        List<AssetSummaryDTO> all = new ArrayList<>(listAssets(status, keyword, categoryId, brandId, platformId, tagIds));
         Comparator<AssetSummaryDTO> comparator = switch (sortBy == null ? "purchaseDate" : sortBy) {
             case "name" -> Comparator.comparing(AssetSummaryDTO::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
             case "status" -> Comparator.comparing(AssetSummaryDTO::status, Comparator.nullsLast(String::compareTo));
@@ -157,6 +161,8 @@ public class AssetServiceImpl implements AssetService {
                 asset.getPurchaseDate(),
                 asset.getRetiredDate(),
                 storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
+                parseRelatedLinks(asset.getRelatedLinks()),
+                asset.getManualUseMonths(),
                 asset.getNotes(),
                 tags,
                 metrics.totalInvest,
@@ -214,8 +220,14 @@ public class AssetServiceImpl implements AssetService {
     public void deleteAsset(Long id) {
         DeviceAsset asset = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
-        if (purchaseMapper.countByAsset(id) > 0 || saleMapper.countByAsset(id) > 0) {
+        List<Purchase> purchases = purchaseMapper.findByAssetId(id);
+        boolean hasOnlyPrimaryPurchase = purchases.size() == 1
+                && "PRIMARY".equals(purchases.get(0).getType());
+        if (saleMapper.countByAsset(id) > 0 || (!purchases.isEmpty() && !hasOnlyPrimaryPurchase)) {
             throw new BizException(ErrorCode.ASSET_DELETE_CONFLICT);
+        }
+        if (hasOnlyPrimaryPurchase) {
+            purchaseMapper.delete(purchases.get(0).getId());
         }
 /*        // 删除与该资产关联的升级路线节点
         equipUpgradeNodeMapper.softDeleteByAssetId(id);*/
@@ -338,6 +350,8 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
         asset.setEnabledDate(request.getPurchaseDate());
         asset.setRetiredDate(request.getRetiredDate());
         asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
+        asset.setRelatedLinks(toJsonRelatedLinks(request.getRelatedLinks()));
+        asset.setManualUseMonths(request.getManualUseMonths());
         asset.setNotes(request.getNotes());
         return asset;
     }
@@ -607,6 +621,29 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
             return objectMapper.writeValueAsString(objectKeys);
         } catch (JsonProcessingException e) {
             throw new BizException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
+        }
+    }
+
+    private List<AssetRelatedLinkDTO> parseRelatedLinks(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, objectMapper.getTypeFactory()
+                    .constructCollectionType(List.class, AssetRelatedLinkDTO.class));
+        } catch (JsonProcessingException e) {
+            return List.of();
+        }
+    }
+
+    private String toJsonRelatedLinks(List<AssetRelatedLinkRequest> links) {
+        if (links == null || links.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(links);
+        } catch (JsonProcessingException e) {
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "相关链接序列化失败");
         }
     }
 

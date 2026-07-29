@@ -108,6 +108,11 @@
         WHERE route_id = #{routeId} AND level = #{level} AND id != #{nodeId} AND is_deleted = 0
     </update>
 
+    <update id="updateMainline">
+        UPDATE equip_upgrade_node SET is_mainline = #{mainline}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
     <update id="softDeleteSequenceLinksByRoute">
         UPDATE equip_upgrade_link SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP
         WHERE route_id = #{routeId} AND relation_type = 'SEQUENCE' AND is_deleted = 0

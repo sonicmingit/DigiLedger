@@ -6,7 +6,7 @@
       ><view class="top"
         ><view class="back touch" @click="back"><view class="back-icon" /></view
         ><text class="title">物品详情</text
-        ><view class="dots touch" @click="openMenu"><i /><i /><i /></view></view
+        ><view class="more touch" @click="openMenu">更多</view></view
       ><view class="hero"
         ><image
           v-if="asset.coverImageUrl"
@@ -18,24 +18,114 @@
         ><view
           ><text class="name">{{ asset.name }}</text
           ><text class="meta"
-            >{{ asset.categoryName || "未分类" }} ·
+            >{{ asset.categoryName || asset.categoryPath || "未分类" }} ·
             {{ asset.model || "未填写型号" }}</text
           ></view
-        ><text class="price">{{ money(asset.totalCost) }}</text></view
+        ><text class="price">{{ money(asset.totalInvest ?? asset.totalCost) }}</text></view
+      ><view v-if="asset.tags?.length" class="tags"
+        ><text
+          v-for="tag in asset.tags"
+          :key="tag.id"
+          :style="{ background: tag.color || 'var(--dl-accent-soft)' }"
+          >{{ tag.name }}</text
+        ></view
+      ><view class="metrics"
+        ><view class="card"
+          ><text>总投入</text><text>{{ money(asset.totalInvest ?? asset.totalCost) }}</text></view
+        ><view class="card"
+          ><text>日均成本</text><text>{{ money(asset.avgCostPerDay ?? asset.dailyCost) }}</text></view
+        ><view class="card"
+          ><text>使用天数</text><text>{{ asset.useDays || 0 }} 天</text></view
+        ><view class="card"
+          ><text>最近净收入</text><text>{{ money(asset.lastNetIncome) }}</text></view
+        ></view
+      ><text class="section-title">基础信息</text
       ><view class="card info"
         ><view
+          ><text>品牌</text
+          ><text>{{ asset.brandName || asset.brand?.name || "—" }}</text></view
+        ><view
+          ><text>型号</text><text>{{ asset.model || "—" }}</text></view
+        ><view
+          ><text>序列号</text><text>{{ asset.serialNo || "—" }}</text></view
+        ><view
           ><text>购买日期</text
-          ><text>{{ asset.purchaseDate || "--" }}</text></view
+          ><text>{{ asset.purchaseDate || primaryPurchase?.purchaseDate || "—" }}</text></view
+        ><view
+          ><text>购买平台</text
+          ><text>{{ primaryPurchase?.platformName || primaryPurchase?.seller || "—" }}</text></view
         ><view
           ><text>保修到期</text
-          ><text>{{ asset.warrantyExpireDate || "--" }}</text></view
+          ><text>{{ asset.warrantyExpireDate || primaryPurchase?.warrantyExpireDate || "—" }}</text></view
         ><view
-          ><text>使用成本</text
-          ><text>{{ money(asset.dailyCost) }} / 天</text></view
+          ><text>手动使用时间</text
+          ><text>{{ manualUseDuration || "—" }}</text></view
+        ></view
+      ><view v-if="relatedLinks.length" class="link-list card"
+        ><text class="label">相关链接</text
+        ><view
+          v-for="link in relatedLinks"
+          :key="`${link.url}-${link.description || ''}`"
+          class="link-row touch"
+          @click="copyLink(link.url)"
+          ><text>{{ link.description || "链接" }}</text
+          ><text>复制</text></view
         ></view
       ><view class="card note"
         ><text class="label">备注</text
         ><text>{{ asset.notes || "暂无备注" }}</text></view
+      ><view class="records-heading"
+        ><text class="section-title">购买记录</text
+        ><text>{{ purchaseRecords.length }} 条</text></view
+      ><view v-if="purchaseRecords.length" class="record-list"
+        ><view
+          v-for="record in purchaseRecords"
+          :key="record.id || `${record.type}-${record.purchaseDate}`"
+          class="record card"
+          ><view class="record-title"
+            ><text>{{ purchaseTypeLabel(record.type) }}</text
+            ><text>{{ money(record.price) }}</text></view
+          ><text class="record-name">{{
+            record.type === "PRIMARY" ? asset.name : record.name || "未命名记录"
+          }}</text
+          ><view class="record-grid"
+            ><text>{{ record.purchaseDate || "—" }}</text
+            ><text>{{ record.platformName || record.seller || "—" }}</text
+            ><text>数量 {{ record.quantity || 1 }}</text
+            ><text>运费 {{ money(record.shippingCost) }}</text></view
+          ><view v-if="record.productLink || record.attachments?.length" class="record-actions"
+            ><text v-if="record.productLink" @click="copyLink(record.productLink)">复制商品链接</text
+            ><text v-if="record.attachments?.length" @click="previewAttachments(record.attachments)"
+              >查看附件 {{ record.attachments.length }}</text
+            ></view
+          ><text v-if="record.notes" class="record-note">{{ record.notes }}</text></view
+        ></view
+      ><view v-else class="empty-inline card">暂无购买记录</view
+      ><view class="records-heading"
+        ><text class="section-title">出售记录</text
+        ><text>{{ saleRecords.length }} 条</text></view
+      ><view v-if="saleRecords.length" class="record-list"
+        ><view v-for="record in saleRecords" :key="record.id" class="record card"
+          ><view class="record-title sale-title"
+            ><text>{{ record.saleScope === "ASSET" ? "主商品" : "配件" }}</text
+            ><text>{{ money(record.netIncome ?? record.salePrice) }}</text></view
+          ><text class="record-name">{{ record.saleDate || "—" }}</text
+          ><view class="record-grid"
+            ><text>售价 {{ money(record.salePrice) }}</text
+            ><text>{{ record.platformName || record.buyer || "—" }}</text
+            ><text>费用 {{ money(totalSaleFee(record)) }}</text
+            ><text>使用 {{ record.useDays || 0 }} 天</text></view
+          ><view class="cost-line"
+            ><text>日均 {{ money(record.dailyUsageCost) }}</text
+            ><text>月均 {{ money(record.monthlyUsageCost) }}</text></view
+          ><text
+            v-if="record.attachments?.length"
+            class="attachment-link"
+            @click="previewAttachments(record.attachments)"
+            >查看附件 {{ record.attachments.length }}</text
+          ><text v-if="record.notes" class="record-note">{{ record.notes }}</text></view
+        ></view
+      ><view v-else class="empty-inline card">暂无出售记录</view
       ><view class="actions"
         ><button class="primary" @click="edit">编辑物品</button
         ><button class="primary lime" @click="changeStatus">
@@ -47,8 +137,14 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
-import { api, type Asset } from "@/services/api";
+import { onLoad, onShow } from "@dcloudio/uni-app";
+import {
+  api,
+  type Asset,
+  type PurchaseRecord,
+  type SaleRecord,
+} from "@/services/api";
+import { categoryPathLabel } from "@/utils/dictionaries";
 const id = ref(0),
   asset = ref<Asset>(),
   loading = ref(true),
@@ -58,52 +154,101 @@ const heroInitials = computed(() => {
   const latin = last.replace(/[^A-Za-z]/g, "");
   return (latin || asset.value?.name || "--").slice(0, 2).toUpperCase();
 });
+const primaryPurchase = computed(() =>
+    asset.value?.purchases?.find((record) => record.type === "PRIMARY"),
+  ),
+  purchaseRecords = computed(() =>
+    [...(asset.value?.purchases || [])].sort(
+      (a, b) =>
+        new Date(a.purchaseDate || 0).getTime() -
+        new Date(b.purchaseDate || 0).getTime(),
+    ),
+  ),
+  saleRecords = computed(() =>
+    [...(asset.value?.sales || [])].sort(
+      (a, b) =>
+        new Date(a.saleDate || 0).getTime() -
+        new Date(b.saleDate || 0).getTime(),
+    ),
+  ),
+  relatedLinks = computed(() => [
+    ...(primaryPurchase.value?.productLink
+      ? [{ url: primaryPurchase.value.productLink, description: "购买链接" }]
+      : []),
+    ...(asset.value?.relatedLinks || []),
+  ]),
+  manualUseDuration = computed(() => {
+    const total = Number(asset.value?.manualUseMonths || 0);
+    if (!total) return "";
+    const years = Math.floor(total / 12),
+      months = total % 12;
+    return `${years ? `${years} 年` : ""}${months ? `${months} 个月` : ""}`;
+  });
 const money = (n?: number) => `¥ ${Number(n || 0).toLocaleString("zh-CN")}`;
 const back = () => uni.navigateBack(),
   edit = () => uni.navigateTo({ url: `/pages/assets/editor?id=${id.value}` });
 async function load() {
   try {
-    asset.value = await api.asset(id.value);
+    const [detail, categories] = await Promise.all([
+      api.asset(id.value),
+      api.categories().catch(() => []),
+    ]);
+    asset.value = {
+      ...detail,
+      categoryName:
+        categoryPathLabel(categories, detail.categoryId) ||
+        detail.categoryName,
+    };
   } catch (e) {
     error.value = (e as Error).message;
   } finally {
     loading.value = false;
   }
 }
+const purchaseTypeLabel = (type: PurchaseRecord["type"]) =>
+    type === "PRIMARY" ? "主商品" : type === "ACCESSORY" ? "配件" : "服务",
+  totalSaleFee = (record: SaleRecord) =>
+    Number(record.fee || 0) +
+    Number(record.shippingCost || 0) +
+    Number(record.otherCost || 0);
+function copyLink(url: string) {
+  uni.setClipboardData({ data: url });
+}
+function previewAttachments(attachments: string[]) {
+  const images = attachments.filter((url) =>
+    /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url),
+  );
+  if (images.length)
+    return uni.previewImage({ urls: images, current: images[0] });
+  uni.showActionSheet({
+    itemList: attachments.map((_, index) => `复制附件 ${index + 1} 地址`),
+    success: (result) => copyLink(attachments[result.tapIndex]),
+  });
+}
 function changeStatus() {
   uni.showActionSheet({
-    itemList: ["使用中", "已闲置", "待出售", "已出售"],
+    itemList: ["使用中", "已闲置", "待出售", "已出售", "已丢弃"],
     success: async (r) => {
       if (!asset.value) return;
-      const updated = {
-        ...asset.value,
-        status: ["使用中", "已闲置", "待出售", "已出售"][r.tapIndex],
-      } as any;
-      await api.updateAsset(id.value, updated);
-      asset.value.status = updated.status;
+      const nextStatus = [
+        "使用中",
+        "已闲置",
+        "待出售",
+        "已出售",
+        "已丢弃",
+      ][r.tapIndex];
+      await api.updateAssetStatus(id.value, nextStatus);
+      asset.value.status = nextStatus;
     },
   });
 }
 function openMenu() {
   uni.showActionSheet({
-    itemList: ["查看购买记录", "记录出售", "删除物品"],
+    itemList: ["记录出售", "删除物品"],
     success: (r) => {
-      if (r.tapIndex === 0) return showPurchases();
-      if (r.tapIndex === 1) return sell();
-      remove();
+      if (r.tapIndex === 0) return sell();
+      if (r.tapIndex === 1) remove();
     },
-  });
-}
-function showPurchases() {
-  const list = (asset.value?.purchases || []) as any[];
-  uni.showModal({
-    title: "购买记录",
-    content: list.length
-      ? list
-          .map((p, i) => `${i + 1}. ${p.purchaseDate || ""} ${money(p.price)}`)
-          .join("\n")
-      : "暂无购买记录",
-    showCancel: false,
   });
 }
 function sell() {
@@ -151,6 +296,9 @@ onLoad((q) => {
   id.value = Number(q?.id);
   load();
 });
+onShow(() => {
+  if (asset.value) load();
+});
 </script>
 <style scoped>
 .detail {
@@ -176,16 +324,10 @@ onLoad((q) => {
   font-size: 22px;
   font-weight: 700;
 }
-.dots {
+.more {
   margin-left: auto;
-  gap: 4px;
-}
-.dots i {
-  display: block;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--dl-text-secondary);
+  color: var(--dl-text-secondary);
+  font-size: 12px;
 }
 .hero {
   height: 245px;
@@ -257,6 +399,145 @@ onLoad((q) => {
   margin-top: 18px;
   padding: 16px 18px;
   font-size: 12px;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: -10px;
+}
+.tags text {
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 18px 0 22px;
+}
+.metrics .card {
+  padding: 14px 16px;
+  box-shadow: none;
+}
+.metrics text {
+  display: block;
+}
+.metrics text:first-child {
+  color: var(--dl-text-secondary);
+  font-size: 10px;
+}
+.metrics text:last-child {
+  margin-top: 7px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.section-title {
+  display: block;
+  margin: 22px 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.link-list {
+  margin-top: 14px;
+  padding: 14px 16px;
+}
+.link-row {
+  min-height: 44px;
+  justify-content: space-between;
+  border-top: 1px solid var(--dl-bg);
+  font-size: 11px;
+}
+.link-row text:last-child {
+  color: var(--dl-text-secondary);
+}
+.records-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.records-heading > text:last-child {
+  color: var(--dl-text-secondary);
+  font-size: 10px;
+}
+.record {
+  margin-bottom: 12px;
+  padding: 15px 16px;
+  box-shadow: none;
+}
+.record-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.record-title text:first-child {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--dl-accent-soft);
+  font-size: 9px;
+}
+.record-title text:last-child {
+  font-size: 15px;
+  font-weight: 700;
+}
+.sale-title text:first-child {
+  background: var(--dl-black);
+  color: #fff;
+}
+.record-name {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.record-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 12px;
+  margin-top: 9px;
+  color: var(--dl-text-secondary);
+  font-size: 10px;
+}
+.record-actions,
+.cost-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  color: #4d7212;
+  font-size: 10px;
+  font-weight: 600;
+}
+.cost-line {
+  color: var(--dl-text-secondary);
+}
+.attachment-link {
+  display: block;
+  margin-top: 11px;
+  color: #4d7212;
+  font-size: 10px;
+  font-weight: 600;
+}
+.record-note {
+  display: block;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dl-bg);
+  color: var(--dl-text-secondary);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.empty-inline {
+  padding: 24px;
+  color: var(--dl-muted);
+  text-align: center;
+  font-size: 11px;
+  box-shadow: none;
 }
 .label {
   display: block;

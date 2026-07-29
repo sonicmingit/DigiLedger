@@ -1,6 +1,6 @@
 <template>
   <view class="page settings-page"
-    ><AppHeader title="设置" subtitle="管理分类、偏好和数据" /><view
+    ><AppHeader title="设置" subtitle="管理常用资料" /><view
       class="profile"
       ><view class="avatar">DL</view
       ><view
@@ -64,8 +64,7 @@
         ><input v-model.number="form.timeoutMs" type="number" /></view
       ><button class="primary save-server" @click="save">保存服务器设置</button
       ><text class="policy"
-        >GET / HEAD 仅在断网、超时或 5xx
-        时向另一节点重试一次；写请求不会跨节点自动重放。</text
+        >读取失败时自动切换；写入不会自动重试。</text
       ></view
     ><text class="section manage-title">管理</text
     ><view class="settings-list card manage-list"
@@ -73,22 +72,16 @@
         v-for="item in management"
         :key="item.key"
         class="setting touch"
-        @click="showDictionary(item.key)"
+        @click="openDictionary(item.key)"
         ><image :src="item.icon" /><text>{{ item.label }}</text
         ><text class="count">{{ counts[item.key] || 0 }} 个</text
-        ><view class="chevron" /></view></view
-    ><text class="section preference-title">偏好</text
-    ><view class="settings-list card preference-list"
-      ><view class="setting touch" @click="exportData"
-        ><view class="export-icon" /><text>数据导出</text
-        ><text class="count">CSV / JSON</text
         ><view class="chevron" /></view></view
     ><BottomNav active="settings"
   /></view>
 </template>
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import AppHeader from "@/components/AppHeader.vue";
 import BottomNav from "@/components/BottomNav.vue";
 import {
@@ -99,6 +92,7 @@ import {
 } from "@/services/server-profile";
 import { testNode } from "@/services/http";
 import { api } from "@/services/api";
+import { flattenTree } from "@/utils/dictionaries";
 const form = reactive<ServerProfile>(getServerProfile()),
   serverExpanded = ref(false),
   testing = reactive({ primary: false, secondary: false }),
@@ -144,32 +138,17 @@ async function loadCounts() {
     api.brands(),
     api.tags(),
   ]);
-  counts.categories = c.length;
+  counts.categories = flattenTree(c).length;
   counts.brands = b.length;
-  counts.tags = t.length;
+  counts.tags = flattenTree(t).length;
 }
-function showDictionary(key: string) {
-  const label = management.find((x) => x.key === key)?.label || "管理";
-  uni.showModal({
-    title: label,
-    content: `当前共 ${counts[key] || 0} 项。完整 CRUD 由后端字典接口支持；移动端当前提供查看入口。`,
-    showCancel: false,
-  });
-}
-function exportData() {
-  uni.showActionSheet({
-    itemList: ["导出 JSON", "导出 CSV"],
-    success: (r) => {
-      const format = r.tapIndex === 0 ? "json" : "csv";
-      uni.showModal({
-        title: "导出地址",
-        content: `请在当前首选节点访问 /api/data/export?format=${format}`,
-        showCancel: false,
-      });
-    },
-  });
+function openDictionary(key: string) {
+  uni.navigateTo({ url: `/pages/settings/dictionary?type=${key}` });
 }
 onLoad(() => loadCounts().catch(() => {}));
+onShow(() => {
+  if (Object.values(counts).some(Boolean)) loadCounts().catch(() => {});
+});
 </script>
 <style scoped>
 .settings-page {
@@ -222,21 +201,15 @@ onLoad(() => loadCounts().catch(() => {}));
 .manage-list {
   order: 3;
 }
-.preference-title {
-  order: 4;
-}
-.preference-list {
-  order: 5;
-}
 .server-title {
-  order: 6;
+  order: 4;
   min-height: 48px;
   display: flex;
   align-items: center;
   margin-bottom: 0;
 }
 .server {
-  order: 7;
+  order: 5;
   padding: 18px;
 }
 .field {
@@ -337,12 +310,5 @@ onLoad(() => loadCounts().catch(() => {}));
   border-right: 1px solid var(--dl-muted);
   transform: rotate(45deg);
   margin-left: 9px;
-}
-.export-icon {
-  width: 16px;
-  height: 18px;
-  border: 1.5px solid var(--dl-text);
-  border-radius: 2px;
-  margin-right: 14px;
 }
 </style>

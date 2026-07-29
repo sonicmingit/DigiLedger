@@ -17,7 +17,7 @@ class DashboardServiceImplTest {
         AssetService assets = mock(AssetService.class);
         DictCategoryMapper categories = mock(DictCategoryMapper.class);
         DashboardSnapshotMapper snapshots = mock(DashboardSnapshotMapper.class);
-        when(assets.listAssets(isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(
+        when(assets.listAssets(isNull(), isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(
                 asset(1L, "使用中", new BigDecimal("1000"), new BigDecimal("10")),
                 asset(1L, "待出售", new BigDecimal("500"), new BigDecimal("5"))));
         DictCategory category = new DictCategory(); category.setId(1L); category.setName("数码");

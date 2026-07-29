@@ -14,6 +14,7 @@ public interface AssetMapper {
                               @Param("categoryId") Long categoryId,
                               @Param("categoryPathLike") String categoryPathLike,
                               @Param("categoryPathSuffix") String categoryPathSuffix,
+                              @Param("brandId") Long brandId,
                               @Param("platformId") Long platformId,
                               @Param("tagIds") List<Long> tagIds,
                               @Param("tagCount") Integer tagCount);

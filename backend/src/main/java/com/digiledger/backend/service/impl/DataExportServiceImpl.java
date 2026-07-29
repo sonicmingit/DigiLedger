@@ -23,7 +23,7 @@ public class DataExportServiceImpl implements DataExportService {
         if (!Set.of("json", "csv").contains(normalized)) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "format 仅支持 json 或 csv");
         }
-        List<AssetSummaryDTO> assets = assetService.listAssets(null, null, null, null, null);
+        List<AssetSummaryDTO> assets = assetService.listAssets(null, null, null, null, null, null);
         String name = "digiledger-assets-" + LocalDate.now() + "." + normalized;
         if ("json".equals(normalized)) return new DataExportDTO("json", name, "application/json", assets);
         StringBuilder csv = new StringBuilder("id,name,status,categoryId,totalInvest,avgDailyCost,useDays,purchaseDate\r\n");

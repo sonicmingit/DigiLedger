@@ -8,6 +8,7 @@
       <label class="search-box"><img :src="searchIcon" alt="" /><input v-model.trim="keyword" placeholder="搜索名称、品牌、标签或备注" @keyup.enter="load" /></label>
       <el-select v-model="status" class="dl-select" clearable placeholder="全部状态" @change="applyFilters"><el-option v-for="item in statuses" :key="item" :label="item" :value="item" /></el-select>
       <el-cascader v-model="categoryPath" class="dl-select dl-cascader" clearable :options="categories" :props="categoryProps" placeholder="全部分类" @change="applyFilters" />
+      <el-select v-model="brandId" class="dl-select" clearable filterable placeholder="全部品牌" @change="applyFilters"><el-option v-for="item in brands" :key="item.id" :label="item.name" :value="item.id" /></el-select>
       <el-select v-model="platformId" class="dl-select" clearable filterable placeholder="全部平台" @change="applyFilters"><el-option v-for="item in platforms" :key="item.id" :label="item.name" :value="item.id" /></el-select>
       <el-select v-model="tagIds" class="dl-select tag-filter" clearable multiple collapse-tags :max-collapse-tags="1" placeholder="全部标签" @change="applyFilters"><el-option v-for="item in flatTags" :key="item.id" :label="item.name" :value="item.id" /></el-select>
       <div class="filter-actions"><button class="secondary-button search-button" @click="applyFilters">搜索</button><button class="secondary-button reset-button" @click="resetFilters">重置</button></div>
@@ -37,8 +38,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteAsset, fetchAsset, fetchAssets, fetchAssetsPage } from '@/api/assets'
-import { fetchCategories, fetchPlatforms, fetchTags } from '@/api/settings'
-import type { AssetStatus, AssetSummary, CategoryNode, PlatformItem, TagItem, TagNode } from '@/types'
+import { fetchBrands, fetchCategories, fetchPlatforms, fetchTags } from '@/api/settings'
+import type { AssetStatus, AssetSummary, BrandItem, CategoryNode, PlatformItem, TagItem, TagNode } from '@/types'
 import { useWorkspaceStore } from '@/stores/workspace'
 import PageHeader from '@/components/PageHeader.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
@@ -50,6 +51,7 @@ const router = useRouter()
 const workspace = useWorkspaceStore()
 const assets = ref<AssetSummary[]>([])
 const categories = ref<CategoryNode[]>([])
+const brands = ref<BrandItem[]>([])
 const platforms = ref<PlatformItem[]>([])
 const tags = ref<TagNode[]>([])
 const loading = ref(true)
@@ -57,6 +59,7 @@ const error = ref('')
 const keyword = ref('')
 const status = ref('')
 const categoryPath = ref<number[]>([])
+const brandId = ref<number>()
 const platformId = ref<number>()
 const tagIds = ref<number[]>([])
 const viewMode = ref<'card' | 'list'>('card')
@@ -81,17 +84,17 @@ const tagStyle = (tag: TagItem) => ({ backgroundColor: `${tag.color || palette[t
 function flattenTags(nodes: TagNode[]): TagNode[] { return nodes.flatMap(node => [node, ...flattenTags(node.children || [])]) }
 function categoryNamePath(nodes: CategoryNode[], id: number, parents: string[] = []): string | undefined { for (const node of nodes) { const path = [...parents, node.name]; if (node.id === id) return path.join(' / '); const found = categoryNamePath(node.children || [], id, path); if (found) return found } }
 
-async function load() { loading.value = true; error.value = ''; try { const result = await fetchAssetsPage({ keyword: keyword.value, status: status.value, categoryId: categoryId.value, platformId: platformId.value, tagIds: tagIds.value, page: currentPage.value, pageSize: pageSize.value, sortBy: sortBy.value, sortOrder: sortOrder.value }); assets.value = result.records; total.value = result.total; if (!assets.value.length && total.value && currentPage.value > 1) { currentPage.value--; await load() } } catch { const all = await fetchAssets({ keyword: keyword.value, status: status.value, categoryId: categoryId.value, platformId: platformId.value, tagIds: tagIds.value }); const sorted = sortFallback(all); total.value = sorted.length; const start = (currentPage.value - 1) * pageSize.value; assets.value = sorted.slice(start, start + pageSize.value) } finally { loading.value = false } }
+async function load() { loading.value = true; error.value = ''; try { const result = await fetchAssetsPage({ keyword: keyword.value, status: status.value, categoryId: categoryId.value, brandId: brandId.value, platformId: platformId.value, tagIds: tagIds.value, page: currentPage.value, pageSize: pageSize.value, sortBy: sortBy.value, sortOrder: sortOrder.value }); assets.value = result.records; total.value = result.total; if (!assets.value.length && total.value && currentPage.value > 1) { currentPage.value--; await load() } } catch { const all = await fetchAssets({ keyword: keyword.value, status: status.value, categoryId: categoryId.value, brandId: brandId.value, platformId: platformId.value, tagIds: tagIds.value }); const sorted = sortFallback(all); total.value = sorted.length; const start = (currentPage.value - 1) * pageSize.value; assets.value = sorted.slice(start, start + pageSize.value) } finally { loading.value = false } }
 function sortFallback(items: AssetSummary[]) { const getValue = (asset: AssetSummary) => ({ name: asset.name, status: asset.status, useDays: safeNumber(asset.useDays), avgCostPerDay: safeNumber(asset.avgCostPerDay), totalInvest: safeNumber(asset.totalInvest), purchaseDate: purchaseDate(asset) }[sortBy.value] || ''); return [...items].sort((left, right) => { const a = getValue(left), b = getValue(right); const result = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'zh-CN'); return sortOrder.value === 'asc' ? result : -result }) }
 function applyFilters() { currentPage.value = 1; load() }
-function resetFilters() { keyword.value = ''; status.value = ''; categoryPath.value = []; platformId.value = undefined; tagIds.value = []; applyFilters() }
+function resetFilters() { keyword.value = ''; status.value = ''; categoryPath.value = []; brandId.value = undefined; platformId.value = undefined; tagIds.value = []; applyFilters() }
 function changePageSize() { currentPage.value = 1; load() }
 function toggleSort(key: string) { if (sortBy.value === key) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'; else { sortBy.value = key; sortOrder.value = key === 'purchaseDate' ? 'desc' : 'asc' } currentPage.value = 1; load() }
 function sortIndicator(key: string) { return sortBy.value === key ? (sortOrder.value === 'asc' ? '↑' : '↓') : '↕' }
 async function edit(id: number) { try { workspace.openAssetEditor(await fetchAsset(id)) } catch (e) { ElMessage.error((e as Error).message) } }
 async function confirmDelete(asset: AssetSummary) { try { await ElMessageBox.confirm(`确认删除“${asset.name}”？此操作无法撤销。`, '删除物品', { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }); await deleteAsset(asset.id); ElMessage.success('物品已删除'); await load() } catch (e) { if (e !== 'cancel' && e !== 'close') ElMessage.error((e as Error).message) } }
 watch(() => workspace.refreshKey, load)
-onMounted(async () => { const [categoryResult, platformResult, tagResult] = await Promise.all([fetchCategories().catch(() => [] as CategoryNode[]), fetchPlatforms().catch(() => [] as PlatformItem[]), fetchTags().catch(() => [] as TagNode[])]); categories.value = categoryResult; platforms.value = platformResult; tags.value = tagResult; await load() })
+onMounted(async () => { const [categoryResult, brandResult, platformResult, tagResult] = await Promise.all([fetchCategories().catch(() => [] as CategoryNode[]), fetchBrands().catch(() => [] as BrandItem[]), fetchPlatforms().catch(() => [] as PlatformItem[]), fetchTags().catch(() => [] as TagNode[])]); categories.value = categoryResult; brands.value = brandResult; platforms.value = platformResult; tags.value = tagResult; await load() })
 </script>
 
 <style scoped>

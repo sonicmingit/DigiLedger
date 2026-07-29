@@ -21,6 +21,8 @@ public record AssetDetailDTO(
         LocalDate purchaseDate,
         LocalDate retiredDate,
         String coverImageUrl,
+        List<AssetRelatedLinkDTO> relatedLinks,
+        Integer manualUseMonths,
         String notes,
         List<TagDTO> tags,
         BigDecimal totalInvest,

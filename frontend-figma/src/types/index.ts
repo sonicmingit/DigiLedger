@@ -13,6 +13,7 @@ export type UpgradeRelationType = 'SEQUENCE' | 'ALTERNATIVE'
 
 export interface ApiEnvelope<T> { code: number; data: T; msg: string }
 export interface TagItem { id: number; name: string; color?: string; icon?: string }
+export interface AssetRelatedLink { url: string; description?: string }
 export interface BrandInfo { id: number | null; name: string; alias?: string | null; initial?: string | null }
 export interface PurchaseRecord {
   id?: number; type: PurchaseType; name?: string; platformId?: number; platformName?: string; seller?: string
@@ -32,12 +33,13 @@ export interface AssetSummary {
 }
 export interface AssetPage { records: AssetSummary[]; total: number; page: number; pageSize: number }
 export interface AssetDetail extends AssetSummary {
-  brand?: BrandInfo | null; model?: string; serialNo?: string; retiredDate?: string; notes?: string
+  brand?: BrandInfo | null; model?: string; serialNo?: string; retiredDate?: string; notes?: string; relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   purchases: PurchaseRecord[]; sales: SaleRecord[]
 }
 export interface AssetPayload {
   name: string; categoryId: number; brandId?: number; brand?: string; model?: string; serialNo?: string
   status: AssetStatus; purchaseDate?: string; retiredDate?: string; coverImageUrl?: string; notes?: string
+  relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   tagIds?: number[]; targetCostStrategy?: 'NONE' | 'PRICE' | 'DATE' | 'CUSTOM'; targetCostValue?: number
   attachAssetIds?: number[]; purchases?: PurchaseRecord[]
 }

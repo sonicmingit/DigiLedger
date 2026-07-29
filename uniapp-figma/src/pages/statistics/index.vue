@@ -1,6 +1,6 @@
 <template>
   <view class="page"
-    ><AppHeader title="数据统计" subtitle="看见价值，也看见真实使用成本" /><view
+    ><AppHeader title="数据统计" subtitle="查看价值与使用成本" /><view
       v-if="loading"
       class="loading"
       >计算数据中…</view
@@ -35,6 +35,21 @@
               class="bar"
               :class="{ lime: index === 0 }"
               :style="{ width: barWidth(row.value) }" /></view></view></view
+      ><view class="card status-card"
+        ><text class="card-title">状态分布</text
+        ><scroll-view scroll-x class="status-scroll"
+          ><view class="status-row"
+            ><view v-for="row in data.statusDistribution || []" :key="row.status"
+              ><text>{{ row.count }}</text><text>{{ row.status }}</text></view
+            ></view></scroll-view
+        ></view
+      ><view class="card trend-card"
+        ><text class="card-title">价值趋势</text
+        ><view v-if="data.valueTrend?.length" class="trend-list"
+          ><view v-for="row in data.valueTrend" :key="row.month"
+            ><text>{{ row.month }}</text><text>{{ money(row.value) }}</text></view
+          ></view
+        ><text v-else class="trend-empty">暂无趋势数据</text></view
       ><view class="cost"
         ><text>平均每日使用成本</text
         ><text class="cost-value">{{ money(data.avgDailyCost) }}</text
@@ -53,7 +68,7 @@ const data = ref<Dashboard>(),
   loading = ref(false),
   error = ref("");
 const categories = computed(
-    () => data.value?.categoryDistribution?.slice(0, 4) || [],
+    () => data.value?.categoryDistribution || [],
   ),
   max = computed(() =>
     Math.max(...categories.value.map((x) => Number(x.value)), 1),
@@ -161,6 +176,66 @@ onPullDownRefresh(load);
   background: var(--dl-black);
   color: #fff;
   position: relative;
+}
+.status-card,
+.trend-card {
+  margin-top: 18px;
+  padding: 17px 18px 20px;
+  box-shadow: none;
+}
+.status-scroll {
+  width: calc(100vw - 58px);
+  margin-top: 14px;
+}
+.status-row {
+  display: flex;
+  gap: 9px;
+  padding-right: 10px;
+}
+.status-row > view {
+  min-width: 92px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--dl-bg);
+}
+.status-row text {
+  display: block;
+}
+.status-row text:first-child {
+  font-size: 19px;
+  font-weight: 700;
+}
+.status-row text:last-child {
+  margin-top: 5px;
+  color: var(--dl-text-secondary);
+  font-size: 10px;
+}
+.trend-list {
+  margin-top: 10px;
+}
+.trend-list view {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--dl-bg);
+  font-size: 11px;
+}
+.trend-list view:last-child {
+  border-bottom: 0;
+}
+.trend-list text:first-child {
+  color: var(--dl-text-secondary);
+}
+.trend-list text:last-child {
+  font-weight: 700;
+}
+.trend-empty {
+  display: block;
+  padding: 24px 0 8px;
+  color: var(--dl-muted);
+  text-align: center;
+  font-size: 11px;
 }
 .cost > text:first-child {
   font-size: 12px;

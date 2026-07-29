@@ -191,7 +191,6 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         node.setIsDeleted(0);
         ensureAssetIsNotDuplicated(routeId, node.getAssetId(), null);
 
-        List<EquipUpgradeLink> links = linkMapper.findByRouteId(routeId);
         boolean insertBefore = anchor != null && "BEFORE".equals(request.getPosition());
         if (anchor != null && "BEFORE".equals(request.getPosition())) {
             if (insertBefore || Optional.ofNullable(anchor.getLevel()).orElse(1) <= 1) {
@@ -201,12 +200,18 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                 node.setLevel(Math.max(1, Optional.ofNullable(anchor.getLevel()).orElse(1) - 1));
             }
         }
+        if (anchor != null && "AFTER".equals(request.getPosition())) {
+            // 下级插入到锚点后方，已有的后续代际整体顺延，避免与新节点落在同一列。
+            int insertedLevel = Optional.ofNullable(anchor.getLevel()).orElse(1) + 1;
+            nodeMapper.increaseLevelFrom(routeId, insertedLevel);
+            node.setLevel(insertedLevel);
+        }
         nodeMapper.insert(node);
 
         if (anchor != null) {
             createAutomaticRelation(routeId, anchor, node, request.getPosition());
         }
-        // 每次新增上、同、下级后都重新按主线物品的购买时间排列，避免插入中间节点后代际和价差失真。
+        // 每次新增上、同、下级后按结构层级重建主线，并刷新相邻代际的价差。
         rebuildMainline(routeId);
         return node.getId();
     }
@@ -216,7 +221,12 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
     public void updateNode(Long routeId, Long nodeId, EquipUpgradeNodeRequest request) {
         requireEditableRoute(routeId);
         EquipUpgradeNode node = requireNodeInRoute(nodeId, routeId);
+        Integer originalLevel = Optional.ofNullable(node.getLevel()).orElse(1);
+        Integer originalSort = Optional.ofNullable(node.getSort()).orElse(0);
         applyNodeRequest(node, request, null);
+        // 节点编辑和主物品切换都不属于移动代际操作，无论客户端是否携带旧默认值都保留原布局。
+        node.setLevel(originalLevel);
+        node.setSort(originalSort);
         ensureAssetIsNotDuplicated(routeId, node.getAssetId(), nodeId);
         nodeMapper.update(node);
         if (Boolean.TRUE.equals(node.getMainline())) {
@@ -242,8 +252,9 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         node.setAssetId(request.getAssetId());
         node.setWishlistId(request.getWishlistId());
         node.setNodeType(nodeType);
-        node.setLevel(anchor == null ? Optional.ofNullable(request.getLevel()).orElse(1) : calculateLevel(anchor, request.getPosition()));
-        node.setSort(anchor == null ? Optional.ofNullable(request.getSort()).orElse(0)
+        // 独立创建请求可提供 level/sort；更新入口会在调用后再次锁定原布局。
+        node.setLevel(anchor == null ? Optional.ofNullable(request.getLevel()).orElse(Optional.ofNullable(node.getLevel()).orElse(1)) : calculateLevel(anchor, request.getPosition()));
+        node.setSort(anchor == null ? Optional.ofNullable(request.getSort()).orElse(Optional.ofNullable(node.getSort()).orElse(0))
                 : "ALTERNATIVE".equals(request.getPosition()) ? Optional.ofNullable(anchor.getSort()).orElse(0) + 1 : 0);
         node.setMainline(request.getMainline() == null ? !"ALTERNATIVE".equals(request.getPosition()) : request.getMainline());
         node.setLabel(request.getLabel());
@@ -315,10 +326,22 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
 
     /** 读取路线图并按需求文档输出节点、关系计算、真实汇总、计划汇总和数据告警。 */
     @Override
+    @Transactional
     public UpgradeRouteGraphDTO getRouteGraph(Long routeId) {
         EquipUpgradeRoute route = requireRoute(routeId);
         List<EquipUpgradeNode> nodes = nodeMapper.findByRouteId(routeId);
         List<EquipUpgradeLink> links = linkMapper.findByRouteId(routeId);
+        // 旧 DTO 的 level=1 缺省值可能在“设为同级主物品”时覆盖原代际；命中特征后自动复原。
+        if (repairLegacyLevelOneOverwrite(routeId, nodes, links)) {
+            nodes = nodeMapper.findByRouteId(routeId);
+            links = linkMapper.findByRouteId(routeId);
+        }
+        // 兼容此前“同级被排成下一代”的存量数据：首次读取时即可恢复正确列布局，无需用户手工编辑。
+        if (needsAlternativeLayoutRepair(nodes, links)) {
+            rebuildMainline(routeId);
+            nodes = nodeMapper.findByRouteId(routeId);
+            links = linkMapper.findByRouteId(routeId);
+        }
         Map<Long, DeviceAsset> assets = loadAssets(nodes.stream().map(EquipUpgradeNode::getAssetId)
                 .filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<Long, WishlistItem> wishlists = new HashMap<>();
@@ -509,8 +532,8 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         BigDecimal total = zero();
         BigDecimal primary = zero();
         BigDecimal income = zero();
-        long useDays = 0;
-        int usableCount = 0;
+        LocalDate routeStart = null;
+        LocalDate routeEnd = null;
         for (Long assetId : assetIds) {
             AssetFinancials item = financials.get(assetId);
             if (item == null) {
@@ -519,14 +542,22 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
             total = total.add(item.totalSpend());
             primary = primary.add(item.primarySpend());
             income = income.add(item.allSalesNetIncome());
-            if (item.primaryPurchaseDate() != null) {
-                LocalDate end = item.mainSale() == null ? LocalDate.now() : item.mainSale().getSaleDate();
-                useDays += Math.max(0, ChronoUnit.DAYS.between(item.primaryPurchaseDate(), end));
-                usableCount++;
+            if (item.primaryPurchaseDate() == null) {
+                continue;
+            }
+            routeStart = routeStart == null || item.primaryPurchaseDate().isBefore(routeStart)
+                    ? item.primaryPurchaseDate() : routeStart;
+            // 仍在持有或缺少出售记录的物品，成本持续均摊到今天；全部出售时取最后一次出售日期。
+            LocalDate itemEnd = item.mainSale() == null ? LocalDate.now() : item.mainSale().getSaleDate();
+            if (itemEnd != null && (routeEnd == null || itemEnd.isAfter(routeEnd))) {
+                routeEnd = itemEnd;
             }
         }
         BigDecimal net = total.subtract(income);
-        BigDecimal daily = useDays == 0 ? null : net.divide(BigDecimal.valueOf(useDays), 2, RoundingMode.HALF_UP);
+        // 日均成本以路线的连续实际履历为分母，避免并行持有多件物品时重复累计使用天数。
+        long routeDays = routeStart == null || routeEnd == null ? 0
+                : Math.max(1, ChronoUnit.DAYS.between(routeStart, routeEnd));
+        BigDecimal daily = routeDays == 0 ? null : net.divide(BigDecimal.valueOf(routeDays), 2, RoundingMode.HALF_UP);
         return new UpgradeActualSummaryDTO(assetIds.size(), money(total), money(primary), money(total.subtract(primary)),
                 money(income), money(net), daily);
     }
@@ -540,24 +571,28 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
     }
 
     /**
-     * 主线只保留每一层标记为主物品的节点。每次变更后用真实购买日期重新串联，
-     * 让“中途补录上级/下级”无需手工调整连线、代际和价差；同级备用节点仍保留在总收支中。
+     * 主线只保留每一层标记为主物品的节点。每次变更后按结构层级重新串联，
+     * 让“中途补录上级/下级”无需手工调整连线和价差；同级备用节点仍保留在总收支中。
      */
     private void rebuildMainline(Long routeId) {
         List<EquipUpgradeNode> allNodes = nodeMapper.findByRouteId(routeId);
-        Map<Long, AssetFinancials> financials = buildFinancials(allNodes.stream().map(EquipUpgradeNode::getAssetId)
-                .filter(Objects::nonNull).collect(Collectors.toSet()));
+        List<EquipUpgradeLink> alternatives = linkMapper.findByRouteId(routeId).stream()
+                .filter(link -> RELATION_ALTERNATIVE.equals(link.getRelationType())).toList();
+        normalizeAlternativeMainline(allNodes, alternatives);
+        collapseAlternativeLevels(allNodes, alternatives);
         List<EquipUpgradeNode> mainline = allNodes.stream().filter(node -> Boolean.TRUE.equals(node.getMainline()))
-                .sorted(Comparator
-                        .comparing((EquipUpgradeNode node) -> Optional.ofNullable(financials.get(node.getAssetId()))
-                                .map(AssetFinancials::primaryPurchaseDate).orElse(LocalDate.MAX))
-                        .thenComparing(EquipUpgradeNode::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                // 代际由“添加上/下/同级”的结构关系决定；购买时间仅用于显示间隔，不能把同级推到下一代。
+                .sorted(Comparator.comparing(EquipUpgradeNode::getLevel, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(EquipUpgradeNode::getSort, Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(EquipUpgradeNode::getId))
                 .toList();
         nodeMapper.softDeleteSequenceLinksByRoute(routeId);
         for (int index = 0; index < mainline.size(); index++) {
             EquipUpgradeNode node = mainline.get(index);
             nodeMapper.updateLayout(node.getId(), index + 1, 0);
+            // 后续同级对齐直接读取实体对象，须同步内存状态，不能继续使用数据库更新前的旧层级。
+            node.setLevel(index + 1);
+            node.setSort(0);
             if (index > 0) {
                 EquipUpgradeLink link = new EquipUpgradeLink();
                 link.setRouteId(routeId);
@@ -569,17 +604,197 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
             }
         }
         // 备用同级沿用其 ALTERNATIVE 锚点所在代际，不参与主线的顺序关系。
-        List<EquipUpgradeLink> alternatives = linkMapper.findByRouteId(routeId).stream()
-                .filter(link -> RELATION_ALTERNATIVE.equals(link.getRelationType())).toList();
         Map<Long, EquipUpgradeNode> mainlineMap = mainline.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
-        for (EquipUpgradeLink alternative : alternatives) {
-            EquipUpgradeNode base = mainlineMap.get(alternative.getFromNodeId());
-            EquipUpgradeNode standby = allNodes.stream().filter(node -> Objects.equals(node.getId(), alternative.getToNodeId())).findFirst().orElse(null);
-            if (base != null && standby != null && !Boolean.TRUE.equals(standby.getMainline())) {
-                nodeMapper.updateLayout(standby.getId(), Optional.ofNullable(base.getLevel()).orElse(1),
-                        Optional.ofNullable(standby.getSort()).orElse(0) + 1);
+        alignAlternativeLayouts(allNodes, alternatives, mainlineMap);
+    }
+
+    /**
+     * 同级关系中仅允许一个主物品参与前后代计算。
+     * 历史数据可能因旧逻辑把同一组节点都标记为主物品；此处选择最近一次修改的节点作为主物品，
+     * 使随后重建的 SEQUENCE 关系不会再把同级误拆成下一代。
+     */
+    private void normalizeAlternativeMainline(List<EquipUpgradeNode> nodes, List<EquipUpgradeLink> alternatives) {
+        Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
+        Comparator<EquipUpgradeNode> mostRecent = Comparator
+                .comparing(EquipUpgradeNode::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(EquipUpgradeNode::getId);
+        for (List<EquipUpgradeNode> group : alternativeGroups(nodes, alternatives, nodeMap)) {
+            List<EquipUpgradeNode> mains = group.stream().filter(node -> Boolean.TRUE.equals(node.getMainline())).toList();
+            if (mains.size() <= 1) {
+                continue;
+            }
+            EquipUpgradeNode retained = mains.stream().max(mostRecent).orElseThrow();
+            for (EquipUpgradeNode candidate : mains) {
+                if (!Objects.equals(candidate.getId(), retained.getId())) {
+                    nodeMapper.updateMainline(candidate.getId(), false);
+                    candidate.setMainline(false);
+                }
             }
         }
+    }
+
+    /**
+     * 将一整组同级节点对齐到主物品所在代际。支持“从备用物品继续添加同级”的链式关系，
+     * 不依赖关系的 from/to 方向，避免同级节点被排到新的一列。
+     */
+    private void alignAlternativeLayouts(List<EquipUpgradeNode> nodes, List<EquipUpgradeLink> alternatives,
+                                         Map<Long, EquipUpgradeNode> mainlineMap) {
+        Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
+        for (List<EquipUpgradeNode> group : alternativeGroups(nodes, alternatives, nodeMap)) {
+            EquipUpgradeNode primary = group.stream()
+                    .filter(node -> mainlineMap.containsKey(node.getId()))
+                    .findFirst().orElse(null);
+            if (primary == null) {
+                continue;
+            }
+            int level = Optional.ofNullable(primary.getLevel()).orElse(1);
+            int sort = 0;
+            // 主物品始终放在同级列顶部，备用物品按稳定 ID 顺序纵向排列。
+            for (EquipUpgradeNode node : group.stream().sorted(Comparator.comparing(EquipUpgradeNode::getId)).toList()) {
+                int nodeSort = Objects.equals(node.getId(), primary.getId()) ? 0 : ++sort;
+                nodeMapper.updateLayout(node.getId(), level, nodeSort);
+                node.setLevel(level);
+                node.setSort(nodeSort);
+            }
+        }
+    }
+
+    /**
+     * 同级组以最早已有层级作为锚点。这样旧版本已把新增同级错误放到下一代时，
+     * 在下一次重建便会回到原列；新写入的同级节点也天然继承被点击物品的层级。
+     */
+    private void collapseAlternativeLevels(List<EquipUpgradeNode> nodes, List<EquipUpgradeLink> alternatives) {
+        Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
+        for (List<EquipUpgradeNode> group : alternativeGroups(nodes, alternatives, nodeMap)) {
+            int anchorLevel = group.stream().map(EquipUpgradeNode::getLevel).filter(Objects::nonNull)
+                    .min(Comparator.naturalOrder()).orElse(1);
+            int sort = 0;
+            for (EquipUpgradeNode node : group.stream().sorted(Comparator.comparing(EquipUpgradeNode::getId)).toList()) {
+                int nodeSort = Boolean.TRUE.equals(node.getMainline()) ? 0 : ++sort;
+                nodeMapper.updateLayout(node.getId(), anchorLevel, nodeSort);
+                node.setLevel(anchorLevel);
+                node.setSort(nodeSort);
+            }
+        }
+    }
+
+    /** 构造 ALTERNATIVE 的无向连通分组，供主物品冲突修复和纵向排布共用。 */
+    private List<List<EquipUpgradeNode>> alternativeGroups(List<EquipUpgradeNode> nodes, List<EquipUpgradeLink> alternatives,
+                                                            Map<Long, EquipUpgradeNode> nodeMap) {
+        Map<Long, List<Long>> adjacent = new HashMap<>();
+        for (EquipUpgradeLink link : alternatives) {
+            adjacent.computeIfAbsent(link.getFromNodeId(), ignored -> new ArrayList<>()).add(link.getToNodeId());
+            adjacent.computeIfAbsent(link.getToNodeId(), ignored -> new ArrayList<>()).add(link.getFromNodeId());
+        }
+        List<List<EquipUpgradeNode>> groups = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        for (EquipUpgradeNode node : nodes) {
+            if (!adjacent.containsKey(node.getId()) || !visited.add(node.getId())) {
+                continue;
+            }
+            List<EquipUpgradeNode> group = new ArrayList<>();
+            ArrayDeque<Long> queue = new ArrayDeque<>();
+            queue.add(node.getId());
+            while (!queue.isEmpty()) {
+                Long currentId = queue.removeFirst();
+                EquipUpgradeNode current = nodeMap.get(currentId);
+                if (current != null) {
+                    group.add(current);
+                }
+                for (Long nextId : adjacent.getOrDefault(currentId, Collections.emptyList())) {
+                    if (visited.add(nextId)) {
+                        queue.add(nextId);
+                    }
+                }
+            }
+            groups.add(group);
+        }
+        return groups;
+    }
+
+    /** 判断同级组是否发生跨代或双主物品错位，仅命中历史异常数据时才触发读取期修复。 */
+    private boolean needsAlternativeLayoutRepair(List<EquipUpgradeNode> nodes, List<EquipUpgradeLink> links) {
+        List<EquipUpgradeLink> alternatives = links.stream()
+                .filter(link -> RELATION_ALTERNATIVE.equals(link.getRelationType())).toList();
+        if (alternatives.isEmpty()) {
+            return false;
+        }
+        Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
+        for (EquipUpgradeLink link : alternatives) {
+            EquipUpgradeNode from = nodeMap.get(link.getFromNodeId());
+            EquipUpgradeNode to = nodeMap.get(link.getToNodeId());
+            if (from != null && to != null && !Objects.equals(from.getLevel(), to.getLevel())) {
+                return true;
+            }
+        }
+        return alternativeGroups(nodes, alternatives, nodeMap).stream()
+                .anyMatch(group -> group.stream().filter(node -> Boolean.TRUE.equals(node.getMainline())).count() > 1);
+    }
+
+    /**
+     * 修复旧请求模型把被编辑节点写入第一代的特定数据形态。
+     * <p>安全条件必须同时满足：第一代存在一个无同级关系且被误标为备用的原节点、
+     * 一个主物品及其可选同级组，并且该主物品按购买时间应位于后续代际。
+     * 命中后恢复原第一代，并把整个错位同级组插回目标位置。</p>
+     */
+    private boolean repairLegacyLevelOneOverwrite(Long routeId, List<EquipUpgradeNode> nodes,
+                                                   List<EquipUpgradeLink> links) {
+        List<EquipUpgradeNode> levelOne = nodes.stream()
+                .filter(node -> Optional.ofNullable(node.getLevel()).orElse(1) == 1)
+                .toList();
+        if (levelOne.size() < 2) {
+            return false;
+        }
+        EquipUpgradeNode displaced = levelOne.stream()
+                .filter(node -> Boolean.TRUE.equals(node.getMainline())).findFirst().orElse(null);
+        if (displaced == null) {
+            return false;
+        }
+        List<EquipUpgradeLink> alternatives = links.stream()
+                .filter(link -> RELATION_ALTERNATIVE.equals(link.getRelationType())).toList();
+        Map<Long, EquipUpgradeNode> nodeMap = nodes.stream().collect(Collectors.toMap(EquipUpgradeNode::getId, node -> node));
+        List<EquipUpgradeNode> displacedGroup = alternativeGroups(nodes, alternatives, nodeMap).stream()
+                .filter(group -> group.stream().anyMatch(node -> Objects.equals(node.getId(), displaced.getId())))
+                .findFirst().orElse(List.of(displaced));
+        Set<Long> displacedGroupIds = displacedGroup.stream().map(EquipUpgradeNode::getId).collect(Collectors.toSet());
+        EquipUpgradeNode original = levelOne.stream()
+                .filter(node -> !Boolean.TRUE.equals(node.getMainline()))
+                .filter(node -> !displacedGroupIds.contains(node.getId()))
+                .findFirst().orElse(null);
+        if (original == null || levelOne.stream().anyMatch(node -> !Objects.equals(node.getId(), original.getId())
+                && !displacedGroupIds.contains(node.getId()))) {
+            return false;
+        }
+
+        Map<Long, AssetFinancials> financials = buildFinancials(nodes.stream()
+                .map(EquipUpgradeNode::getAssetId).filter(Objects::nonNull).collect(Collectors.toSet()));
+        List<EquipUpgradeNode> chronologicalMainline = nodes.stream()
+                .filter(node -> Boolean.TRUE.equals(node.getMainline()) || Objects.equals(node.getId(), original.getId()))
+                .filter(node -> Optional.ofNullable(financials.get(node.getAssetId()))
+                        .map(AssetFinancials::primaryPurchaseDate).isPresent())
+                .sorted(Comparator
+                        .comparing((EquipUpgradeNode node) -> financials.get(node.getAssetId()).primaryPurchaseDate())
+                        .thenComparing(EquipUpgradeNode::getId))
+                .toList();
+        if (chronologicalMainline.isEmpty()
+                || !Objects.equals(chronologicalMainline.get(0).getId(), original.getId())) {
+            return false;
+        }
+        int targetLevel = chronologicalMainline.indexOf(displaced) + 1;
+        if (targetLevel <= 1) {
+            return false;
+        }
+
+        // 为目标代际腾出位置，再恢复被误伤的第一代主物品；随后统一重建 SEQUENCE 关系。
+        nodeMapper.increaseLevelFrom(routeId, targetLevel);
+        for (EquipUpgradeNode groupNode : displacedGroup) {
+            nodeMapper.updateLayout(groupNode.getId(), targetLevel,
+                    Boolean.TRUE.equals(groupNode.getMainline()) ? 0 : Optional.ofNullable(groupNode.getSort()).orElse(1));
+        }
+        nodeMapper.updateLayout(original.getId(), 1, 0);
+        nodeMapper.updateMainline(original.getId(), true);
+        rebuildMainline(routeId);
+        return true;
     }
 
     /** 汇总购买与出售数据；主商品出售仅选择 sale_scope=ASSET，配件出售只进入路线总收入。 */

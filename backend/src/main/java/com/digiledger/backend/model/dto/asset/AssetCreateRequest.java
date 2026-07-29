@@ -41,6 +41,12 @@ public class AssetCreateRequest {
     @Size(max = 500, message = "封面 URL 过长")
     private String coverImageUrl;
 
+    @Size(max = 20, message = "相关链接最多 20 条")
+    private List<@Valid AssetRelatedLinkRequest> relatedLinks;
+
+    @PositiveOrZero(message = "使用时间不能为负数")
+    private Integer manualUseMonths;
+
     private String notes;
 
     private List<@NotNull(message = "标签ID不能为空") Long> tagIds;

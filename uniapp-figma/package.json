@@ -6,7 +6,8 @@
     "dev:h5": "uni",
     "dev:app-android": "uni -p app-android",
     "build:h5": "uni build",
-    "build:app-android": "uni build -p app-android"
+    "build:app-android": "uni build -p app-android",
+    "verify:h5": "tsc --noEmit && node scripts/verify-mobile-alignment.mjs && npm run build:h5"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-3080220230511001",

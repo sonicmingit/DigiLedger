@@ -4,6 +4,7 @@ import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.mapper.FileAttachmentMapper;
+import com.digiledger.backend.integration.cover.ExternalImageImportService;
 import com.digiledger.backend.model.dto.asset.CoverApplyResponse;
 import com.digiledger.backend.model.dto.asset.RemoveBgRequest;
 import com.digiledger.backend.model.dto.asset.RemoveBgResponse;
@@ -41,6 +42,7 @@ public class FileController {
     private final FileAttachmentMapper fileAttachmentMapper;
     private final AttachmentService attachmentService;
     private final BackgroundRemovalService backgroundRemovalService;
+    private final ExternalImageImportService externalImageImportService;
 
 
     public FileController(FileService fileService,
@@ -48,13 +50,15 @@ public class FileController {
                           AssetCoverService assetCoverService,
                           FileAttachmentMapper fileAttachmentMapper,
                           AttachmentService attachmentService,
-                          BackgroundRemovalService backgroundRemovalService) {
+                          BackgroundRemovalService backgroundRemovalService,
+                          ExternalImageImportService externalImageImportService) {
         this.fileService = fileService;
         this.storagePathHelper = storagePathHelper;
         this.assetCoverService = assetCoverService;
         this.fileAttachmentMapper = fileAttachmentMapper;
         this.attachmentService = attachmentService;
         this.backgroundRemovalService = backgroundRemovalService;
+        this.externalImageImportService = externalImageImportService;
     }
 
     @PostMapping("/upload")
@@ -74,7 +78,7 @@ public class FileController {
         if (sourceUrl == null || sourceUrl.isBlank()) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "图片地址不能为空");
         }
-        String objectKey = fileService.upload(assetCoverService.downloadRemoteImage(sourceUrl));
+        String objectKey = fileService.upload(externalImageImportService.download(sourceUrl));
         String publicUrl = storagePathHelper.toFullUrl(objectKey);
         return ApiResponse.success(Map.of(
                 "objectKey", objectKey,

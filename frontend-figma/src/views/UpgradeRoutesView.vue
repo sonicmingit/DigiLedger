@@ -33,10 +33,10 @@
             <div class="finance-lead"><span>实际净投入</span><strong>{{ money(actualSummary.netInvestment) }}</strong><small>{{ actualSummary.assetCount }} 件真实物品 · 数据随物品记录实时更新</small></div>
             <div class="finance-item"><span>累计总支出</span><b>{{ money(actualSummary.totalSpend) }}</b><small>主商品 {{ money(actualSummary.primarySpend) }}</small></div>
             <div class="finance-item income"><span>出售净收入</span><b>{{ money(actualSummary.totalIncome) }}</b><small>仅主商品出售计入补款</small></div>
-            <div class="finance-item"><span>日均成本</span><b>{{ money(actualSummary.dailyCost) }}</b><small>{{ routePeriod(currentRoute) }}</small></div>
+            <div class="finance-item"><span>日均成本</span><b>{{ money(actualSummary.dailyCost) }}</b><small>按路线实际履历时间均摊</small></div>
           </section>
 
-          <section class="route-tools"><div class="segment-switch" role="tablist"><button :class="{active: detailView === 'graph'}" role="tab" :aria-selected="detailView === 'graph'" @click="detailView = 'graph'">路线图</button><button :class="{active: detailView === 'table'}" role="tab" :aria-selected="detailView === 'table'" @click="detailView = 'table'">路线明细</button></div><el-select v-model="nodeFilter" clearable class="filter-select" placeholder="全部状态"><el-option label="当前使用" value="使用中" /><el-option label="已出售" value="已出售" /><el-option label="心愿物品" value="WISHLIST" /><el-option label="数据异常" value="warning" /></el-select><el-select v-model="relationFilter" clearable class="filter-select" placeholder="全部关系"><el-option label="前后代" value="SEQUENCE" /><el-option label="同级" value="ALTERNATIVE" /></el-select><el-select v-model="generationFilter" clearable class="filter-select" placeholder="全部代际"><el-option v-for="(_, index) in layers" :key="index" :label="generationLabel(index + 1)" :value="index + 1" /></el-select></section>
+          <section class="route-tools"><div class="segment-switch" role="tablist"><button :class="{active: detailView === 'graph'}" role="tab" :aria-selected="detailView === 'graph'" @click="detailView = 'graph'">路线图</button><button :class="{active: detailView === 'table'}" role="tab" :aria-selected="detailView === 'table'" @click="detailView = 'table'">路线明细</button></div><el-select v-model="nodeFilter" clearable class="filter-select" placeholder="全部状态"><el-option label="当前使用" value="使用中" /><el-option label="已出售" value="已出售" /><el-option label="心愿物品" value="WISHLIST" /><el-option label="数据异常" value="warning" /></el-select><el-select v-model="relationFilter" clearable class="filter-select" placeholder="全部关系"><el-option label="前后代" value="SEQUENCE" /><el-option label="同级" value="ALTERNATIVE" /></el-select><el-select v-model="generationFilter" clearable class="filter-select" placeholder="全部代际"><el-option v-for="layer in layers" :key="nodeGeneration(layer[0])" :label="generationLabel(nodeGeneration(layer[0]))" :value="nodeGeneration(layer[0])" /></el-select></section>
 
           <section v-if="graph.warnings?.length" class="warning-strip" role="status"><strong>数据提示</strong><span v-for="warning in graph.warnings" :key="warning">{{ warning }}</span></section>
 
@@ -45,16 +45,16 @@
               <div class="canvas-heading"><div><h2>物品升级路线</h2><p>选择物品后可添加上级、同级或下级；同级备用不参与主线价差计算。</p></div><button class="text-button" @click="selectedNodeId = undefined">取消选择</button></div>
               <div v-if="!visibleNodes.length" class="canvas-empty"><strong>路线还没有物品</strong><p>先新建一件物品，或从已有物品与心愿单中选择。</p><PrimaryButton label="新建第一件物品" :icon="plusIcon" @click="openFirstAssetCreator" /></div>
               <div v-else class="generation-track">
-                <article v-for="(layer, layerIndex) in layers" :key="layerIndex" class="generation-column">
-                  <header class="generation-header"><span>{{ generationLabel(layerIndex + 1) }}</span><strong>{{ generationPeriod(layer) }}</strong></header>
-                  <div class="generation-nodes"><template v-for="node in layer" :key="node.nodeId"><button v-if="visibleNodes.includes(node)" class="route-node-card" :class="nodeClasses(node)" @click="selectNode(node.nodeId)"><span class="node-status">{{ nodeStatusLabel(node) }}</span><div class="node-image"><img :src="node.coverImageUrl || generationImage(nodeGeneration(node))" :alt="nodeName(node)" /></div><div class="node-content"><strong>{{ nodeName(node) }}</strong><span>{{ node.brandName || node.targetName || '未填写品牌 / 型号' }}</span><div class="node-facts"><span>{{ formatDate(node.purchaseDate || node.periodLabel) }}</span><b>{{ money(node.primaryPurchaseAmount ?? node.purchasePrice ?? node.plannedBudget) }}</b></div><div class="node-meta"><span>已用 {{ useDaysLabel(node) }}</span><span v-if="node.mainSaleNetIncome !== undefined || node.salePrice">已售 {{ money(node.mainSaleNetIncome ?? node.salePrice) }}</span><span v-else>{{ node.nodeType === 'PLANNED' ? '计划中' : '未出售' }}</span></div></div></button><div v-for="link in linksTo(node)" :key="link.linkId" class="relation-chip" :class="{ alternative: relationType(link) === 'ALTERNATIVE' }"><span>{{ relationType(link) === 'ALTERNATIVE' ? '同级对比' : gapLabel(link) }}</span><b v-if="relationType(link) === 'SEQUENCE'">{{ priceDeltaLabel(link) }}</b><small v-if="relationType(link) === 'SEQUENCE'">{{ netOutflowLabel(link) }}</small></div></template></div>
+                <article v-for="layer in layers" :key="nodeGeneration(layer[0])" class="generation-column">
+                  <header class="generation-header"><span>{{ generationLabel(nodeGeneration(layer[0])) }}</span><strong>{{ generationPeriod(layer) }}</strong></header>
+                  <div class="generation-nodes"><template v-for="node in layer" :key="node.nodeId"><button v-if="visibleNodes.includes(node)" class="route-node-card" :class="nodeClasses(node)" @click="selectNode(node.nodeId)"><span class="node-status">{{ nodeStatusLabel(node) }}</span><div class="node-image"><img :src="node.coverImageUrl || generationImage(nodeGeneration(node))" :alt="nodeName(node)" /></div><div class="node-content"><strong>{{ nodeName(node) }}</strong><span>{{ node.brandName || node.targetName || '未填写品牌 / 型号' }}</span><div class="node-facts"><span>{{ formatDate(node.purchaseDate || node.periodLabel) }}</span><b>{{ money(node.primaryPurchaseAmount ?? node.purchasePrice ?? node.plannedBudget) }}</b></div><div class="node-meta"><span>已用 {{ useDaysLabel(node) }}</span><span v-if="hasMainSale(node)">已售 {{ money(node.mainSaleNetIncome ?? node.salePrice) }}</span><span v-else>{{ node.nodeType === 'PLANNED' ? '计划中' : '未出售' }}</span></div></div></button><div v-for="link in linksTo(node)" :key="link.linkId" class="relation-chip" :class="{ alternative: relationType(link) === 'ALTERNATIVE' }"><span>{{ relationType(link) === 'ALTERNATIVE' ? '同级对比' : gapLabel(link) }}</span><b v-if="relationType(link) === 'SEQUENCE'">{{ priceDeltaLabel(link) }}</b><small v-if="relationType(link) === 'SEQUENCE'">{{ netOutflowLabel(link) }}</small></div></template></div>
                 </article>
               </div>
             </div>
             <aside class="node-inspector card" :class="{empty: !selectedNode}"><template v-if="selectedNode"><div class="inspector-heading"><span>物品详情</span><button class="icon-button" aria-label="关闭物品详情" @click="selectedNodeId = undefined">×</button></div><button class="inspector-image-button" :aria-label="`放大查看${nodeName(selectedNode)}图片`" @click="openImagePreview(selectedNode.coverImageUrl || generationImage(nodeGeneration(selectedNode)))"><img class="inspector-image" :src="selectedNode.coverImageUrl || generationImage(nodeGeneration(selectedNode))" :alt="nodeName(selectedNode)" /><span>点击放大</span></button><button class="inspector-name-link" :disabled="!selectedNode.assetId" @click="openAssetDetail(selectedNode)">{{ nodeName(selectedNode) }} <span v-if="selectedNode.assetId">查看更多 ↗</span></button><p>{{ selectedNode.brandName || selectedNode.model || '未填写品牌 / 型号' }}</p><div class="inspector-status"><span class="tag" :class="{lime: selectedNode.assetId === currentRoute?.mainAssetId}">{{ selectedNode.assetId === currentRoute?.mainAssetId ? '当前主物品' : nodeStatusLabel(selectedNode) }}</span><span>{{ selectedNode.nodeType === 'WISHLIST' ? '心愿物品' : selectedNode.mainline ? '同级主物品' : '备用物品' }}</span></div><dl><div><dt>购买时间</dt><dd>{{ formatDate(selectedNode.purchaseDate) }}</dd></div><div><dt>主商品金额</dt><dd>{{ money(selectedNode.primaryPurchaseAmount ?? selectedNode.purchasePrice ?? selectedNode.plannedBudget) }}</dd></div><div><dt>总投入</dt><dd>{{ money(selectedNode.totalInvest ?? selectedNode.plannedBudget) }}</dd></div><div><dt>使用时间</dt><dd>{{ useDaysLabel(selectedNode) }}</dd></div><div v-if="selectedNode.mainSaleDate" class="wide"><dt>出售记录</dt><dd>{{ formatDate(selectedNode.mainSaleDate) }} · 净收入 {{ money(selectedNode.mainSaleNetIncome) }}</dd></div></dl><div v-if="selectedNode.dataWarnings?.length" class="node-warnings"><span v-for="warning in selectedNode.dataWarnings" :key="warning">{{ warning }}</span></div><div class="inspector-actions"><PrimaryButton label="添加上级" @click="openAddNode(selectedNode, 'BEFORE')" /><PrimaryButton label="添加同级" @click="openAddNode(selectedNode, 'ALTERNATIVE')" /><PrimaryButton label="添加下级" @click="openAddNode(selectedNode, 'AFTER')" /><button v-if="selectedNode.assetId && selectedNode.assetId !== currentRoute?.mainAssetId" class="secondary-button" @click="setRouteMainAsset(selectedNode)">设为当前主物品</button><button v-if="!selectedNode.mainline" class="secondary-button" @click="setNodeMainline(selectedNode)">设为同级主物品</button><button class="secondary-button" @click="openEditNode(selectedNode)">编辑节点</button><button v-if="selectedNode.assetId && !isSold(selectedNode)" class="secondary-button sell-button" @click="openSell(selectedNode)">记录出售</button><button class="text-button danger" @click="confirmRemoveNode(selectedNode)">从路线移除</button></div></template><template v-else><div class="inspector-empty-mark">＋</div><strong>选择一件物品</strong><p>查看主商品信息、购买与相邻代际计算结果。</p></template></aside>
           </section>
 
-          <section v-else class="card route-table"><div class="table-scroll"><table><thead><tr><th>层级</th><th>物品</th><th>关系</th><th>购买日期</th><th>购买金额</th><th>使用天数</th><th>出售净收入</th><th>与上级间隔</th><th>购买价差</th><th>实际升级补款</th></tr></thead><tbody><tr v-for="node in visibleNodes" :key="node.nodeId" tabindex="0" @click="selectNode(node.nodeId)" @keyup.enter="selectNode(node.nodeId)"><td><span class="generation-mini">{{ generationLabel(nodeGeneration(node)) }}</span></td><td><div class="table-product"><img :src="node.coverImageUrl || generationImage(nodeGeneration(node))" alt="" /><div><strong>{{ nodeName(node) }}</strong><span>{{ nodeStatusLabel(node) }}</span></div></div></td><td>{{ nodeRelationLabel(node) }}</td><td>{{ formatDate(node.purchaseDate || node.periodLabel) }}</td><td>{{ money(node.primaryPurchaseAmount ?? node.purchasePrice ?? node.plannedBudget) }}</td><td>{{ useDaysLabel(node) }}</td><td>{{ node.mainSaleNetIncome !== undefined ? money(node.mainSaleNetIncome) : '—' }}</td><td>{{ nodeIncomingLink(node) ? gapLabel(nodeIncomingLink(node)!) : '—' }}</td><td>{{ nodeIncomingLink(node) ? priceDeltaLabel(nodeIncomingLink(node)!) : '—' }}</td><td>{{ nodeIncomingLink(node) ? netOutflowLabel(nodeIncomingLink(node)!) : '—' }}</td></tr></tbody></table></div></section>
+          <section v-else class="card route-table"><div class="table-scroll"><table><thead><tr><th>层级</th><th>物品</th><th>关系</th><th>购买日期</th><th>购买金额</th><th>使用天数</th><th>出售净收入</th><th>与上级间隔</th><th>购买价差</th><th>实际升级补款</th></tr></thead><tbody><tr v-for="node in visibleNodes" :key="node.nodeId" tabindex="0" @click="selectNode(node.nodeId)" @keyup.enter="selectNode(node.nodeId)"><td><span class="generation-mini">{{ generationLabel(nodeGeneration(node)) }}</span></td><td><div class="table-product"><img :src="node.coverImageUrl || generationImage(nodeGeneration(node))" alt="" /><div><strong>{{ nodeName(node) }}</strong><span>{{ nodeStatusLabel(node) }}</span></div></div></td><td>{{ nodeRelationLabel(node) }}</td><td>{{ formatDate(node.purchaseDate || node.periodLabel) }}</td><td>{{ money(node.primaryPurchaseAmount ?? node.purchasePrice ?? node.plannedBudget) }}</td><td>{{ useDaysLabel(node) }}</td><td>{{ hasMainSale(node) ? money(node.mainSaleNetIncome) : '—' }}</td><td>{{ nodeIncomingLink(node) ? gapLabel(nodeIncomingLink(node)!) : '—' }}</td><td>{{ nodeIncomingLink(node) ? priceDeltaLabel(nodeIncomingLink(node)!) : '—' }}</td><td>{{ nodeIncomingLink(node) ? netOutflowLabel(nodeIncomingLink(node)!) : '—' }}</td></tr></tbody></table></div></section>
         </template>
       </AsyncState>
     </template>
@@ -140,14 +140,14 @@ const previewOpen = ref(false)
 const previewImage = ref('')
 
 const createForm = reactive({ name: '', remark: '', status: 'ACTIVE' as const, firstAssetId: undefined as number | undefined, firstWishlistId: undefined as number | undefined })
-const nodeForm = reactive<NodePayload>({ nodeType: 'ASSET', assetId: undefined, wishlistId: undefined, remark: '', alternativePurpose: '', mainline: true })
+const nodeForm = reactive<NodePayload>({ nodeType: 'ASSET', assetId: undefined, wishlistId: undefined, remark: '', alternativePurpose: '', mainline: false })
 const editRouteForm = reactive<RoutePayload>({ name: '', remark: '', routeType: 'ACTUAL', status: 'ACTIVE' })
 const editNodeForm = reactive({ assetId: undefined as number | undefined, label: '', remark: '', mainline: true })
 const sellForm = reactive({ saleDate: new Date().toISOString().slice(0, 10), salePrice: 0, fee: 0, shippingCost: 0, notes: '' })
 
 const currentRoute = computed(() => routes.value.find(route => route.id === selectedRouteId.value))
 const screenTitle = computed(() => pageMode.value === 'list' ? '升级路线' : currentRoute.value?.name || '升级路线')
-const screenSubtitle = computed(() => pageMode.value === 'list' ? '' : '主线按购买时间自动排序；备用物品只计入路线总额。')
+const screenSubtitle = computed(() => pageMode.value === 'list' ? '' : '上级、同级、下级决定代际结构；备用物品只计入路线总额。')
 const selectedNode = computed(() => graph.value?.nodes.find(node => node.nodeId === selectedNodeId.value))
 const actualSummary = computed<UpgradeActualSummary>(() => graph.value?.actualSummary || routeActual(currentRoute.value) || { assetCount: graph.value?.nodes.filter(node => node.nodeType !== 'PLANNED').length || 0, totalSpend: 0, primarySpend: 0, extraSpend: 0, totalIncome: 0, netInvestment: 0 })
 const visibleNodes = computed(() => (graph.value?.nodes || []).filter(node => {
@@ -156,10 +156,16 @@ const visibleNodes = computed(() => (graph.value?.nodes || []).filter(node => {
   const relationMatched = !relationFilter.value || linksTo(node).some(link => relationType(link) === relationFilter.value) || (relationFilter.value === 'SEQUENCE' && !linksTo(node).length)
   return statusMatched && generationMatched && relationMatched
 }))
+/**
+ * 图谱从最新一代向最早一代倒序展示；每层仍以节点真实 level 作为代际编号，
+ * 不能再用 v-for 的数组下标，否则倒序后会把代号标错。
+ */
 const layers = computed(() => {
   const allNodes = graph.value?.nodes || []
   const maxGeneration = Math.max(1, ...allNodes.map(nodeGeneration))
   return Array.from({ length: maxGeneration }, (_, index) => allNodes.filter(node => nodeGeneration(node) === index + 1))
+    .filter(layer => layer.length > 0)
+    .reverse()
 })
 const filteredAssets = computed(() => filterAssets(assetKeyword.value, false))
 const nodeAvailableAssets = computed(() => filterAssets(nodeAssetKeyword.value, true))
@@ -174,16 +180,26 @@ const relationshipPreview = computed(() => {
   const childDate = selectedNewAsset.value?.primaryPurchaseDate || selectedNewAsset.value?.purchaseDate || nodeForm.periodLabel
   const anchorPrice = Number(nodeAnchor.value.primaryPurchaseAmount ?? nodeAnchor.value.purchasePrice ?? 0)
   const childPrice = Number(selectedNewAsset.value?.primaryPrice ?? selectedNewAsset.value?.totalInvest ?? nodeForm.plannedBudget ?? 0)
-  const days = anchorDate && childDate ? `${daysBetween(anchorDate, childDate)} 天` : '待补充购买日期'
+  // 预览与已保存关系使用相同的时间文案，避免用户保存前后看到两套单位。
+  const days = anchorDate && childDate ? durationLabel(daysBetween(anchorDate, childDate)) : '待补充购买日期'
   const price = anchorPrice || childPrice ? signedMoney(childPrice - anchorPrice) : '待补充金额'
   const saleIncome = nodeAnchor.value.mainSaleNetIncome
-  return { days, price, outflow: saleIncome === undefined ? '出售后计算' : money(childPrice - saleIncome) }
+  return { days, price, outflow: saleIncome == null ? '出售后计算' : money(childPrice - saleIncome) }
 })
 
 function money(value?: number) { return `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` }
 function signedMoney(value?: number | null) { if (value === null || value === undefined) return '待计算'; return `${value > 0 ? '+' : value < 0 ? '−' : ''}${money(Math.abs(value))}` }
 function formatDate(value?: string) { if (!value) return '数据未记录'; const matched = value.match(/^(\d{4})-(\d{2})/); return matched ? `${matched[1]} 年 ${matched[2]} 月` : value }
-function daysBetween(start: string, end: string) { return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) }
+/** 将天数换成路线页面统一的“年/月（天）”口径；月份按 30 天近似，便于快速比较使用周期。 */
+function durationLabel(days: number) {
+  const normalizedDays = Math.max(0, Math.round(days))
+  const totalMonths = Math.floor(normalizedDays / 30)
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+  const calendarPart = years > 0 ? `${years}年${months}个月` : `${months}个月`
+  return `${calendarPart}（${normalizedDays}天）`
+}
+function daysBetween(start: string, end: string) { return Math.abs(Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000)) }
 function routeTypeLabel(type?: UpgradeRouteType) { return ({ ACTUAL: '实际履历', PLAN: '未来规划', MIXED: '实际 + 规划' }[type || 'ACTUAL']) }
 function nodeName(node: UpgradeGraphNode) { return node.label || node.name || node.title || node.targetName || '未命名物品' }
 function nodeGeneration(node: UpgradeGraphNode) { return Math.max(1, Number(node.level || 1)) }
@@ -192,13 +208,14 @@ function generationLabel(index: number) { return `第 ${index} 代` }
 function generationImage(index: number) { return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="260" height="180"><rect width="100%" height="100%" fill="#eaffbf"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" fill="#4d6421" font-size="28">第 ${index} 代</text></svg>`)}` }
 function generationPeriod(layer: UpgradeGraphNode[]) { const dates = layer.map(node => node.purchaseDate || node.periodLabel).filter(Boolean).sort(); return dates[0] ? formatDate(dates[0]) : '待定年月' }
 function nodeStatusLabel(node: UpgradeGraphNode) { if (node.nodeType === 'WISHLIST' || node.nodeType === 'PLANNED') return '心愿中'; if (isSold(node)) return '已出售'; return node.assetStatus || node.status || '数据待补充' }
-function useDaysLabel(node: UpgradeGraphNode) { return node.useDays === undefined || node.useDays === null ? '待计算' : `${node.useDays} 天` }
-function isSold(node: UpgradeGraphNode) { return Boolean(node.sold || node.assetStatus === '已出售' || node.mainSaleDate || node.mainSaleNetIncome !== undefined) }
+function useDaysLabel(node: UpgradeGraphNode) { return node.useDays === undefined || node.useDays === null ? '待计算' : durationLabel(node.useDays) }
+function hasMainSale(node: UpgradeGraphNode) { return Boolean(node.mainSaleDate || node.mainSaleNetIncome != null) }
+function isSold(node: UpgradeGraphNode) { return Boolean(node.sold || node.assetStatus === '已出售' || hasMainSale(node)) }
 function relationType(link: UpgradeGraphLink): UpgradeRelationType { return link.relationType || 'SEQUENCE' }
 function linksTo(node: UpgradeGraphNode) { return (graph.value?.links || []).filter(link => link.toNodeId === node.nodeId) }
 function nodeIncomingLink(node: UpgradeGraphNode) { return linksTo(node)[0] }
 function nodeRelationLabel(node: UpgradeGraphNode) { const link = nodeIncomingLink(node); return link ? relationType(link) === 'ALTERNATIVE' ? '同级对比' : '前后代' : '起点物品' }
-function gapLabel(link: UpgradeGraphLink) { return link.purchaseGapDays === null || link.purchaseGapDays === undefined ? '购买时间待补充' : `${link.purchaseGapDays} 天后` }
+function gapLabel(link: UpgradeGraphLink) { return link.purchaseGapDays === null || link.purchaseGapDays === undefined ? '购买时间待补充' : `${durationLabel(link.purchaseGapDays)}后` }
 function priceDeltaLabel(link: UpgradeGraphLink) { return link.purchasePriceDelta === null || link.purchasePriceDelta === undefined ? '购入价待补充' : `购入价 ${signedMoney(link.purchasePriceDelta)}` }
 function netOutflowLabel(link: UpgradeGraphLink) { return link.replacementNetOutflow === null || link.replacementNetOutflow === undefined ? '出售后计算' : `实际补款 ${money(link.replacementNetOutflow)}` }
 function nodeClasses(node: UpgradeGraphNode) { return { selected: node.nodeId === selectedNodeId.value, sold: isSold(node), planned: node.nodeType === 'PLANNED' || node.status === 'PLANNED', active: node.assetStatus === '使用中', mainProduct: node.assetId === currentRoute.value?.mainAssetId, warning: Boolean(node.dataWarnings?.length) } }
@@ -233,7 +250,8 @@ async function nextCreate() {
   try { const result = await createRoute(payload); const id = typeof result === 'number' ? result : result.routeId; await loadRoutes(); selectedRouteId.value = id; graph.value = typeof result === 'number' ? undefined : result; pageMode.value = 'detail'; createDrawer.value = false; if (!graph.value) await loadGraph(); ElMessage.success('升级路线已创建') } catch (e) { ElMessage.error((e as Error).message) } finally { saving.value = false }
 }
 function openAddNode(anchor: UpgradeGraphNode | undefined, position: NodePosition) { if (!selectedRouteId.value && anchor) return; resetNodeForm(); nodeAnchor.value = anchor; nodePosition.value = position; nodeDrawer.value = true }
-function resetNodeForm() { nodeAssetKeyword.value = ''; Object.assign(nodeForm, { nodeType: 'ASSET', assetId: undefined, wishlistId: undefined, remark: '', alternativePurpose: '', mainline: true }) }
+/** 新增同级默认作为备用物品；只有用户主动选择主物品时才参与前后代计算。 */
+function resetNodeForm() { nodeAssetKeyword.value = ''; Object.assign(nodeForm, { nodeType: 'ASSET', assetId: undefined, wishlistId: undefined, remark: '', alternativePurpose: '', mainline: false }) }
 async function saveNode() {
   if (!selectedRouteId.value) return
   if (nodeForm.nodeType === 'ASSET' && !nodeForm.assetId) return ElMessage.warning('请选择一件已有物品')

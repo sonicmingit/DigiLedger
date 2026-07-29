@@ -9,10 +9,10 @@
     ><view class="content"
       ><text class="name">{{ asset.name }}</text
       ><text class="meta"
-        >{{ asset.categoryName || "未分类" }} ·
+        >{{ asset.categoryName || asset.categoryPath || "未分类" }} ·
         {{ asset.status || "未设置" }}</text
       ><text class="price">{{
-        money(asset.totalCost ?? asset.currentValue)
+        money(asset.totalInvest ?? asset.totalCost ?? asset.currentValue)
       }}</text></view
     ></view
   >
