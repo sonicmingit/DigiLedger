@@ -19,14 +19,14 @@ uniapp/digiLeder/node_modules
 uniapp/digiLeder/dist/
 
 # Figma rebuild clients
-frontend-figma/node_modules/
-frontend-figma/dist/
-frontend-figma/.playwright-cli/
-frontend-figma/output/
-uniapp-figma/node_modules/
-uniapp-figma/dist/
-uniapp-figma/.playwright-cli/
-uniapp-figma/output/
+fronten2.0/node_modules/
+fronten2.0/dist/
+fronten2.0/.playwright-cli/
+fronten2.0/output/
+uniapp/node_modules/
+uniapp/dist/
+uniapp/.playwright-cli/
+uniapp/output/
 
 # API配置
 /backend/api_configs.sql

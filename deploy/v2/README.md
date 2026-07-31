@@ -1,4 +1,4 @@
-# 部署版本 2：后端 + frontend-figma
+# 部署版本 2：后端 + fronten2.0
 
 在服务器克隆仓库后运行（Linux/macOS）：
 
@@ -16,7 +16,7 @@ Windows PowerShell：
 首次执行会从已提交的 `config.env.template` 和 `docker-compose.template.yml`
 生成本地的 `config.env`、`docker-compose.yml`。请先填写外部 MySQL 与对象存储
 的连接信息（`DL_DB_*`、`DL_STORAGE_*`），再使用 `--force` 部署。Compose 仅启动
-后端与 `frontend-figma`，不会创建数据库、MinIO 或其他中间件。
+后端与 `fronten2.0`，不会创建数据库、MinIO 或其他中间件。
 
 `config.env` 是本地配置，脚本不会覆盖；`docker-compose.yml` 每次运行都会按仓库中
 已提交的模板刷新，请将所有可配置项（端口、数据库、对象存储、Flyway）保存在

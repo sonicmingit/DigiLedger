@@ -668,7 +668,7 @@ src
 实际部署文件集中于 `deploy/`，不再使用仓库根目录 Compose 文件：
 
 - `deploy/v1/`：后端 + `frontend`；
-- `deploy/v2/`：后端 + `frontend-figma`。
+- `deploy/v2/`：后端 + `fronten2.0`。
 
 每个版本均提交 `config.env.template` 与 `docker-compose.template.yml`。
 部署脚本首次运行时从模板生成本地配置，随后拉取代码、检测更新并按确认重建。

@@ -5,11 +5,11 @@
 !frontend/**
 frontend/node_modules/
 frontend/dist/
-!frontend-figma/
-!frontend-figma/**
-frontend-figma/node_modules/
-frontend-figma/dist/
-frontend-figma/.playwright-cli/
-frontend-figma/output/
+!fronten2.0/
+!fronten2.0/**
+fronten2.0/node_modules/
+fronten2.0/dist/
+fronten2.0/.playwright-cli/
+fronten2.0/output/
 !deploy/
 !deploy/**

@@ -1,13 +1,14 @@
-# 移动端图标获取说明
+# DigiLedger 图标资源
 
-以下 Base64 文本文件用于手动恢复 PWA 图标，请在需要时执行以下步骤：
+`icon-192.png` 和 `icon-512.png` 使用项目统一品牌图标。源文件保存在
+`logo/digiledger-logo.png`，PC 端页面 favicon 也使用同一份资源。
 
-1. 将 `icon-192.base64.txt` 或 `icon-512.base64.txt` 的全部内容复制到新建的同名 `.txt` 文件中。
-2. 使用命令行转码生成 PNG，例如：
-   ```bash
-   base64 -d icon-192.base64.txt > icon-192.png
-   base64 -d icon-512.base64.txt > icon-512.png
-   ```
-3. 把生成的 PNG 图标放回 `frontend/public/icons/` 目录即可。
+如需更新品牌图标，请同时替换以下位置，并保持 PNG 格式：
 
-如需在 Mac 上使用，可将命令中的 `base64 -d` 替换为 `base64 -D`。
+- `logo/digiledger-logo.png`
+- `frontend/public/digiledger-logo.png`
+- `frontend/public/icons/icon-192.png`
+- `frontend/public/icons/icon-512.png`
+- `frontend/src/assets/digiledger-logo.png`
+- `fronten2.0/src/assets/digiledger-logo.png`
+- `fronten2.0/public/digiledger-logo.png`

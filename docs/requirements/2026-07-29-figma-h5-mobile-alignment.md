@@ -2,7 +2,7 @@
 
 ## 目标
 
-`uniapp-figma` 作为正式 H5 / Android 客户端，对齐 `frontend-figma` 已有的核心查询和基础资料维护能力，并保持现有浅色、黑色与荧光绿色设计体系。
+`uniapp` 作为正式 H5 / Android 客户端，对齐 `fronten2.0` 已有的核心查询和基础资料维护能力，并保持现有浅色、黑色与荧光绿色设计体系。
 
 ## 范围
 
@@ -44,4 +44,4 @@
   - 验证完整筛选展开、拍照/相册来源面板、分类新增/编辑面板和路线只读浏览。
   - 首轮发现并修复滚动条、原始分类路径、favicon 请求和筛选标签截断问题。
   - 所有测试页面控制台均为 0 error；保留 1 条来自 uni-app 依赖的 `vue-router` 兼容性 warning。
-  - 并排视觉证据与完整记录见 `uniapp-figma/design-qa.md` 和 `uniapp-figma/output/playwright/h5-qa/`。
+  - 并排视觉证据与完整记录见 `uniapp/design-qa.md` 和 `uniapp/output/playwright/h5-qa/`。

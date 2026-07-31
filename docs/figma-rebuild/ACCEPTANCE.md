@@ -42,10 +42,10 @@
 
 - PC：`npm run build` 通过；六张 1440 × 900 页面截图逐张复核。
 - H5：`npm run build:h5` 通过；七张 393 × 852 页面截图逐张复核。
-- Android 资源：`npm run build:app-android` 通过，输出 `uniapp-figma/dist/build/app`。
+- Android 资源：`npm run build:app-android` 通过，输出 `uniapp/dist/build/app`。
 - 后端：`mvn test` 通过，3 个测试、0 失败、0 错误。
 - OpenAPI：YAML 解析通过，OpenAPI 3.0.3，共 29 个路径。
-- 部署：`deploy/v2/docker-compose.template.yml` 为后端 + `frontend-figma` 的统一部署模板；使用
+- 部署：`deploy/v2/docker-compose.template.yml` 为后端 + `fronten2.0` 的统一部署模板；使用
   `deploy/v2/deploy.sh --force` 或 `deploy/v2/deploy.ps1 -Force` 执行部署。
   当前未启动，因此本轮未执行镜像构建。
 - 实库迁移与真机 APK 发布未在本机执行；正式发布仍需数据库备份、正式包名、

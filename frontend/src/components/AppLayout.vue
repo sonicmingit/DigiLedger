@@ -2,7 +2,7 @@
   <el-config-provider namespace="el" size="default">
     <el-container class="layout">
       <el-aside width="220px" class="sidebar">
-        <div class="logo">DigiLedger</div>
+        <div class="logo"><img src="@/assets/digiledger-logo.png" alt="DigiLedger logo" /><span>DigiLedger</span></div>
         <el-menu :default-active="active" router>
           <el-menu-item index="/">资产总览</el-menu-item>
           <el-menu-item index="/assets">物品中心</el-menu-item>
@@ -82,12 +82,22 @@ const currentTheme = computed({
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   color: var(--dl-accent);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: bold;
-  text-align: center;
   margin-bottom: 18px;
   letter-spacing: 0.5px;
+}
+
+.logo img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 12px;
 }
 
 .header {

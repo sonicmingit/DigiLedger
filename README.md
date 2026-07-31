@@ -24,9 +24,10 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 ├── frontend/                # Vue3 前端项目（部署版本 1）
 │   ├── src                  # 页面、组件与 API 封装
 │   ├── public               # 静态资源
-├── frontend-figma/          # Figma 重构前端（部署版本 2）
+├── fronten2.0/              # PC 端重构前端（部署版本 2）
+├── logo/                    # DigiLedger 统一品牌图标资源
 ├── deploy/v1/               # 后端 + frontend 一键部署
-├── deploy/v2/               # 后端 + frontend-figma 一键部署
+├── deploy/v2/               # 后端 + fronten2.0 一键部署
 ├── README.md                # 项目说明
 └── 设计文档.md               # 业务与架构设计说明
 ```
@@ -93,7 +94,7 @@ npm run preview
 后端与前端反向代理；MySQL、对象存储等依赖由外部服务提供：
 
 - 版本 1：`deploy/v1`，后端 + `frontend`。
-- 版本 2：`deploy/v2`，后端 + `frontend-figma`。
+- 版本 2：`deploy/v2`，后端 + `fronten2.0`。
 
 在已克隆的仓库中选择一个版本执行：
 
