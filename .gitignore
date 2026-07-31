@@ -9,11 +9,22 @@ frontend/dist/
 
 # General
 .DS_Store
+Thumbs.db
+*.log
+coverage/
+*.tsbuildinfo
 /参考/
 /backend/src/main/resources/application-home.yml
 /.vscode/settings.json
 /frontend/dist.zip
 /frontend/yarn.lock
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
 
 uniapp/digiLeder/node_modules
 uniapp/digiLeder/dist/
@@ -23,10 +34,22 @@ fronten2.0/node_modules/
 fronten2.0/dist/
 fronten2.0/.playwright-cli/
 fronten2.0/output/
+fronten2.0/.hallmark/
 uniapp/node_modules/
 uniapp/dist/
 uniapp/.playwright-cli/
 uniapp/output/
+uniapp/.hallmark/
+
+# Local Android SDK/JDK and downloaded tool archives
+uniapp/android/jdk/
+uniapp/android/sdk/
+uniapp/android/*.zip
+uniapp/android/local.properties
+
+# Temporary logo variants generated during design exploration
+/logo/tmp*.png
+/logo/ChatGPT Image *.png
 
 # API配置
 /backend/api_configs.sql

@@ -32,6 +32,9 @@ logging:
     com.digiledger: DEBUG
 
 app:
+  cors:
+    # 逗号分隔；生产部署时通过环境变量仅放行实际 H5 域名。
+    allowed-origin-patterns: "${DL_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:[*],https://localhost,https://localhost:[*],http://127.0.0.1:[*],http://[::1]:[*],http://10.*:[*],http://172.*:[*],http://192.168.*:[*]}"
   upload:
     max-size-mb: 5
     allowed-content-types:
