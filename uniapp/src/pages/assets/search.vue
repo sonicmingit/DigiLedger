@@ -161,7 +161,7 @@
       >
         <image
           v-if="asset.coverImageUrl"
-          :src="asset.coverImageUrl"
+          :src="resolveMediaUrl(asset.coverImageUrl)"
           mode="aspectFill"
           aria-hidden="true"
         />
@@ -203,6 +203,7 @@ import {
   type DictionaryTag,
 } from "@/services/api";
 import { categoryPathLabel } from "@/utils/dictionaries";
+import { resolveMediaUrl } from "@/services/media";
 const keyword = ref(""),
   state = ref("全部"),
   states = ["全部", "使用中", "已闲置", "待出售", "已出售", "已丢弃"],

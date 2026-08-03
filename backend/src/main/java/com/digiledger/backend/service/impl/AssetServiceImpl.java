@@ -160,7 +160,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getStatus(),
                 asset.getPurchaseDate(),
                 asset.getRetiredDate(),
-                storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
+                storagePathHelper.toBrowserUrl(asset.getCoverImageUrl()),
                 parseRelatedLinks(asset.getRelatedLinks()),
                 asset.getManualUseMonths(),
                 asset.getNotes(),
@@ -349,7 +349,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
         // 历史库仍保留 enabled_date 的 NOT NULL 约束；新建物品以购买日作为启用日。
         asset.setEnabledDate(request.getPurchaseDate());
         asset.setRetiredDate(request.getRetiredDate());
-        asset.setCoverImageUrl(storagePathHelper.toObjectKey(request.getCoverImageUrl()));
+        asset.setCoverImageUrl(storagePathHelper.toStoredReference(request.getCoverImageUrl()));
         asset.setRelatedLinks(toJsonRelatedLinks(request.getRelatedLinks()));
         asset.setManualUseMonths(request.getManualUseMonths());
         asset.setNotes(request.getNotes());
@@ -409,7 +409,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
                 asset.getCategoryId(),
                 asset.getCategoryPath(),
                 asset.getStatus(),
-                storagePathHelper.toFullUrl(asset.getCoverImageUrl()),
+                storagePathHelper.toBrowserUrl(asset.getCoverImageUrl()),
                 metrics.totalInvest,
                 metrics.avgCostPerDay,
                 metrics.useDays,
@@ -662,7 +662,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
                 purchase.getWarrantyMonths(),
                 purchase.getWarrantyExpireDate(),
                 purchase.getProductLink(),
-                storagePathHelper.toFullUrls(parseStringList(purchase.getAttachments())),
+                storagePathHelper.toBrowserUrls(parseStringList(purchase.getAttachments())),
                 purchase.getNotes()
         );
     }
@@ -701,7 +701,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
                 lossAmount,
                 dailyUsageCost,
                 monthlyUsageCost,
-                storagePathHelper.toFullUrls(parseStringList(sale.getAttachments())),
+                storagePathHelper.toBrowserUrls(parseStringList(sale.getAttachments())),
                 sale.getNotes()
         );
     }

@@ -14,7 +14,7 @@
     <view v-else-if="error" class="error">{{ error }}</view>
     <template v-else-if="item">
       <view class="hero">
-        <image v-if="item.imageUrl" :src="item.imageUrl" mode="aspectFill" />
+        <image v-if="item.imageUrl" :src="resolveMediaUrl(item.imageUrl)" mode="aspectFill" />
         <text v-else>{{ item.name.slice(0, 2) }}</text>
         <view class="status">{{ item.status || "未购买" }}</view>
       </view>
@@ -96,6 +96,7 @@
 import { ref } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { api, type PricePoint, type Wishlist } from "@/services/api";
+import { resolveMediaUrl } from "@/services/media";
 import WishlistActionSheets from "@/components/WishlistActionSheets.vue";
 import PageBackButton from "@/components/PageBackButton.vue";
 

@@ -13,6 +13,18 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Images and attachments are served through the backend, which can reach
+    # the private MinIO endpoint from the internal network.
+    location /oss/ {
+        proxy_pass http://backend:${DL_SERVER_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

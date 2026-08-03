@@ -73,7 +73,7 @@
           <view class="purchase-summary">
             <image
               v-if="wishlist.imageUrl"
-              :src="wishlist.imageUrl"
+              :src="resolveMediaUrl(wishlist.imageUrl)"
               mode="aspectFill"
             />
             <view v-else class="summary-fallback">{{
@@ -193,6 +193,7 @@ import {
   type Wishlist,
 } from "@/services/api";
 import { uploadFile } from "@/services/http";
+import { resolveMediaUrl } from "@/services/media";
 
 const props = defineProps<{ wishlist: Wishlist }>();
 const emit = defineEmits<{

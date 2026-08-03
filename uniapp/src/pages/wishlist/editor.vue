@@ -12,7 +12,7 @@
       </button>
     </view>
     <view class="cover" @click="chooseImage">
-      <image v-if="form.imageUrl" :src="form.imageUrl" mode="aspectFill" />
+      <image v-if="form.imageUrl" :src="resolveMediaUrl(form.imageUrl)" mode="aspectFill" />
       <template v-else>
         <image class="image-icon" src="/static/icons/image.svg" />
         <text class="cover-title">添加图片</text>
@@ -124,6 +124,7 @@ import {
   type DictionaryTag,
 } from "@/services/api";
 import { uploadFile } from "@/services/http";
+import { resolveMediaUrl } from "@/services/media";
 
 const id = ref(0),
   saving = ref(false),

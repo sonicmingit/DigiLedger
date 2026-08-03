@@ -114,7 +114,7 @@
                 <image
                   v-if="node.coverImageUrl"
                   class="compact-cover"
-                  :src="node.coverImageUrl"
+                  :src="resolveMediaUrl(node.coverImageUrl)"
                   mode="aspectFill"
                 />
                 <view v-else class="compact-cover fallback">
@@ -194,7 +194,7 @@
               <image
                 v-if="node.coverImageUrl"
                 class="tile-cover"
-                :src="node.coverImageUrl"
+                :src="resolveMediaUrl(node.coverImageUrl)"
                 mode="aspectFill"
               />
               <view v-else class="tile-cover fallback">
@@ -244,6 +244,7 @@ import {
   type UpgradeGraph,
   type UpgradeNode,
 } from "@/services/api";
+import { resolveMediaUrl } from "@/services/media";
 
 const id = ref(0),
   graph = ref<UpgradeGraph>(),

@@ -206,7 +206,7 @@ public class WishlistServiceImpl implements WishlistService {
             request.setBrandId(item.getBrandId());
         }
         if (request.getCoverImageUrl() == null) {
-            request.setCoverImageUrl(storagePathHelper.toObjectKey(item.getImageUrl()));
+            request.setCoverImageUrl(storagePathHelper.toStoredReference(item.getImageUrl()));
         }
         if (request.getStatus() == null || request.getStatus().isBlank()) {
             request.setStatus("使用中");
@@ -276,7 +276,7 @@ public class WishlistServiceImpl implements WishlistService {
         item.setExpectedPrice(request.getExpectedPrice());
         item.setCurrentPrice(request.getCurrentPrice());
         item.setLastPriceAt(request.getCurrentPrice() == null ? null : LocalDateTime.now());
-        item.setImageUrl(storagePathHelper.toObjectKey(request.getImageUrl()));
+        item.setImageUrl(storagePathHelper.toStoredReference(request.getImageUrl()));
         item.setLink(request.getLink());
         item.setSource(request.getSource());
         item.setStatus(status);
@@ -312,7 +312,7 @@ public class WishlistServiceImpl implements WishlistService {
                 item.getCurrentPrice(),
                 changeRate,
                 item.getLastPriceAt(),
-                storagePathHelper.toFullUrl(item.getImageUrl()),
+                storagePathHelper.toBrowserUrl(item.getImageUrl()),
                 item.getStatus(),
                 item.getLink(),
                 item.getSource(),

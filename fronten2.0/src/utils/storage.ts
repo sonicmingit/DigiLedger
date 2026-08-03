@@ -8,11 +8,6 @@ const isNonHttpUrl = (value: string) => /^(?:blob:|data:|mailto:|javascript:)/i.
 
 const getApiBase = () => ((import.meta.env.VITE_API_BASE as string | undefined) || '').trim()
 
-/**
- * Keep the object proxy on the same API root as axios. `/api` becomes the
- * current-origin root, while a full API address keeps its origin without the
- * `/api` suffix.
- */
 const normalizeApiRoot = () => {
   const raw = getApiBase()
   if (!raw) return ''
@@ -25,7 +20,7 @@ const normalizeApiRoot = () => {
       else if (pathname.endsWith('/api')) pathname = pathname.slice(0, -4)
       return `${url.origin}${pathname}`.replace(/\/$/, '')
     } catch {
-      // Fall through to the path-only normalization for an invalid env value.
+      // Fall through to path-only normalization for an invalid env value.
     }
   }
 
@@ -35,10 +30,7 @@ const normalizeApiRoot = () => {
   return base.replace(/\/$/, '')
 }
 
-const normalizePath = (value: string) => {
-  const withoutQuery = value.split(/[?#]/, 1)[0]
-  return withoutQuery.replace(/\\/g, '/').replace(/\/+/g, '/')
-}
+const normalizePath = (value: string) => value.split(/[?#]/, 1)[0].replace(/\\/g, '/')
 
 const parseUrl = (value: string) => {
   try {
@@ -78,20 +70,15 @@ const isLikelyStorageHost = (url: URL) => {
 }
 
 const extractKeyFromPath = (path: string) => {
-  const normalizedPath = normalizePath(path)
-  const proxyMarker = OSS_PREFIX
-  const proxyIndex = normalizedPath.indexOf(proxyMarker)
+  const normalized = normalizePath(path)
+  const proxyIndex = normalized.indexOf(OSS_PREFIX)
   if (proxyIndex >= 0) {
-    return normalizedPath.slice(proxyIndex + proxyMarker.length).replace(/^\/+/, '')
+    return normalized.slice(proxyIndex + OSS_PREFIX.length).replace(/^\/+/, '')
   }
 
   const bucketMarker = `/${OSS_BUCKET}/`
-  if (normalizedPath.startsWith(bucketMarker)) {
-    return normalizedPath.slice(bucketMarker.length).replace(/^\/+/, '')
-  }
-  if (normalizedPath.startsWith(`${OSS_BUCKET}/`)) {
-    return normalizedPath.slice(OSS_BUCKET.length + 1).replace(/^\/+/, '')
-  }
+  if (normalized.startsWith(bucketMarker)) return normalized.slice(bucketMarker.length).replace(/^\/+/, '')
+  if (normalized.startsWith(`${OSS_BUCKET}/`)) return normalized.slice(OSS_BUCKET.length + 1).replace(/^\/+/, '')
   return ''
 }
 
@@ -100,36 +87,19 @@ const resolveLocalObjectKey = (value: string) => {
 
   if (isHttpUrl(value) || isProtocolRelativeUrl(value)) {
     const url = parseUrl(value)
-    if (!url) return ''
-    const path = normalizePath(url.pathname)
-    const proxyKey = extractKeyFromPath(path)
-    if (proxyKey && (path.includes(OSS_PREFIX) ? isLikelyStorageHost(url) : true)) {
-      return proxyKey
-    }
-
-    const bucketMarker = `/${OSS_BUCKET}/`
-    const bucketIndex = path.indexOf(bucketMarker)
-    if (bucketIndex >= 0 && isLikelyStorageHost(url)) {
-      return path.slice(bucketIndex + bucketMarker.length).replace(/^\/+/, '')
-    }
-    return ''
+    if (!url || !isLikelyStorageHost(url)) return ''
+    return extractKeyFromPath(url.pathname)
   }
 
   const path = normalizePath(value)
-  const key = extractKeyFromPath(path)
-  if (key) return key
-  return path.replace(/^\/+/, '')
+  return extractKeyFromPath(path) || path.replace(/^\/+/, '')
 }
 
-/**
- * Convert a local object key or legacy object URL to the application proxy.
- * Genuine external HTTP(S), blob and data URLs are returned unchanged.
- */
+/** Convert local object references to the same-origin application proxy. */
 export const buildOssUrl = (value?: string | null): string => {
   if (value == null) return ''
   const trimmed = value.trim()
-  if (!trimmed) return ''
-  if (isNonHttpUrl(trimmed)) return trimmed
+  if (!trimmed || isNonHttpUrl(trimmed)) return trimmed
 
   const objectKey = resolveLocalObjectKey(trimmed)
   if (!objectKey) return trimmed
@@ -139,45 +109,21 @@ export const buildOssUrl = (value?: string | null): string => {
   return `${prefix}${objectKey}`.replace(/([^:]\/)\/+/g, '$1')
 }
 
-/** Parse only local values; unknown external URLs do not become object keys. */
 export const extractObjectKey = (value?: string | null): string => {
   if (value == null) return ''
   const trimmed = value.trim()
   if (!trimmed || isNonHttpUrl(trimmed)) return ''
-
-  if (isHttpUrl(trimmed) || isProtocolRelativeUrl(trimmed)) {
-    const url = parseUrl(trimmed)
-    if (!url) return ''
-    const path = normalizePath(url.pathname)
-    const proxyKey = extractKeyFromPath(path)
-    if (proxyKey && (path.includes(OSS_PREFIX) ? isLikelyStorageHost(url) : true)) return proxyKey
-
-    const bucketMarker = `/${OSS_BUCKET}/`
-    const bucketIndex = path.indexOf(bucketMarker)
-    if (bucketIndex >= 0 && isLikelyStorageHost(url)) {
-      return path.slice(bucketIndex + bucketMarker.length).replace(/^\/+/, '')
-    }
-    return ''
-  }
-
   return resolveLocalObjectKey(trimmed)
 }
 
-export const buildOssUrls = (values?: (string | null | undefined)[]): string[] => {
-  if (!values?.length) return []
-  return values.map((item) => buildOssUrl(item)).filter(Boolean)
-}
+export const buildOssUrls = (values?: (string | null | undefined)[]): string[] =>
+  (values || []).map((value) => buildOssUrl(value)).filter(Boolean)
 
-export const extractObjectKeys = (values?: (string | null | undefined)[]): string[] => {
-  if (!values?.length) return []
-  return values.map((item) => extractObjectKey(item)).filter(Boolean)
-}
+export const extractObjectKeys = (values?: (string | null | undefined)[]): string[] =>
+  (values || []).map((value) => extractObjectKey(value)).filter(Boolean)
 
-/** Normalize an API response containing known persisted media fields. */
 export const normalizeMediaUrls = <T>(value: T): T => {
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeMediaUrls(item)) as T
-  }
+  if (Array.isArray(value)) return value.map((item) => normalizeMediaUrls(item)) as T
   if (!value || typeof value !== 'object') return value
 
   const result: Record<string, unknown> = {}
@@ -187,9 +133,7 @@ export const normalizeMediaUrls = <T>(value: T): T => {
     } else if (key === 'coverImageUrls' || key === 'attachments') {
       result[key] = Array.isArray(item)
         ? item.map((entry) => (typeof entry === 'string' ? buildOssUrl(entry) : entry))
-        : typeof item === 'string'
-          ? buildOssUrl(item)
-          : item
+        : item
     } else {
       result[key] = normalizeMediaUrls(item)
     }
@@ -197,7 +141,6 @@ export const normalizeMediaUrls = <T>(value: T): T => {
   return result as T
 }
 
-/** Normalize upload/import responses whose local URL is returned as `url`. */
 export const normalizeObjectUrlResponse = <T extends { url?: string | null; objectKey?: string | null }>(value: T): T => {
   const normalizedUrl = buildOssUrl(value.url || value.objectKey)
   return { ...value, url: normalizedUrl || value.url || '' }

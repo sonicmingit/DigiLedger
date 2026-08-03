@@ -104,7 +104,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                 attachment.getBizType(),
                 attachment.getBizId(),
                 attachment.getObjectKey(),
-                storagePathHelper.toFullUrl(attachment.getObjectKey()),
+                storagePathHelper.toBrowserUrl(attachment.getObjectKey()),
                 attachment.getFileName(),
                 attachment.getFileType(),
                 attachment.getFileSize(),

@@ -419,7 +419,7 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         List<String> warnings = new ArrayList<>();
         if (NODE_WISHLIST.equals(nodeType) && wishlist != null) {
             return new UpgradeGraphNodeDTO(node.getId(), null, wishlist.getName(), null, zero(), zero(), false,
-                    null, storagePathHelper.toFullUrl(wishlist.getImageUrl()), node.getLevel(), node.getSort(), node.getLabel(), node.getRemark(),
+                    null, storagePathHelper.toBrowserUrl(wishlist.getImageUrl()), node.getLevel(), node.getSort(), node.getLabel(), node.getRemark(),
                     null, wishlist.getName(), null, wishlist.getExpectedPrice(), null, wishlist.getStatus(), nodeType,
                     wishlist.getBrandId() == null ? null : "心愿物品", wishlist.getModel(), null, null, null, null, null, null, List.of(),
                     node.getAlternativePurpose(), node.getWishlistId(), Boolean.TRUE.equals(node.getMainline()));
@@ -452,7 +452,7 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
         }
         return new UpgradeGraphNodeDTO(node.getId(), asset.getId(), asset.getName(), asset.getStatus(),
                 financials.totalSpend(), mainSale == null ? zero() : safe(mainSale.getSalePrice()), sold,
-                purchaseDate, storagePathHelper.toFullUrl(asset.getCoverImageUrl()), node.getLevel(), node.getSort(),
+                purchaseDate, storagePathHelper.toBrowserUrl(asset.getCoverImageUrl()), node.getLevel(), node.getSort(),
                 node.getLabel(), node.getRemark(), node.getTitle(), node.getTargetName(), node.getPeriodLabel(),
                 node.getPlannedBudget(), node.getExpectedRecovery(), node.getStatus(), nodeType, asset.getBrand(), asset.getModel(),
                 financials.primarySpend(), financials.totalSpend(), useDays, mainSale == null ? null : mainSale.getSaleDate(),
@@ -516,7 +516,7 @@ public class EquipUpgradeServiceImpl implements EquipUpgradeService {
                 .filter(Objects::nonNull).sorted().toList();
         List<String> covers = nodes.stream().filter(node -> node.getAssetId() != null)
                 .map(node -> assets.get(node.getAssetId())).filter(Objects::nonNull)
-                .map(DeviceAsset::getCoverImageUrl).filter(StringUtils::hasText).map(storagePathHelper::toFullUrl)
+                .map(DeviceAsset::getCoverImageUrl).filter(StringUtils::hasText).map(storagePathHelper::toBrowserUrl)
                 .distinct().limit(3).toList();
         return new EquipUpgradeRouteDTO(route.getId(), route.getName(), route.getRootAssetId(), route.getMainAssetId(),
                 root == null ? null : root.getName(), route.getRemark(), route.getPlanYear(), route.getAnnualBudget(),

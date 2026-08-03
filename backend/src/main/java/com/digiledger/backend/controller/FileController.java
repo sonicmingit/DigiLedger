@@ -64,7 +64,7 @@ public class FileController {
     @PostMapping("/upload")
     public ApiResponse<Map<String, String>> upload(@RequestParam(name = "file") MultipartFile file) {
         String objectKey = fileService.upload(file);
-        String publicUrl = storagePathHelper.toFullUrl(objectKey);
+        String publicUrl = storagePathHelper.toBrowserUrl(objectKey);
         return ApiResponse.success(Map.of(
                 "objectKey", objectKey,
                 "url", publicUrl != null ? publicUrl : ""
@@ -79,7 +79,7 @@ public class FileController {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "图片地址不能为空");
         }
         String objectKey = fileService.upload(externalImageImportService.download(sourceUrl));
-        String publicUrl = storagePathHelper.toFullUrl(objectKey);
+        String publicUrl = storagePathHelper.toBrowserUrl(objectKey);
         return ApiResponse.success(Map.of(
                 "objectKey", objectKey,
                 "url", publicUrl != null ? publicUrl : ""
@@ -119,7 +119,7 @@ public class FileController {
                 request.getAssetId(),
                 extra
         );
-        String url = storagePathHelper.toFullUrl(attachment.objectKey());
+        String url = storagePathHelper.toBrowserUrl(attachment.objectKey());
         return ApiResponse.success(new RemoveBgResponse(attachment.id(), url));
     }
 

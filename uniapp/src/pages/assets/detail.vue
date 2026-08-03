@@ -10,7 +10,7 @@
       ><view class="hero"
         ><image
           v-if="asset.coverImageUrl"
-          :src="asset.coverImageUrl"
+          :src="resolveMediaUrl(asset.coverImageUrl)"
           mode="aspectFill"
         /><text v-else>{{ heroInitials }}</text
         ><view class="status">{{ asset.status }}</view></view
@@ -166,6 +166,7 @@ import {
   type PurchaseRecord,
   type SaleRecord,
 } from "@/services/api";
+import { resolveMediaUrl, resolveMediaUrls } from "@/services/media";
 import { categoryPathLabel } from "@/utils/dictionaries";
 const id = ref(0),
   asset = ref<Asset>(),
@@ -256,14 +257,15 @@ function copyLink(url: string) {
   uni.setClipboardData({ data: url });
 }
 function previewAttachments(attachments: string[]) {
-  const images = attachments.filter((url) =>
+  const resolved = resolveMediaUrls(attachments);
+  const images = resolved.filter((url) =>
     /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url),
   );
   if (images.length)
     return uni.previewImage({ urls: images, current: images[0] });
   uni.showActionSheet({
-    itemList: attachments.map((_, index) => `复制附件 ${index + 1} 地址`),
-    success: (result) => copyLink(attachments[result.tapIndex]),
+    itemList: resolved.map((_, index) => `复制附件 ${index + 1} 地址`),
+    success: (result) => copyLink(resolved[result.tapIndex]),
   });
 }
 function changeStatus() {

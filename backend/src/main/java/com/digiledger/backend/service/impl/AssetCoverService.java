@@ -84,7 +84,7 @@ public class AssetCoverService {
 
     private CoverApplyResponse updateCover(Long assetId, AttachmentResponse attachment) {
         assetMapper.updateCoverImage(assetId, attachment.objectKey());
-        String url = storagePathHelper.toFullUrl(attachment.objectKey());
+        String url = storagePathHelper.toBrowserUrl(attachment.objectKey());
         return new CoverApplyResponse(attachment.id(), url, attachment.objectKey());
     }
 

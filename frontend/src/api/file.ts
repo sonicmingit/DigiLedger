@@ -1,5 +1,6 @@
 import { ElMessage } from 'element-plus'
 import http from './http'
+import { buildOssUrl, normalizeObjectUrlResponse } from '@/utils/storage'
 
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
 
@@ -77,7 +78,7 @@ const compressImageFile = async (file: File, maxBytes: number) => {
   throw new Error('图片压缩失败')
 }
 
-// 上传文件到 MinIO，返回可访问的 URL
+// 上传文件到对象存储，返回应用代理 URL
 export const uploadFile = async (file: File) => {
   let uploadTarget = file
   if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
@@ -94,7 +95,8 @@ export const uploadFile = async (file: File) => {
   }
   const formData = new FormData()
   formData.append('file', uploadTarget)
-  return http.post<{ url: string; objectKey: string }>('/files/upload', formData)
+  const result = await http.post<{ url: string; objectKey: string }>('/files/upload', formData)
+  return normalizeObjectUrlResponse(result)
 }
 
 export interface UnusedAttachment {
@@ -104,7 +106,9 @@ export interface UnusedAttachment {
 
 // 获取未使用的附件列表
 export const getUnusedAttachments = () => {
-  return http.get<UnusedAttachment[]>('/cleanup/unused-attachments')
+  return http
+    .get<UnusedAttachment[]>('/cleanup/unused-attachments')
+    .then((items) => items.map((item) => ({ ...item, url: buildOssUrl(item.url || item.objectKey) })))
 }
 
 // 执行清理未使用的附件

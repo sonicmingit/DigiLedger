@@ -1,4 +1,9 @@
-import { getServerProfile, nodeUrl, type NodeName } from "./server-profile";
+import {
+  getServerProfile,
+  markActiveNode,
+  nodeUrl,
+  type NodeName,
+} from "./server-profile";
 
 type Method = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
 type Envelope<T> = { code: number; data: T; msg?: string };
@@ -71,7 +76,7 @@ export async function apiRequest<T>(
   const base = nodeUrl(p, first);
   if (!base) throw new ApiError("请先配置服务器地址");
   try {
-    return await requestOnce<T>(
+    const result = await requestOnce<T>(
       base,
       path,
       method,
@@ -79,6 +84,8 @@ export async function apiRequest<T>(
       options.header,
       p.timeoutMs,
     );
+    markActiveNode(first, p);
+    return result;
   } catch (error) {
     const e = error as ApiError;
     const retry =
@@ -89,7 +96,7 @@ export async function apiRequest<T>(
       (e.status === 0 || e.status >= 500) &&
       !!nodeUrl(p, other);
     if (!retry) throw e;
-    return requestOnce<T>(
+    const result = await requestOnce<T>(
       nodeUrl(p, other),
       path,
       method,
@@ -97,6 +104,8 @@ export async function apiRequest<T>(
       options.header,
       p.timeoutMs,
     );
+    markActiveNode(other, p);
+    return result;
   }
 }
 export const testNode = (node: NodeName) =>
@@ -107,9 +116,10 @@ export const testNode = (node: NodeName) =>
   });
 
 /** Uses uni.uploadFile so the same upload flow works in H5 and native Android. */
-export function uploadFile(filePath: string) {
+export function uploadFile(filePath: string, node?: NodeName) {
   const p = getServerProfile(),
-    base = nodeUrl(p, p.preferred);
+    uploadNode = node || p.preferred,
+    base = nodeUrl(p, uploadNode);
   if (!base) return Promise.reject(new ApiError("请先配置服务器地址"));
   return new Promise<{ url: string; objectKey: string }>((resolve, reject) =>
     uni.uploadFile({
@@ -126,6 +136,7 @@ export function uploadFile(filePath: string) {
           const body = JSON.parse(res.data);
           if (body.code !== 200)
             throw new ApiError(body.msg || "上传失败", res.statusCode, true);
+          markActiveNode(uploadNode, p);
           resolve(body.data);
         } catch (e) {
           reject(e);

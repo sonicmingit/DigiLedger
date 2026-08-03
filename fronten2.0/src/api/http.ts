@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiEnvelope } from '@/types'
+import { normalizeMediaUrls } from '@/utils/storage'
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status?: number) { super(message); this.name = 'ApiError' }
@@ -12,7 +13,7 @@ async function unwrap<T>(request: Promise<AxiosResponse<ApiEnvelope<T>>>): Promi
   try {
     const response = await request
     if (response.data.code !== 200) throw new ApiError(response.data.msg || '服务暂时不可用', response.status)
-    return response.data.data
+    return normalizeMediaUrls(response.data.data)
   } catch (error) {
     if (error instanceof ApiError) throw error
     const axiosError = error as AxiosError<ApiEnvelope<unknown>>

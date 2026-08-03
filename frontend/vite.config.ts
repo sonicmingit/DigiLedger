@@ -16,6 +16,10 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:18080',
         changeOrigin: true
+      },
+      '/oss': {
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:18080',
+        changeOrigin: true
       }
     }
   }

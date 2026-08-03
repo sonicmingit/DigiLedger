@@ -9,7 +9,7 @@
     <section class="mobile-card-section">
       <article class="mobile-settings-card" v-if="profile">
         <div class="user-card">
-          <img :src="profile.avatar || fallbackAvatar" alt="头像" />
+          <img :src="buildOssUrl(profile.avatar) || fallbackAvatar" alt="头像" />
           <div>
             <h3>{{ profile.nickname }}</h3>
             <p>{{ profile.level || '普通会员' }}</p>
@@ -74,6 +74,7 @@ import {
   type MobilePreferencePayload,
   type MobileUserProfile
 } from '@/mobile/api/settings'
+import { buildOssUrl } from '@/utils/storage'
 
 const router = useRouter()
 const fallbackAvatar = 'https://cdn.jsdelivr.net/gh/itellboy/assets@main/avatar-default.png'

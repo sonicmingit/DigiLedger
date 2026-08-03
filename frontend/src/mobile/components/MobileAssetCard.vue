@@ -1,7 +1,7 @@
 <template>
   <div class="asset-card" @click="emit('select', asset)">
     <div class="card-thumb">
-      <img v-if="asset.coverImageUrl" :src="asset.coverImageUrl" :alt="asset.name" loading="lazy" />
+      <img v-if="buildOssUrl(asset.coverImageUrl)" :src="buildOssUrl(asset.coverImageUrl)" :alt="asset.name" loading="lazy" />
       <div v-else class="placeholder">
         <i class="mdi mdi-cube-outline"></i>
       </div>
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { AssetSummary } from '@/types'
+import { buildOssUrl } from '@/utils/storage'
 
 const props = defineProps<{ asset: AssetSummary }>()
 const emit = defineEmits<{ (e: 'select', asset: AssetSummary): void }>()

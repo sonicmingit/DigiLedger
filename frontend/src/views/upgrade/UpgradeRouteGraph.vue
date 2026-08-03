@@ -33,7 +33,7 @@
                     <el-tag size="small" type="info">{{ node.status }}</el-tag>
                   </div>
                   <div class="node-body">
-                    <el-image v-if="node.coverImageUrl" :src="node.coverImageUrl" fit="cover" class="node-cover" />
+                    <el-image v-if="buildOssUrl(node.coverImageUrl)" :src="buildOssUrl(node.coverImageUrl)" fit="cover" class="node-cover" />
                     <div class="node-info">
                       <div>购入：¥ {{ formatNumber(node.purchasePrice) }}</div>
                       <div v-if="node.sold">售出：¥ {{ formatNumber(node.salePrice) }}</div>
@@ -176,6 +176,7 @@ import {
 } from '@/api/upgrade'
 import { fetchAssets } from '@/api/asset'
 import type { AssetSummary, UpgradeRouteGraph } from '@/types'
+import { buildOssUrl } from '@/utils/storage'
 
 const route = useRoute()
 const router = useRouter()

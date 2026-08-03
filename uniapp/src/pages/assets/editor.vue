@@ -14,7 +14,7 @@
       @keyup.space="chooseImage"
       ><image
         v-if="form.coverImageUrl"
-        :src="form.coverImageUrl"
+        :src="resolveMediaUrl(form.coverImageUrl)"
         mode="aspectFill"
       /><template v-else
         ><image
@@ -165,6 +165,7 @@ import {
   type PurchaseRecord,
 } from "@/services/api";
 import { uploadFile } from "@/services/http";
+import { resolveMediaUrl } from "@/services/media";
 const id = ref(0),
   saving = ref(false),
   cost = ref(""),

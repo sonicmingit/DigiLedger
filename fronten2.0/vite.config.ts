@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: {
       port: 5174,
-      proxy: { '/api': { target: env.VITE_PROXY_TARGET || 'http://localhost:18080', changeOrigin: true } }
+      proxy: {
+        '/api': { target: env.VITE_PROXY_TARGET || 'http://localhost:18080', changeOrigin: true },
+        '/oss': { target: env.VITE_PROXY_TARGET || 'http://localhost:18080', changeOrigin: true }
+      }
     }
   }
 })

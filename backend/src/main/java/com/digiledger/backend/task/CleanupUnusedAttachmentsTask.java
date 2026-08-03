@@ -150,10 +150,7 @@ public class CleanupUnusedAttachmentsTask {
 
                     // 如果该对象不在活跃附件列表中，则加入待清理列表
                     if (!activeObjectKeys.contains(objectKey)) {
-                        String fullUrl = storagePathHelper.toFullUrl(objectKey);
-                        if (fullUrl == null || fullUrl.isBlank()) {
-                            fullUrl = storagePathHelper.toRelativeUrl(objectKey);
-                        }
+                        String fullUrl = storagePathHelper.toBrowserUrl(objectKey);
                         unusedFiles.add(new UnusedAttachmentResponse(
                             objectKey,
                             fullUrl

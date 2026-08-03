@@ -8,6 +8,7 @@ export type ServerProfile = {
 };
 export type NodeName = "primary" | "secondary";
 const KEY = "__digiledger_server_profile_v2__";
+let activeNodeState: { node: NodeName; apiUrl: string } | undefined;
 const defaults: ServerProfile = {
   primaryUrl: "/api",
   secondaryUrl: "",
@@ -52,4 +53,46 @@ export function nodeUrl(profile: ServerProfile, node: NodeName) {
   return normalizeApiUrl(
     node === "primary" ? profile.primaryUrl : profile.secondaryUrl,
   );
+}
+
+/**
+ * Returns the server base without the API suffix. Relative profiles stay
+ * relative so H5 can continue to use the dev-server/reverse-proxy origin.
+ */
+export function nodeOrigin(profile: ServerProfile, node: NodeName) {
+  const apiUrl = nodeUrl(profile, node);
+  if (!apiUrl) return "";
+  if (/^https?:\/\//i.test(apiUrl)) {
+    try {
+      return new URL(apiUrl).origin;
+    } catch (_) {
+      return apiUrl.replace(/\/api\/?$/i, "");
+    }
+  }
+  if (/^\/\//.test(apiUrl)) {
+    try {
+      const parsed = new URL(`http:${apiUrl}`);
+      return `//${parsed.host}`;
+    } catch (_) {
+      return apiUrl.replace(/\/api\/?$/i, "");
+    }
+  }
+  return apiUrl.replace(/\/api\/?$/i, "");
+}
+
+/** Remember the node that actually completed the latest request. */
+export function markActiveNode(node: NodeName, profile = getServerProfile()) {
+  const apiUrl = nodeUrl(profile, node);
+  if (apiUrl) activeNodeState = { node, apiUrl };
+}
+
+/** Prefer the last successful node, then the configured preferred node. */
+export function activeNode(profile = getServerProfile()): NodeName {
+  if (
+    activeNodeState &&
+    nodeUrl(profile, activeNodeState.node) === activeNodeState.apiUrl
+  ) {
+    return activeNodeState.node;
+  }
+  return profile.preferred;
 }

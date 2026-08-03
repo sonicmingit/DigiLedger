@@ -1,5 +1,6 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
+import { normalizeMediaUrls } from '@/utils/storage'
 
 interface ApiEnvelope<T> {
   code: number
@@ -22,7 +23,7 @@ const unwrap = async <T>(promise: Promise<AxiosResponse<ApiEnvelope<T>>>) => {
     ElMessage.error(errMsg)
     throw new Error(errMsg)
   }
-  return data
+  return normalizeMediaUrls(data)
 }
 
 const http = {

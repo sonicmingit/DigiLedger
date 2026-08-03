@@ -10,7 +10,7 @@
     <view class="visual" :class="{ soft: index % 2 === 0 }"
       ><image
         v-if="asset.coverImageUrl"
-        :src="asset.coverImageUrl"
+        :src="resolveMediaUrl(asset.coverImageUrl)"
         mode="aspectFill"
       /><text v-else>{{ initials }}</text></view
     ><view class="content"
@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Asset } from "@/services/api";
+import { resolveMediaUrl } from "@/services/media";
 const props = withDefaults(defineProps<{ asset: Asset; index?: number }>(), {
   index: 0,
 });

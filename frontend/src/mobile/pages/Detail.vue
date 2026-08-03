@@ -1,7 +1,7 @@
 <template>
   <div class="page-detail" v-if="asset">
     <!-- Hero Header -->
-    <header class="detail-header" :style="{ backgroundImage: `url(${asset.coverImageUrl})` }">
+    <header class="detail-header" :style="{ backgroundImage: `url(${buildOssUrl(asset.coverImageUrl)})` }">
       <div class="header-overlay"></div>
       <button class="back-btn" @click="goBack">
         <i class="mdi mdi-arrow-left"></i>
@@ -89,6 +89,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchAssetDetail, updateAsset } from '@/api/asset' // We might need a simpler status update api if exist
 import type { AssetDetail } from '@/types'
 import { ElMessage } from 'element-plus'
+import { buildOssUrl } from '@/utils/storage'
 
 const route = useRoute()
 const router = useRouter()

@@ -33,7 +33,7 @@
         <image
           v-for="(cover, index) in route.coverImageUrls?.slice(0, 3)"
           :key="cover"
-          :src="cover"
+          :src="resolveMediaUrl(cover)"
           mode="aspectFill"
           aria-hidden="true"
           :style="{ zIndex: 3 - index }"
@@ -68,6 +68,7 @@ import { onLoad, onPullDownRefresh } from "@dcloudio/uni-app";
 import BottomNav from "@/components/BottomNav.vue";
 import PageBackButton from "@/components/PageBackButton.vue";
 import { api, type UpgradeRoute } from "@/services/api";
+import { resolveMediaUrl } from "@/services/media";
 
 const routes = ref<UpgradeRoute[]>([]),
   loading = ref(false),

@@ -7,6 +7,7 @@ import type {
   CoverApplyResult,
   RemoveBgResult
 } from '../types'
+import { normalizeObjectUrlResponse } from '@/utils/storage'
 
 // 物品表单载荷，涵盖基础信息与购买记录
 export type AssetPayload = {
@@ -103,8 +104,8 @@ export const fetchCoverSuggestions = (assetId: number, query?: string, provider?
   return http.get<CoverSuggestion[]>(`/assets/${assetId}/cover/suggestions`, { params })
 }
 
-export const setCoverFromUrl = (assetId: number, payload: { sourceUrl: string }) =>
-  http.post<CoverApplyResult>(`/assets/${assetId}/cover/from-url`, payload)
+export const setCoverFromUrl = async (assetId: number, payload: { sourceUrl: string }) =>
+  normalizeObjectUrlResponse(await http.post<CoverApplyResult>(`/assets/${assetId}/cover/from-url`, payload))
 
 export type RemoveBgPayload = {
   assetId: number
@@ -112,8 +113,8 @@ export type RemoveBgPayload = {
   coverUrl?: string
 }
 
-export const removeCoverBackground = (payload: RemoveBgPayload) =>
-  http.post<RemoveBgResult>('/files/remove-bg', payload)
+export const removeCoverBackground = async (payload: RemoveBgPayload) =>
+  normalizeObjectUrlResponse(await http.post<RemoveBgResult>('/files/remove-bg', payload))
 
-export const previewCoverBackground = (payload: RemoveBgPayload) =>
-  http.post<RemoveBgResult>('/files/remove-bg-preview', payload)
+export const previewCoverBackground = async (payload: RemoveBgPayload) =>
+  normalizeObjectUrlResponse(await http.post<RemoveBgResult>('/files/remove-bg-preview', payload))

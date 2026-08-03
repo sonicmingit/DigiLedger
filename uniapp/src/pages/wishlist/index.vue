@@ -41,7 +41,7 @@
       ><view class="visual" :class="{ soft: index % 2 === 0 }"
         ><image
           v-if="item.imageUrl"
-          :src="item.imageUrl"
+          :src="resolveMediaUrl(item.imageUrl)"
           mode="aspectFill"
         /><text v-else>{{ item.name.slice(0, 2) }}</text></view
       ><view class="wish-info"
@@ -62,6 +62,7 @@ import { onLoad, onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import AppHeader from "@/components/AppHeader.vue";
 import BottomNav from "@/components/BottomNav.vue";
 import { api, type Wishlist } from "@/services/api";
+import { resolveMediaUrl } from "@/services/media";
 const items = ref<Wishlist[]>([]),
   loading = ref(false),
   error = ref(""),

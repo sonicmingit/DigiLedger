@@ -1,7 +1,7 @@
 <template>
   <div class="mobile-uploader" @paste.stop.prevent="handlePaste">
     <div v-for="(item, index) in internalValue" :key="item.objectKey ?? item.url ?? index" class="mobile-uploader-item">
-      <img :src="item.url" :alt="item.name || '附件'" />
+      <img :src="buildOssUrl(item.url)" :alt="item.name || '附件'" />
       <button type="button" class="mobile-uploader-remove" @click="remove(index)">×</button>
     </div>
     <label class="mobile-uploader-add">
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { uploadFile } from '@/api/file'
+import { buildOssUrl } from '@/utils/storage'
 
 export interface MobileAttachment {
   name?: string
@@ -114,7 +115,7 @@ const processFile = async (file: File) => {
       const data = await uploadFile(file)
       const attachment: MobileAttachment = {
         name: file.name,
-        url: data.url,
+        url: buildOssUrl(data.url || data.objectKey),
         objectKey: data.objectKey
       }
       internalValue.value.push(attachment)

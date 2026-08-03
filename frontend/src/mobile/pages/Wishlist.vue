@@ -29,8 +29,8 @@
         class="wish-card"
         @click="openWish(item)"
       >
-        <div class="wish-image" v-if="item.imageUrl">
-          <img :src="item.imageUrl" loading="lazy">
+        <div class="wish-image" v-if="buildOssUrl(item.imageUrl)">
+          <img :src="buildOssUrl(item.imageUrl)" loading="lazy">
         </div>
         <div class="wish-content">
           <div class="wish-tags" v-if="item.priority">
@@ -56,6 +56,7 @@ import { ref, computed, onMounted } from 'vue'
 import { fetchWishlist, createWishlist } from '@/api/wishlist'
 import type { WishlistItem } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { buildOssUrl } from '@/utils/storage'
 
 const statuses = ['未购买', '已购买'] as const
 const currentStatus = ref<(typeof statuses)[number]>('未购买')
