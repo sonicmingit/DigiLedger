@@ -23,6 +23,8 @@ public class DeviceAsset {
     private String model;
     /** 序列号 */
     private String serialNo;
+    /** 自由填写的主商品配置规格 */
+    private String specifications;
     /** 状态（中文枚举） */
     private String status;
     /** 首次购买记录 ID（冗余） */

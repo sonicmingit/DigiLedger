@@ -115,8 +115,21 @@ export const testNode = (node: NodeName) =>
     allowFailover: false,
   });
 
-/** Uses uni.uploadFile so the same upload flow works in H5 and native Android. */
-export function uploadFile(filePath: string, node?: NodeName) {
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+export function checkUploadSize(size?: number) {
+  if (size != null && size > MAX_UPLOAD_BYTES) {
+    throw new ApiError("单个文件不能超过 5 MB");
+  }
+}
+
+/** Uses uni.uploadFile for camera images and files selected by the H5 file picker. */
+export function uploadFile(filePath: string, node?: NodeName, size?: number) {
+  try {
+    checkUploadSize(size);
+  } catch (error) {
+    return Promise.reject(error);
+  }
   const p = getServerProfile(),
     uploadNode = node || p.preferred,
     base = nodeUrl(p, uploadNode);

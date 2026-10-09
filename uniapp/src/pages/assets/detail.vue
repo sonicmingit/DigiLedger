@@ -49,6 +49,8 @@
         ><view
           ><text>序列号</text><text>{{ asset.serialNo || "—" }}</text></view
         ><view
+          ><text>配置规格</text><text>{{ asset.specifications || "—" }}</text></view
+        ><view
           ><text>购买日期</text
           ><text>{{ asset.purchaseDate || primaryPurchase?.purchaseDate || "—" }}</text></view
         ><view
@@ -97,7 +99,8 @@
             ><text>{{ record.platformName || record.seller || "—" }}</text
             ><text>数量 {{ record.quantity || 1 }}</text
             ><text>运费 {{ money(record.shippingCost) }}</text></view
-          ><view v-if="record.productLink || record.attachments?.length" class="record-actions"
+          ><view class="record-actions"
+            ><text class="touch" @click="recordSheets?.editPurchase(record)">编辑记录</text
             ><text v-if="record.productLink" @click="copyLink(record.productLink)">复制商品链接</text
             ><text v-if="record.attachments?.length" @click="previewAttachments(record.attachments)"
               >查看附件 {{ record.attachments.length }}</text
@@ -130,6 +133,7 @@
           ><view class="cost-line"
             ><text>日均 {{ money(record.dailyUsageCost) }}</text
             ><text>月均 {{ money(record.monthlyUsageCost) }}</text></view
+          ><view class="record-actions"><text class="touch" @click="recordSheets?.editSale(record)">编辑记录</text></view
           ><text
             v-if="record.attachments?.length"
             class="attachment-link"
@@ -175,6 +179,8 @@ const id = ref(0),
   recordSheets = ref<{
     openPurchase: () => void;
     openSale: () => void;
+    editPurchase: (record: PurchaseRecord) => void;
+    editSale: (record: SaleRecord) => void;
   }>();
 const heroInitials = computed(() => {
   const last = asset.value?.name.trim().split(/\s+/).pop() || "";
@@ -258,14 +264,19 @@ function copyLink(url: string) {
 }
 function previewAttachments(attachments: string[]) {
   const resolved = resolveMediaUrls(attachments);
-  const images = resolved.filter((url) =>
-    /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url),
-  );
-  if (images.length)
-    return uni.previewImage({ urls: images, current: images[0] });
+  if (!resolved.length) return;
   uni.showActionSheet({
-    itemList: resolved.map((_, index) => `复制附件 ${index + 1} 地址`),
-    success: (result) => copyLink(resolved[result.tapIndex]),
+    itemList: resolved.map((url, index) =>
+      `${index + 1}. ${/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url) ? "查看图片" : "复制文件地址"}`,
+    ),
+    success: (result) => {
+      const url = resolved[result.tapIndex];
+      if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url)) {
+        uni.previewImage({ urls: [url], current: url });
+      } else {
+        copyLink(url);
+      }
+    },
   });
 }
 function changeStatus() {

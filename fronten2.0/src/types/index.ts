@@ -33,11 +33,11 @@ export interface AssetSummary {
 }
 export interface AssetPage { records: AssetSummary[]; total: number; page: number; pageSize: number }
 export interface AssetDetail extends AssetSummary {
-  brand?: BrandInfo | null; model?: string; serialNo?: string; retiredDate?: string; notes?: string; relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
+  brand?: BrandInfo | null; model?: string; serialNo?: string; specifications?: string; retiredDate?: string; notes?: string; relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   purchases: PurchaseRecord[]; sales: SaleRecord[]
 }
 export interface AssetPayload {
-  name: string; categoryId: number; brandId?: number; brand?: string; model?: string; serialNo?: string
+  name: string; categoryId: number; brandId?: number; brand?: string; model?: string; serialNo?: string; specifications?: string
   status: AssetStatus; purchaseDate?: string; retiredDate?: string; coverImageUrl?: string; notes?: string
   relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   tagIds?: number[]; targetCostStrategy?: 'NONE' | 'PRICE' | 'DATE' | 'CUSTOM'; targetCostValue?: number
@@ -49,6 +49,16 @@ export interface DashboardSummary {
   statusDistribution: Array<{ status: string; count: number }>
   categoryDistribution: Array<{ categoryId: number; categoryName: string; value: number; count: number }>
   valueTrend: Array<{ month: string; value: number }>; recentAssets: AssetSummary[]
+}
+export interface DashboardSpending {
+  totalSpend: number; primarySpend: number; accessorySpend: number; serviceSpend: number
+  purchaseCount: number; assetCount: number
+  monthlyTrend: Array<{ month: string; amount: number }>
+  categoryBreakdown: Array<{ categoryId: number | null; categoryName: string; amount: number; purchaseCount: number }>
+  records: { total: number; page: number; pageSize: number; items: Array<{
+    id: number; assetId: number; assetName: string; categoryId: number | null; type: PurchaseType
+    name?: string; platformName?: string; purchaseDate: string; price: number; shippingCost: number; amount: number
+  }> }
 }
 export interface WishlistItem {
   id: number; name: string; categoryId?: number; categoryName?: string; category?: string; brandId?: number

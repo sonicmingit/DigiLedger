@@ -104,7 +104,7 @@ public class MinioFileService implements FileService {
         if (uploadProperties.getAllowedContentTypes() != null
                 && !uploadProperties.getAllowedContentTypes().isEmpty()
                 && !uploadProperties.getAllowedContentTypes().contains(file.getContentType())) {
-            throw new BizException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "仅支持上传图片类型：" + uploadProperties.getAllowedContentTypes());
+            throw new BizException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "不支持该文件类型：" + file.getContentType());
         }
     }
 

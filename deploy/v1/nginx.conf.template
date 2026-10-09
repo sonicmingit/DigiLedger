@@ -5,6 +5,8 @@ server {
     index index.html;
 
     location /api/ {
+        # A 5 MiB file needs a little extra room for multipart form data.
+        client_max_body_size 6m;
         proxy_pass http://backend:${DL_SERVER_PORT};
         proxy_http_version 1.1;
         proxy_set_header Host $host;

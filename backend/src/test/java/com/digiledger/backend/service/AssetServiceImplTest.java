@@ -2,16 +2,22 @@ package com.digiledger.backend.service;
 
 import com.digiledger.backend.common.BizException;
 import com.digiledger.backend.mapper.*;
+import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
+import com.digiledger.backend.model.dto.asset.PurchaseRequest;
 import com.digiledger.backend.model.entity.DeviceAsset;
+import com.digiledger.backend.model.entity.DictCategory;
 import com.digiledger.backend.model.entity.Purchase;
 import com.digiledger.backend.service.impl.AssetServiceImpl;
 import com.digiledger.backend.util.StoragePathHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AssetServiceImplTest {
@@ -57,9 +63,107 @@ class AssetServiceImplTest {
         verify(assets, never()).delete(anyLong());
     }
 
+    @Test
+    void specificationsFlowThroughUpdateAndDetail() {
+        AssetMapper assets = mock(AssetMapper.class);
+        PurchaseMapper purchases = mock(PurchaseMapper.class);
+        SaleMapper sales = mock(SaleMapper.class);
+        DictCategoryMapper categories = mock(DictCategoryMapper.class);
+        DictCategory category = new DictCategory(); category.setId(3L); category.setName("手机");
+        when(categories.findAll()).thenReturn(List.of(category));
+        DeviceAsset existing = new DeviceAsset(); existing.setId(1L); existing.setCategoryId(3L);
+        when(assets.findById(1L)).thenReturn(existing);
+        when(purchases.findByAssetId(1L)).thenReturn(List.of());
+        when(sales.findByAssetId(1L)).thenReturn(List.of());
+        AssetCreateRequest request = new AssetCreateRequest();
+        request.setName("手机"); request.setCategoryId(3L); request.setStatus("使用中");
+        request.setSpecifications("CPU A\n内存 16GB");
+        var service = service(assets, purchases, sales, categories);
+        service.updateAsset(1L, request);
+        ArgumentCaptor<DeviceAsset> saved = ArgumentCaptor.forClass(DeviceAsset.class);
+        verify(assets).update(saved.capture());
+        assertEquals("CPU A\n内存 16GB", saved.getValue().getSpecifications());
+
+        existing.setSpecifications(saved.getValue().getSpecifications());
+        assertEquals("CPU A\n内存 16GB", service.getAssetDetail(1L).specifications());
+
+        request.setSpecifications("");
+        service.updateAsset(1L, request);
+        verify(assets, times(2)).update(saved.capture());
+        assertEquals("", saved.getValue().getSpecifications());
+    }
+
+    @Test
+    void editingAssetKeepsUnchangedPurchaseIdAndLegacyAccessoryWarranty() {
+        AssetMapper assets = mock(AssetMapper.class);
+        PurchaseMapper purchases = mock(PurchaseMapper.class);
+        SaleMapper sales = mock(SaleMapper.class);
+        DictCategoryMapper categories = mock(DictCategoryMapper.class);
+        DictCategory category = new DictCategory(); category.setId(3L); category.setName("手机");
+        when(categories.findAll()).thenReturn(List.of(category));
+        DeviceAsset asset = new DeviceAsset(); asset.setId(1L); asset.setCategoryId(3L);
+        when(assets.findById(1L)).thenReturn(asset);
+        Purchase existing = new Purchase();
+        existing.setId(9L); existing.setAssetId(1L); existing.setType("ACCESSORY");
+        existing.setName("保护壳"); existing.setPrice(new BigDecimal("99.00"));
+        existing.setShippingCost(BigDecimal.ZERO); existing.setQuantity(1);
+        existing.setPurchaseDate(LocalDate.of(2026, 1, 1)); existing.setWarrantyMonths(12);
+        when(purchases.findByAssetId(1L)).thenReturn(List.of(existing));
+        PurchaseRequest record = new PurchaseRequest();
+        record.setId(9L); record.setType("ACCESSORY"); record.setName("保护壳");
+        record.setPrice(new BigDecimal("99")); record.setShippingCost(BigDecimal.ZERO);
+        record.setQuantity(1); record.setPurchaseDate(LocalDate.of(2026, 1, 1));
+        AssetCreateRequest request = new AssetCreateRequest();
+        request.setName("手机新备注"); request.setCategoryId(3L); request.setStatus("使用中");
+        request.setPurchases(List.of(record));
+
+        service(assets, purchases, sales, categories).updateAsset(1L, request);
+
+        verify(purchases, never()).delete(anyLong());
+        verify(purchases, never()).update(any(Purchase.class));
+        verify(purchases, never()).insert(any(Purchase.class));
+    }
+
+    @Test
+    void editingAccessoryUpdatesSameIdAndClearsWarranty() {
+        AssetMapper assets = mock(AssetMapper.class);
+        PurchaseMapper purchases = mock(PurchaseMapper.class);
+        SaleMapper sales = mock(SaleMapper.class);
+        DictCategoryMapper categories = mock(DictCategoryMapper.class);
+        DictCategory category = new DictCategory(); category.setId(3L); category.setName("手机");
+        when(categories.findAll()).thenReturn(List.of(category));
+        DeviceAsset asset = new DeviceAsset(); asset.setId(1L); asset.setCategoryId(3L);
+        when(assets.findById(1L)).thenReturn(asset);
+        Purchase existing = new Purchase();
+        existing.setId(9L); existing.setAssetId(1L); existing.setType("ACCESSORY");
+        existing.setName("保护壳"); existing.setPrice(new BigDecimal("99.00"));
+        existing.setShippingCost(BigDecimal.ZERO); existing.setQuantity(1);
+        existing.setPurchaseDate(LocalDate.of(2026, 1, 1)); existing.setWarrantyMonths(12);
+        when(purchases.findByAssetId(1L)).thenReturn(List.of(existing));
+        PurchaseRequest record = new PurchaseRequest();
+        record.setId(9L); record.setType("ACCESSORY"); record.setName("新保护壳");
+        record.setPrice(new BigDecimal("99")); record.setQuantity(1);
+        record.setPurchaseDate(LocalDate.of(2026, 1, 1));
+        AssetCreateRequest request = new AssetCreateRequest();
+        request.setName("手机"); request.setCategoryId(3L); request.setStatus("使用中");
+        request.setPurchases(List.of(record));
+
+        service(assets, purchases, sales, categories).updateAsset(1L, request);
+
+        ArgumentCaptor<Purchase> updated = ArgumentCaptor.forClass(Purchase.class);
+        verify(purchases).update(updated.capture());
+        assertEquals(9L, updated.getValue().getId());
+        assertNull(updated.getValue().getWarrantyMonths());
+        verify(purchases, never()).delete(anyLong());
+    }
+
     private AssetServiceImpl service(AssetMapper assets, PurchaseMapper purchases, SaleMapper sales) {
+        return service(assets, purchases, sales, mock(DictCategoryMapper.class));
+    }
+
+    private AssetServiceImpl service(AssetMapper assets, PurchaseMapper purchases, SaleMapper sales, DictCategoryMapper categories) {
         return new AssetServiceImpl(assets, mock(EquipUpgradeNodeMapper.class), purchases, sales,
-                mock(DictCategoryMapper.class), mock(DictBrandMapper.class), mock(DictPlatformMapper.class),
+                categories, mock(DictBrandMapper.class), mock(DictPlatformMapper.class),
                 mock(DictTagMapper.class), mock(AssetTagMapMapper.class), new ObjectMapper(), mock(StoragePathHelper.class));
     }
 }

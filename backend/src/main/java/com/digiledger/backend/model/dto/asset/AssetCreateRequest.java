@@ -31,6 +31,8 @@ public class AssetCreateRequest {
     @Size(max = 200, message = "序列号长度需在 200 字以内")
     private String serialNo;
 
+    private String specifications;
+
     @NotBlank(message = "状态不能为空")
     private String status;
 

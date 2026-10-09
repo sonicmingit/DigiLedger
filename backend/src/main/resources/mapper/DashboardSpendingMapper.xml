@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.digiledger.backend.mapper.DashboardSpendingMapper">
+    <resultMap id="row" type="com.digiledger.backend.model.dto.dashboard.SpendingPurchaseRow">
+        <id column="id" property="id" />
+        <result column="asset_id" property="assetId" />
+        <result column="asset_name" property="assetName" />
+        <result column="category_id" property="categoryId" />
+        <result column="type" property="type" />
+        <result column="name" property="name" />
+        <result column="platform_name" property="platformName" />
+        <result column="price" property="price" />
+        <result column="shipping_cost" property="shippingCost" />
+        <result column="purchase_date" property="purchaseDate" />
+    </resultMap>
+
+    <select id="findPurchases" resultMap="row">
+        SELECT p.id, p.asset_id, da.name AS asset_name, da.category_id, p.type, p.name,
+               p.platform_name, p.price, p.shipping_cost, p.purchase_date
+        FROM purchase p
+        JOIN device_asset da ON da.id = p.asset_id
+        <where>
+            <if test="dateFrom != null">AND p.purchase_date &gt;= #{dateFrom}</if>
+            <if test="dateTo != null">AND p.purchase_date &lt;= #{dateTo}</if>
+            <if test="categoryId != null">
+                AND (da.category_id = #{categoryId}
+                     OR CONCAT(da.category_path, '/') LIKE CONCAT('%/', #{categoryId}, '/%'))
+            </if>
+            <if test="type != null">AND p.type = #{type}</if>
+            <if test="platformId != null">AND p.platform_id = #{platformId}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (da.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR da.brand LIKE CONCAT('%', #{keyword}, '%')
+                     OR da.model LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.seller LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY p.purchase_date DESC, p.id DESC
+    </select>
+</mapper>

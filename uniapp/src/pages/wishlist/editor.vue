@@ -123,7 +123,7 @@ import {
   type DictionaryBrand,
   type DictionaryTag,
 } from "@/services/api";
-import { uploadFile } from "@/services/http";
+import { checkUploadSize, uploadFile } from "@/services/http";
 import { resolveMediaUrl } from "@/services/media";
 
 const id = ref(0),
@@ -202,7 +202,8 @@ async function chooseImage() {
   });
   uni.showLoading({ title: "上传中" });
   try {
-    const uploaded = await uploadFile(result.tempFilePaths[0]);
+    checkUploadSize(result.tempFiles[0]?.size);
+    const uploaded = await uploadFile(result.tempFilePaths[0], undefined, result.tempFiles[0]?.size);
     form.imageUrl = uploaded.url;
   } catch (e) {
     uni.showToast({ title: (e as Error).message, icon: "none" });

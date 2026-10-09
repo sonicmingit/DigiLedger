@@ -4,13 +4,14 @@
     <AsyncState :loading="loading" :error="error" :empty="!summary" @retry="load">
       <template v-if="summary">
         <section class="metric-grid">
-          <article class="card metric-card"><span>物品总值</span><strong>{{ money(summary.totalAssetValue) }}</strong><small>本月 {{ signed(summary.monthValueChangeRate) }}%</small></article>
+          <article class="card metric-card"><span>累计投入</span><strong>{{ money(summary.totalAssetValue) }}</strong><small>本月 {{ signed(summary.monthValueChangeRate) }}%</small></article>
           <article class="card metric-card"><span>物品数量</span><strong>{{ summary.assetCount }} 件</strong><small>使用中 {{ summary.activeCount }} 件</small></article>
           <article class="card metric-card"><span>日均成本</span><strong>{{ money(summary.avgDailyCost) }}</strong><small>较上月 {{ signed(summary.monthCostChangeRate) }}%</small></article>
           <article class="card metric-card"><span>闲置物品</span><strong>{{ summary.idleCount }} 件</strong><small>待出售 {{ summary.pendingSaleCount }} 件</small></article>
         </section>
+        <SpendingAnalysis />
         <section class="dashboard-mid">
-          <article class="card trend-card"><div class="card-heading"><h2>价值趋势</h2><span>近一年趋势</span></div><div v-if="yearTrend.length" class="trend-stage"><svg viewBox="0 0 720 180" preserveAspectRatio="none" aria-label="近一年物品价值变化折线图"><polyline :points="trendPoints" fill="none" stroke="#171915" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /><circle v-for="(p, i) in trendDots" :key="i" :cx="p.x" :cy="p.y" r="5" fill="#b7ff3c" stroke="#171915" stroke-width="3" /></svg><div class="trend-labels"><span v-for="p in yearTrend" :key="p.month">{{ p.month.slice(5) }}月</span></div></div><div v-else class="chart-empty">有更多历史快照后，这里会形成趋势。</div></article>
+          <article class="card trend-card"><div class="card-heading"><h2>累计投入快照</h2><span>近一年已记录快照</span></div><div v-if="yearTrend.length" class="trend-stage"><svg viewBox="0 0 720 180" preserveAspectRatio="none" aria-label="近一年累计投入快照折线图"><polyline :points="trendPoints" fill="none" stroke="#171915" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /><circle v-for="(p, i) in trendDots" :key="i" :cx="p.x" :cy="p.y" r="5" fill="#b7ff3c" stroke="#171915" stroke-width="3" /></svg><div class="trend-labels"><span v-for="p in yearTrend" :key="p.month">{{ p.month.slice(5) }}月</span></div></div><div v-else class="chart-empty">有更多历史快照后，这里会形成趋势。</div></article>
           <article class="card status-card"><h2>状态分布</h2><div v-for="item in statusDistribution" :key="item.status" class="status-row"><div><span>{{ item.status }}</span><strong>{{ item.count }}</strong></div><div class="progress-track"><div class="progress-fill" :class="{ neutral: item.status !== '使用中', warning: item.status.includes('出售') }" :style="{ width: `${item.count ? Math.max(5, item.count / statusMax * 100) : 0}%` }" /></div></div></article>
         </section>
         <section class="card recent-card"><div class="card-heading"><h2>最近更新</h2><RouterLink to="/assets">查看全部</RouterLink></div><div v-if="summary.recentAssets.length" class="recent-grid"><RouterLink v-for="asset in summary.recentAssets.slice(0, 10)" :key="asset.id" :to="`/assets/${asset.id}`" class="recent-item"><div class="mini-visual"><img v-if="asset.coverImageUrl" :src="asset.coverImageUrl" alt="" /><strong v-else>{{ initials(asset.name) }}</strong></div><div><strong>{{ asset.name }}</strong><span>购买 {{ purchaseDate(asset) }} · 已用 {{ safeNumber(asset.useDays) }} 天 · 日均 {{ money(asset.avgCostPerDay) }} · {{ asset.status }}</span></div><b>{{ money(asset.totalInvest) }}</b></RouterLink></div><div v-else class="chart-empty">暂无最近更新的物品</div></section>
@@ -25,6 +26,7 @@ import { fetchDashboardSummary } from '@/api/dashboard'
 import type { AssetSummary, DashboardSummary } from '@/types'
 import { useWorkspaceStore } from '@/stores/workspace'
 import PageHeader from '@/components/PageHeader.vue'; import PrimaryButton from '@/components/PrimaryButton.vue'; import AsyncState from '@/components/AsyncState.vue'
+import SpendingAnalysis from '@/components/SpendingAnalysis.vue'
 import plusIcon from '@/assets/icons/plus.svg'
 const workspace = useWorkspaceStore(); const summary = ref<DashboardSummary>(); const loading = ref(true); const error = ref('')
 const safeNumber = (value: unknown) => { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0 }

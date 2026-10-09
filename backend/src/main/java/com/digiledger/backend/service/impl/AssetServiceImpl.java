@@ -157,6 +157,7 @@ public class AssetServiceImpl implements AssetService {
                 toBrandDTO(brand, asset.getBrand()),
                 asset.getModel(),
                 asset.getSerialNo(),
+                asset.getSpecifications(),
                 asset.getStatus(),
                 asset.getPurchaseDate(),
                 asset.getRetiredDate(),
@@ -206,8 +207,7 @@ public class AssetServiceImpl implements AssetService {
         asset.setId(id);
         assetMapper.update(asset);
         persistTags(id, tagIds);
-        purchaseMapper.deleteByAsset(id);
-        persistPurchases(id, request.getPurchases(), new HashMap<>());
+        syncPurchases(id, request.getPurchases(), new HashMap<>());
         refreshPrimaryPurchase(id);
         // 状态变化若为已丢弃则重置售出记录
         if ("已丢弃".equals(asset.getStatus())) {
@@ -344,6 +344,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
         asset.setBrand(determineBrandName(request.getBrand(), brand));
         asset.setModel(request.getModel());
         asset.setSerialNo(request.getSerialNo());
+        asset.setSpecifications(request.getSpecifications());
         asset.setStatus(request.getStatus());
         asset.setPurchaseDate(request.getPurchaseDate());
         // 历史库仍保留 enabled_date 的 NOT NULL 约束；新建物品以购买日作为启用日。
@@ -361,31 +362,80 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
             return;
         }
         for (PurchaseRequest request : purchaseRequests) {
-            validatePurchaseName(request);
-            validatePurchase(request);
-            Purchase purchase = new Purchase();
-            purchase.setAssetId(assetId);
-            purchase.setType(request.getType());
-            purchase.setName(request.getName());
-            DictPlatform platform = resolvePlatform(request.getPlatformId(), platformCache);
-            if (platform != null) {
-                purchase.setPlatformId(platform.getId());
-                purchase.setPlatformName(platform.getName());
-            }
-            purchase.setSeller(request.getSeller());
-            purchase.setPrice(request.getPrice());
-            purchase.setCurrency("CNY");
-            purchase.setQuantity(Optional.ofNullable(request.getQuantity()).orElse(1));
-            purchase.setShippingCost(defaultZero(request.getShippingCost()));
-            purchase.setPurchaseDate(request.getPurchaseDate());
-            purchase.setInvoiceNo("");
-            purchase.setWarrantyMonths(request.getWarrantyMonths());
-            purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
-            purchase.setProductLink(request.getProductLink());
-            purchase.setAttachments(toJson(request.getAttachments()));
-            purchase.setNotes(request.getNotes());
-            purchaseMapper.insert(purchase);
+            purchaseMapper.insert(buildPurchase(assetId, request, platformCache));
         }
+    }
+
+    private void syncPurchases(Long assetId, List<PurchaseRequest> requests, Map<Long, DictPlatform> platformCache) {
+        if (requests == null) return;
+        Map<Long, Purchase> existing = purchaseMapper.findByAssetId(assetId).stream()
+                .collect(Collectors.toMap(Purchase::getId, purchase -> purchase));
+        Set<Long> retained = new HashSet<>();
+        for (PurchaseRequest request : requests) {
+            if (request.getId() == null) {
+                purchaseMapper.insert(buildPurchase(assetId, request, platformCache));
+                continue;
+            }
+            Purchase old = existing.get(request.getId());
+            if (old == null || !retained.add(request.getId())) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "购买记录不存在、重复或不属于当前物品");
+            }
+            if (samePurchase(old, request)) continue;
+            Purchase updated = buildPurchase(assetId, request, platformCache);
+            updated.setId(old.getId());
+            purchaseMapper.update(updated);
+        }
+        for (Purchase old : existing.values()) {
+            if (!retained.contains(old.getId())) purchaseMapper.delete(old.getId());
+        }
+    }
+
+    private boolean samePurchase(Purchase old, PurchaseRequest request) {
+        return Objects.equals(old.getType(), request.getType())
+                && Objects.equals(old.getName(), request.getName())
+                && Objects.equals(old.getPlatformId(), request.getPlatformId())
+                && Objects.equals(old.getSeller(), request.getSeller())
+                && sameAmount(old.getPrice(), request.getPrice())
+                && sameAmount(old.getShippingCost(), request.getShippingCost())
+                && Objects.equals(old.getQuantity(), Optional.ofNullable(request.getQuantity()).orElse(1))
+                && Objects.equals(old.getPurchaseDate(), request.getPurchaseDate())
+                && ("ACCESSORY".equals(request.getType()) ||
+                    (Objects.equals(old.getWarrantyMonths(), request.getWarrantyMonths())
+                     && Objects.equals(old.getWarrantyExpireDate(), request.getWarrantyExpireDate())))
+                && Objects.equals(old.getProductLink(), request.getProductLink())
+                && Objects.equals(old.getAttachments(), toJson(request.getAttachments()))
+                && Objects.equals(old.getNotes(), request.getNotes());
+    }
+
+    private boolean sameAmount(BigDecimal left, BigDecimal right) {
+        return defaultZero(left).compareTo(defaultZero(right)) == 0;
+    }
+
+    private Purchase buildPurchase(Long assetId, PurchaseRequest request, Map<Long, DictPlatform> platformCache) {
+        validatePurchaseName(request);
+        validatePurchase(request);
+        Purchase purchase = new Purchase();
+        purchase.setAssetId(assetId);
+        purchase.setType(request.getType());
+        purchase.setName(request.getName());
+        DictPlatform platform = resolvePlatform(request.getPlatformId(), platformCache);
+        if (platform != null) {
+            purchase.setPlatformId(platform.getId());
+            purchase.setPlatformName(platform.getName());
+        }
+        purchase.setSeller(request.getSeller());
+        purchase.setPrice(request.getPrice());
+        purchase.setCurrency("CNY");
+        purchase.setQuantity(Optional.ofNullable(request.getQuantity()).orElse(1));
+        purchase.setShippingCost(defaultZero(request.getShippingCost()));
+        purchase.setPurchaseDate(request.getPurchaseDate());
+        purchase.setInvoiceNo("");
+        purchase.setWarrantyMonths("ACCESSORY".equals(request.getType()) ? null : request.getWarrantyMonths());
+        purchase.setWarrantyExpireDate("ACCESSORY".equals(request.getType()) ? null : request.getWarrantyExpireDate());
+        purchase.setProductLink(request.getProductLink());
+        purchase.setAttachments(toJson(request.getAttachments()));
+        purchase.setNotes(request.getNotes());
+        return purchase;
     }
 
     private void refreshPrimaryPurchase(Long assetId) {

@@ -41,6 +41,19 @@
 
 PC 总览与 H5 数据统计共用该接口；无历史快照时趋势允许由当前数据返回单点，但字段必须稳定。
 
+`GET /api/dashboard/spending` 为新版 PC 的购买支出分析接口。可选查询参数：
+`dateFrom`、`dateTo`（含两端，`YYYY-MM-DD`）、`categoryId`（包含子分类）、
+`type`（`PRIMARY`／`ACCESSORY`／`SERVICE`）、`platformId`、`q`、`page`（默认 1）、`pageSize`（默认 20，最大 100）。
+金额按每笔购买的 `price + shippingCost` 计算，包含已出售物品，不抵扣出售收入；未传日期时统计全部时间。
+响应 `data` 包含 `totalSpend`、`primarySpend`、`accessorySpend`、`serviceSpend`、
+`purchaseCount`、`assetCount`、`monthlyTrend: [{month, amount}]`、
+`categoryBreakdown: [{categoryId, categoryName, amount, purchaseCount}]` 和
+`records: {total, page, pageSize, items}`。流水项提供购买 ID、物品 ID 与名称、分类 ID、
+购买类型与名称、平台、购买日期、价格、运费及支出金额。分类金额互不重叠；选中父分类后按其直属子分类汇总，直接归属父分类的支出显示为“本分类直属”。
+
+物品创建／更新请求和详情响应新增可选 `specifications` 文本字段，用于主商品配置规格。
+配件购买的 `warrantyMonths` 与 `warrantyExpireDate` 在创建／更新时忽略并清空；历史记录不批量迁移。
+
 ### 3.2 心愿单价格观察
 
 - `PATCH /api/wishlist/{id}/price`

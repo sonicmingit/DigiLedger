@@ -13,6 +13,7 @@
         <div v-show="active === 'brands'"><brand-manager /></div>
         <div v-show="active === 'upload'"><upload-tester /></div>
         <div v-show="active === 'image-search'"><image-search-settings /></div>
+        <div v-if="active === 'open-api'"><open-api-skill-settings /></div>
       </div>
     </el-card>
   </div>
@@ -28,6 +29,7 @@ import TagManager from './components/TagManager.vue'
 import BrandManager from './components/BrandManager.vue'
 import UploadTester from './components/UploadTester.vue'
 import ImageSearchSettings from './components/ImageSearchSettings.vue'
+import OpenApiSkillSettings from './components/OpenApiSkillSettings.vue'
 import { useDictionaries } from '@/composables/useDictionaries'
 
 const active = ref('categories')
@@ -37,7 +39,8 @@ const tabOptions = [
   { label: '标签管理', value: 'tags' },
   { label: '品牌管理', value: 'brands' },
   { label: '上传测试', value: 'upload' },
-  { label: '智能找图', value: 'image-search' }
+  { label: '智能找图', value: 'image-search' },
+  { label: '开放 API / Agent Skill', value: 'open-api' }
 ]
 const { load } = useDictionaries()
 

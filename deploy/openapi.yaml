@@ -552,6 +552,20 @@ paths:
       summary: 获取资产总览、分布、趋势与最近更新
       responses:
         '200': { description: 聚合总览, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseDashboardSummary' } } } }
+  /api/dashboard/spending:
+    get:
+      summary: 按购买日期筛选并汇总支出
+      parameters:
+        - { name: dateFrom, in: query, schema: { type: string, format: date }, description: 起始购买日期（含） }
+        - { name: dateTo, in: query, schema: { type: string, format: date }, description: 截止购买日期（含） }
+        - { name: categoryId, in: query, schema: { type: integer, format: int64 }, description: 包含子分类 }
+        - { name: type, in: query, schema: { type: string, enum: [PRIMARY, ACCESSORY, SERVICE] } }
+        - { name: platformId, in: query, schema: { type: integer, format: int64 } }
+        - { name: q, in: query, schema: { type: string }, description: 物品或购买记录关键词 }
+        - { name: page, in: query, schema: { type: integer, default: 1, minimum: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, default: 20, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 支出汇总与分页流水, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponseDashboardSpending' } } } }
   /api/upgrade-routes:
     get:
       summary: 升级路线列表（含预算和状态汇总）
@@ -1054,6 +1068,9 @@ components:
         serial_no:
           type: string
           nullable: true
+        specifications:
+          type: string
+          nullable: true
         retired_date:
           type: string
           format: date
@@ -1086,6 +1103,10 @@ components:
         serial_no:
           type: string
           nullable: true
+        specifications:
+          type: string
+          nullable: true
+          description: 主商品配置规格，自由填写
         status:
           type: string
         purchase_date:
@@ -1381,6 +1402,24 @@ components:
         categoryDistribution: { type: array, items: { type: object } }
         valueTrend: { type: array, items: { type: object } }
         recentAssets: { type: array, items: { type: object } }
+    ApiResponseDashboardSpending:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/DashboardSpending' }
+        msg: { type: string }
+    DashboardSpending:
+      type: object
+      properties:
+        totalSpend: { type: number }
+        primarySpend: { type: number }
+        accessorySpend: { type: number }
+        serviceSpend: { type: number }
+        purchaseCount: { type: integer }
+        assetCount: { type: integer }
+        monthlyTrend: { type: array, items: { type: object } }
+        categoryBreakdown: { type: array, items: { type: object } }
+        records: { type: object, description: '分页流水：total、page、pageSize、items' }
     UpgradeRouteRequest:
       type: object
       required: [name]

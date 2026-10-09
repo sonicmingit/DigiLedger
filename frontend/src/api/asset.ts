@@ -17,9 +17,11 @@ export type AssetPayload = {
   brand?: string
   model?: string
   serialNo?: string
+  specifications?: string
   status: string
   purchaseDate?: string
   retiredDate?: string
+  manualUseMonths?: number
   coverImageUrl?: string
   notes?: string
   tagIds?: number[]
@@ -27,6 +29,7 @@ export type AssetPayload = {
   targetCostValue?: number
   attachAssetIds?: number[]
   purchases?: Array<{
+    id?: number
     type: 'PRIMARY' | 'ACCESSORY' | 'SERVICE'
     name?: string
     platformId?: number

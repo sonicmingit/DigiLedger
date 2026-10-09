@@ -93,8 +93,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         purchase.setShippingCost(defaultZero(request.getShippingCost()));
         purchase.setPurchaseDate(request.getPurchaseDate());
         purchase.setInvoiceNo("");
-        purchase.setWarrantyMonths(request.getWarrantyMonths());
-        purchase.setWarrantyExpireDate(request.getWarrantyExpireDate());
+        purchase.setWarrantyMonths("ACCESSORY".equals(request.getType()) ? null : request.getWarrantyMonths());
+        purchase.setWarrantyExpireDate("ACCESSORY".equals(request.getType()) ? null : request.getWarrantyExpireDate());
         purchase.setProductLink(request.getProductLink());
         purchase.setAttachments(toJson(request.getAttachments()));
         purchase.setNotes(request.getNotes());

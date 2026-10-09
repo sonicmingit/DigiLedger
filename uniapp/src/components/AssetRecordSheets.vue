@@ -14,8 +14,8 @@
       <view class="sheet-handle" aria-hidden="true" />
       <view class="sheet-header">
         <view>
-          <text class="sheet-title">添加购买记录</text>
-          <text class="sheet-subtitle">仅添加配件或服务</text>
+          <text class="sheet-title">{{ editingPurchaseId ? "编辑购买记录" : "添加购买记录" }}</text>
+          <text class="sheet-subtitle">{{ editingPurchaseId ? "修改这笔购买信息" : "仅添加配件或服务" }}</text>
         </view>
         <view
           class="sheet-close touch"
@@ -32,7 +32,8 @@
         <view class="sheet-body">
           <view class="sheet-field">
             <text>类型</text>
-            <view class="choice-row" role="radiogroup" aria-label="购买类型">
+            <view v-if="purchase.type === 'PRIMARY'" class="picker-value">主商品</view>
+            <view v-else class="choice-row" role="radiogroup" aria-label="购买类型">
               <view
                 class="choice touch"
                 :class="{ active: purchase.type === 'ACCESSORY' }"
@@ -81,6 +82,11 @@
           </view>
 
           <view class="sheet-field">
+            <text>卖家 / 店铺</text>
+            <input v-model="purchase.seller" maxlength="200" placeholder="选填" />
+          </view>
+
+          <view class="sheet-field">
             <text>金额 *</text>
             <view class="money-input">
               <text>¥</text>
@@ -97,6 +103,10 @@
 
           <view class="field-grid">
             <view class="sheet-field">
+              <text>运费</text>
+              <view class="money-input"><text>¥</text><input :value="purchase.shippingCost" type="text" inputmode="decimal" maxlength="12" placeholder="0.00" @input="updatePurchaseMoney('shippingCost', $event)" /></view>
+            </view>
+            <view class="sheet-field">
               <text>数量</text>
               <input
                 :value="purchase.quantity"
@@ -110,6 +120,11 @@
               <text>购买日期 *</text>
               <input v-model="purchase.purchaseDate" type="date" />
             </view>
+          </view>
+
+          <view v-if="purchase.type !== 'ACCESSORY'" class="field-grid">
+            <view class="sheet-field"><text>质保月数</text><input v-model="purchase.warrantyMonths" type="number" inputmode="numeric" placeholder="选填" /></view>
+            <view class="sheet-field"><text>质保到期</text><input v-model="purchase.warrantyExpireDate" type="date" /></view>
           </view>
 
           <view class="sheet-field">
@@ -141,8 +156,8 @@
             >
               <view class="plus-icon" aria-hidden="true" />
               <view>
-                <text>添加图片附件</text>
-                <text>拍照或从相册选择</text>
+                <text>添加附件</text>
+                <text>拍照、相册或选择文件，单个不超过 5 MB</text>
               </view>
             </view>
             <view v-if="purchase.attachments.length" class="attachment-list">
@@ -175,7 +190,7 @@
           :loading="saving"
           @click="savePurchase"
         >
-          保存记录
+          {{ editingPurchaseId ? "保存修改" : "保存记录" }}
         </button>
       </view>
     </view>
@@ -196,7 +211,7 @@
       <view class="sheet-handle" aria-hidden="true" />
       <view class="sheet-header">
         <view>
-          <text class="sheet-title">出售向导</text>
+          <text class="sheet-title">{{ editingSaleId ? "编辑出售记录" : "出售向导" }}</text>
           <text class="sheet-subtitle">记录成交与相关费用</text>
         </view>
         <view
@@ -364,8 +379,8 @@
             >
               <view class="plus-icon" aria-hidden="true" />
               <view>
-                <text>添加图片附件</text>
-                <text>拍照或从相册选择</text>
+                <text>添加附件</text>
+                <text>拍照、相册或选择文件，单个不超过 5 MB</text>
               </view>
             </view>
             <view v-if="sale.attachments.length" class="attachment-list">
@@ -398,7 +413,7 @@
           :loading="saving"
           @click="saveSale"
         >
-          保存出售
+          {{ editingSaleId ? "保存修改" : "保存出售" }}
         </button>
       </view>
     </view>
@@ -415,7 +430,7 @@ import {
   type SaleRecord,
   type SellPayload,
 } from "@/services/api";
-import { uploadFile } from "@/services/http";
+import { chooseAndUploadAttachments } from "@/services/attachments";
 
 const props = defineProps<{
   assetId: number;
@@ -425,7 +440,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(["saved"]);
 
-type PurchaseMoneyField = "price";
+type PurchaseMoneyField = "price" | "shippingCost";
 type SaleMoneyField = "salePrice" | "fee" | "shippingCost" | "otherCost";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -433,14 +448,20 @@ const platforms = ref<DictionaryPlatform[]>([]);
 const purchaseOpen = ref(false);
 const saleOpen = ref(false);
 const saving = ref(false);
+const editingPurchaseId = ref<number>();
+const editingSaleId = ref<number>();
 
 const blankPurchase = () => ({
-  type: "ACCESSORY" as "ACCESSORY" | "SERVICE",
+  type: "ACCESSORY" as "PRIMARY" | "ACCESSORY" | "SERVICE",
   name: "",
   platformId: undefined as number | undefined,
+  seller: "",
   price: "",
+  shippingCost: "",
   quantity: "1",
   purchaseDate: today(),
+  warrantyMonths: "",
+  warrantyExpireDate: "",
   productLink: "",
   attachments: [] as string[],
   notes: "",
@@ -483,14 +504,14 @@ const platformOptions = computed(() => [
         (record) =>
           record.type === "ACCESSORY" &&
           record.id != null &&
-          !soldAccessoryIds.value.has(record.id),
+          (!soldAccessoryIds.value.has(record.id) || (editingSaleId.value != null && sale.purchaseId === record.id)),
       )
       .map((record) => ({
         id: record.id as number,
         name: record.name || "未命名配件",
       })),
   ),
-  canSellMain = computed(() => props.assetStatus !== "已出售"),
+  canSellMain = computed(() => props.assetStatus !== "已出售" || (editingSaleId.value != null && sale.saleScope === "ASSET")),
   canOpenSale = computed(
     () => canSellMain.value || availableAccessories.value.length > 0,
   ),
@@ -540,11 +561,32 @@ async function ensurePlatforms() {
   platforms.value = await api.platforms().catch(() => []);
 }
 async function openPurchaseSheet() {
+  editingPurchaseId.value = undefined;
   Object.assign(purchase, blankPurchase());
   await ensurePlatforms();
   purchaseOpen.value = true;
 }
+async function editPurchase(record: PurchaseRecord) {
+  if (!record.id) return;
+  editingPurchaseId.value = record.id;
+  Object.assign(purchase, blankPurchase(), {
+    ...record,
+    name: record.name || "",
+    seller: record.seller || "",
+    price: String(record.price ?? ""),
+    shippingCost: String(record.shippingCost ?? ""),
+    quantity: String(record.quantity || 1),
+    warrantyMonths: String(record.warrantyMonths ?? ""),
+    warrantyExpireDate: record.warrantyExpireDate || "",
+    productLink: record.productLink || "",
+    attachments: [...(record.attachments || [])],
+    notes: record.notes || "",
+  });
+  await ensurePlatforms();
+  purchaseOpen.value = true;
+}
 async function openSaleSheet() {
+  editingSaleId.value = undefined;
   if (!canOpenSale.value) {
     return uni.showToast({ title: "当前没有可出售的商品", icon: "none" });
   }
@@ -552,6 +594,21 @@ async function openSaleSheet() {
   Object.assign(sale, blankSale(scope), {
     purchaseId:
       scope === "ACCESSORY" ? availableAccessories.value[0]?.id : undefined,
+  });
+  await ensurePlatforms();
+  saleOpen.value = true;
+}
+async function editSale(record: SaleRecord) {
+  editingSaleId.value = record.id;
+  Object.assign(sale, blankSale(record.saleScope), {
+    ...record,
+    buyer: record.buyer || "",
+    salePrice: String(record.salePrice ?? ""),
+    fee: String(record.fee ?? ""),
+    shippingCost: String(record.shippingCost ?? ""),
+    otherCost: String(record.otherCost ?? ""),
+    attachments: [...(record.attachments || [])],
+    notes: record.notes || "",
   });
   await ensurePlatforms();
   saleOpen.value = true;
@@ -601,65 +658,42 @@ function selectSaleScope(scope: "ASSET" | "ACCESSORY") {
     scope === "ACCESSORY" ? availableAccessories.value[0]?.id : undefined;
 }
 async function chooseAttachments(target: "purchase" | "sale") {
-  const source = await new Promise<"camera" | "album" | null>((resolve) => {
-    uni.showActionSheet({
-      itemList: ["拍照", "从相册选择"],
-      success: (result) =>
-        resolve(result.tapIndex === 0 ? "camera" : "album"),
-      fail: () => resolve(null),
-    });
-  });
-  if (!source) return;
-  const selected = await uni.chooseImage({
-    count: 3,
-    sizeType: ["compressed"],
-    sourceType: [source],
-  });
-  uni.showLoading({ title: "上传中" });
-  try {
-    const urls: string[] = [];
-    for (const path of selected.tempFilePaths) {
-      const uploaded = await uploadFile(path);
-      urls.push(uploaded.url);
-    }
-    (target === "purchase" ? purchase.attachments : sale.attachments).push(
-      ...urls,
-    );
-    uni.showToast({ title: `已添加 ${urls.length} 个附件`, icon: "success" });
-  } catch (error) {
-    uni.showToast({ title: (error as Error).message, icon: "none" });
-  } finally {
-    uni.hideLoading();
-  }
+  const attachments = target === "purchase" ? purchase.attachments : sale.attachments;
+  await chooseAndUploadAttachments(10 - attachments.length, (url) => attachments.push(url));
 }
 async function savePurchase() {
-  if (!purchase.name.trim()) {
+  if (purchase.type !== "PRIMARY" && !purchase.name.trim()) {
     return uni.showToast({ title: "请填写名称", icon: "none" });
   }
   if (!purchase.purchaseDate) {
     return uni.showToast({ title: "请选择购买日期", icon: "none" });
   }
-  if (!purchase.price) {
+  if (purchase.price === "") {
     return uni.showToast({ title: "请填写购买金额", icon: "none" });
   }
   const payload: PurchaseCreatePayload = {
     assetId: props.assetId,
     type: purchase.type,
-    name: purchase.name.trim(),
+    name: purchase.name.trim() || undefined,
     platformId: purchase.platformId,
+    seller: purchase.seller.trim() || undefined,
     price: amount(purchase.price),
+    shippingCost: amount(purchase.shippingCost),
     quantity: Math.max(1, Number(purchase.quantity || 1)),
     purchaseDate: purchase.purchaseDate,
+    warrantyMonths: purchase.type === "ACCESSORY" || !purchase.warrantyMonths ? undefined : Number(purchase.warrantyMonths),
+    warrantyExpireDate: purchase.type === "ACCESSORY" ? undefined : purchase.warrantyExpireDate || undefined,
     productLink: purchase.productLink.trim() || undefined,
     attachments: [...purchase.attachments],
     notes: purchase.notes.trim() || undefined,
   };
   saving.value = true;
   try {
-    await api.createPurchase(payload);
+    if (editingPurchaseId.value) await api.updatePurchase(editingPurchaseId.value, payload);
+    else await api.createPurchase(payload);
     purchaseOpen.value = false;
     emit("saved");
-    uni.showToast({ title: "购买记录已添加", icon: "success" });
+    uni.showToast({ title: editingPurchaseId.value ? "购买记录已更新" : "购买记录已添加", icon: "success" });
   } catch (error) {
     uni.showToast({ title: (error as Error).message, icon: "none" });
   } finally {
@@ -667,7 +701,7 @@ async function savePurchase() {
   }
 }
 async function saveSale() {
-  if (!sale.salePrice) {
+  if (sale.salePrice === "") {
     return uni.showToast({ title: "请填写出售金额", icon: "none" });
   }
   if (!sale.saleDate) {
@@ -692,7 +726,8 @@ async function saveSale() {
   };
   saving.value = true;
   try {
-    await api.sellAsset(props.assetId, payload);
+    if (editingSaleId.value) await api.updateSale(props.assetId, editingSaleId.value, payload);
+    else await api.sellAsset(props.assetId, payload);
     saleOpen.value = false;
     emit("saved");
     uni.showToast({ title: "出售记录已保存", icon: "success" });
@@ -706,6 +741,8 @@ async function saveSale() {
 defineExpose({
   openPurchase: openPurchaseSheet,
   openSale: openSaleSheet,
+  editPurchase,
+  editSale,
   canOpenSale,
 });
 </script>

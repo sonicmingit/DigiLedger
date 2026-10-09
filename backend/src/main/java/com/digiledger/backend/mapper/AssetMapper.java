@@ -3,6 +3,8 @@ package com.digiledger.backend.mapper;
 import com.digiledger.backend.model.entity.DeviceAsset;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.ResultMap;
 
 import java.util.List;
 
@@ -20,6 +22,10 @@ public interface AssetMapper {
                               @Param("tagCount") Integer tagCount);
 
     DeviceAsset findById(@Param("id") Long id);
+
+    @Select("SELECT * FROM device_asset WHERE id = #{id} FOR UPDATE")
+    @ResultMap("assetResultMap")
+    DeviceAsset findByIdForUpdate(@Param("id") Long id);
 
     int insert(DeviceAsset asset);
 

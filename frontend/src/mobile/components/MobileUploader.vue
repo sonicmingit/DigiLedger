@@ -1,7 +1,8 @@
 <template>
   <div class="mobile-uploader" @paste.stop.prevent="handlePaste">
     <div v-for="(item, index) in internalValue" :key="item.objectKey ?? item.url ?? index" class="mobile-uploader-item">
-      <img :src="buildOssUrl(item.url)" :alt="item.name || '附件'" />
+      <img v-if="isImage(item)" :src="buildOssUrl(item.url)" :alt="item.name || '图片附件'" />
+      <span v-else class="mobile-file-name">{{ item.name || '文件附件' }}</span>
       <button type="button" class="mobile-uploader-remove" @click="remove(index)">×</button>
     </div>
     <label class="mobile-uploader-add">
@@ -10,7 +11,6 @@
         type="file"
         :accept="accept"
         :multiple="multiple"
-        capture="environment"
         @change="handleSelect"
       />
       +
@@ -39,7 +39,7 @@ const props = withDefaults(
   {
     modelValue: () => [],
     multiple: true,
-    accept: 'image/*'
+    accept: 'image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip'
   }
 )
 
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 const internalValue = ref<MobileAttachment[]>([...props.modelValue])
 const inputRef = ref<HTMLInputElement | null>(null)
 const error = ref('')
+const isImage = (item: MobileAttachment) => /\.(png|jpe?g|webp|gif)(?:[?#]|$)/i.test(item.name || item.url)
 
 const isAcceptedFile = (file: File) => {
   if (!props.accept) return true
@@ -83,7 +84,7 @@ const handleSelect = async (event: Event) => {
   error.value = ''
 
   for (const file of Array.from(files)) {
-    if (!file.type.startsWith('image/') || !isAcceptedFile(file)) continue
+    if (!isAcceptedFile(file)) continue
     await processFile(file)
   }
 
@@ -99,7 +100,7 @@ const handlePaste = async (event: ClipboardEvent) => {
   const files = Array.from(items)
     .filter((item) => item.kind === 'file')
     .map((item) => item.getAsFile())
-    .filter((file): file is File => !!file && file.type.startsWith('image/') && isAcceptedFile(file))
+    .filter((file): file is File => !!file && isAcceptedFile(file))
 
   if (files.length === 0) return
 
@@ -118,10 +119,11 @@ const processFile = async (file: File) => {
         url: buildOssUrl(data.url || data.objectKey),
         objectKey: data.objectKey
       }
-      internalValue.value.push(attachment)
+      if (props.multiple) internalValue.value.push(attachment)
+      else internalValue.value = [attachment]
       emit('uploaded', attachment)
     } catch (e) {
-      error.value = '上传失败，请检查网络后重试'
+      error.value = (e as Error).message || '上传失败，请检查网络后重试'
     }
   }
 
@@ -134,5 +136,18 @@ const remove = (index: number) => {
 <style scoped>
 input[type='file'] {
   display: none;
+}
+.mobile-file-name {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 8px;
+  color: #3e5137;
+  font-size: 11px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 </style>

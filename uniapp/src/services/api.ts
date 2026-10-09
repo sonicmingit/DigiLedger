@@ -11,8 +11,10 @@ export type Asset = {
   brand?: { id?: number; name?: string };
   model?: string;
   serialNo?: string;
+  specifications?: string;
   coverImageUrl?: string;
   purchaseDate?: string;
+  retiredDate?: string;
   warrantyExpireDate?: string;
   notes?: string;
   totalCost?: number;
@@ -67,13 +69,16 @@ export type SaleRecord = {
 };
 export type PurchaseCreatePayload = {
   assetId: number;
-  type: "ACCESSORY" | "SERVICE";
-  name: string;
+  type: "PRIMARY" | "ACCESSORY" | "SERVICE";
+  name?: string;
   platformId?: number;
+  seller?: string;
   price: number;
   shippingCost?: number;
   quantity: number;
   purchaseDate: string;
+  warrantyMonths?: number;
+  warrantyExpireDate?: string;
   productLink?: string;
   attachments?: string[];
   notes?: string;
@@ -239,14 +244,20 @@ export type AssetPayload = {
   categoryId: number;
   brandId?: number;
   model?: string;
+  serialNo?: string;
+  specifications?: string;
   status: string;
   purchaseDate?: string;
+  retiredDate?: string;
   coverImageUrl?: string;
+  relatedLinks?: Array<{ url: string; description?: string }>;
+  manualUseMonths?: number;
   notes?: string;
   tagIds?: number[];
   targetCostValue?: number;
   targetCostStrategy?: string;
   purchases?: Array<{
+    id?: number;
     type: "PRIMARY" | "ACCESSORY" | "SERVICE";
     name?: string;
     platformId?: number;
@@ -294,9 +305,16 @@ export const api = {
     apiRequest<void>(`/assets/${id}`, { method: "DELETE" }),
   createPurchase: (p: PurchaseCreatePayload) =>
     apiRequest<number>("/purchases", { method: "POST", data: p }),
+  updatePurchase: (id: number, p: PurchaseCreatePayload) =>
+    apiRequest<void>(`/purchases/${id}`, { method: "PUT", data: p }),
   sellAsset: (id: number, p: SellPayload) =>
     apiRequest<SaleRecord>(`/assets/${id}/sell`, {
       method: "POST",
+      data: p,
+    }),
+  updateSale: (assetId: number, saleId: number, p: SellPayload) =>
+    apiRequest<SaleRecord>(`/assets/${assetId}/sales/${saleId}`, {
+      method: "PUT",
       data: p,
     }),
   wishlist: () => apiRequest<Wishlist[]>("/wishlist"),

@@ -134,14 +134,23 @@
             />
           </view>
 
+          <view class="field-grid">
+            <view class="field"><text>卖家 / 店铺</text><input v-model="purchase.seller" maxlength="200" placeholder="选填" /></view>
+            <view class="field"><text>运费</text><input :value="purchase.shippingCost" type="text" inputmode="decimal" placeholder="0.00" @input="updateShippingCost" /></view>
+          </view>
+          <view class="field-grid">
+            <view class="field"><text>数量</text><input v-model="purchase.quantity" type="number" inputmode="numeric" placeholder="1" /></view>
+            <view class="field"><text>质保月数</text><input v-model="purchase.warrantyMonths" type="number" inputmode="numeric" placeholder="选填" /></view>
+          </view>
+
           <view class="field">
             <text>购买附件</text>
             <view class="attachment-row">
               <view class="attachment-add touch" @click="chooseAttachments">
                 <text class="attachment-plus">＋</text>
                 <view>
-                  <text>添加凭证</text>
-                  <text>拍照或从相册选择</text>
+                  <text>添加附件</text>
+                  <text>拍照、相册或选择文件，单个不超过 5 MB</text>
                 </view>
               </view>
               <view
@@ -192,7 +201,7 @@ import {
   type DictionaryPlatform,
   type Wishlist,
 } from "@/services/api";
-import { uploadFile } from "@/services/http";
+import { chooseAndUploadAttachments } from "@/services/attachments";
 import { resolveMediaUrl } from "@/services/media";
 
 const props = defineProps<{ wishlist: Wishlist }>();
@@ -211,6 +220,10 @@ const purchase = reactive({
   purchaseDate: today(),
   price: "",
   platformId: undefined as number | undefined,
+  seller: "",
+  shippingCost: "",
+  quantity: "1",
+  warrantyMonths: "",
   productLink: "",
   attachments: [] as string[],
   notes: "",
@@ -264,6 +277,10 @@ function updatePurchasePrice(event: any) {
   purchase.price = cleanMoney(String(event.detail?.value ?? ""));
   return purchase.price;
 }
+function updateShippingCost(event: any) {
+  purchase.shippingCost = cleanMoney(String(event.detail?.value ?? ""));
+  return purchase.shippingCost;
+}
 function formatPurchasePrice() {
   if (purchase.price !== "") {
     purchase.price = amount(purchase.price).toFixed(2);
@@ -291,6 +308,10 @@ async function openPurchaseSheet() {
       props.wishlist.currentPrice ?? props.wishlist.expectedPrice,
     ),
     platformId: undefined,
+    seller: "",
+    shippingCost: "",
+    quantity: "1",
+    warrantyMonths: "",
     productLink: props.wishlist.link || "",
     attachments: [],
     notes: "",
@@ -309,32 +330,7 @@ function pickPlatform(event: any) {
     platformOptions.value[Number(event.detail.value)]?.id || undefined;
 }
 async function chooseAttachments() {
-  const source = await new Promise<"camera" | "album" | null>((resolve) => {
-    uni.showActionSheet({
-      itemList: ["拍照", "从相册选择"],
-      success: (result) =>
-        resolve(result.tapIndex === 0 ? "camera" : "album"),
-      fail: () => resolve(null),
-    });
-  });
-  if (!source) return;
-  const selected = await uni.chooseImage({
-    count: Math.max(1, 3 - purchase.attachments.length),
-    sizeType: ["compressed"],
-    sourceType: [source],
-  });
-  uni.showLoading({ title: "上传中" });
-  try {
-    for (const path of selected.tempFilePaths) {
-      const uploaded = await uploadFile(path);
-      purchase.attachments.push(uploaded.url);
-    }
-    uni.showToast({ title: "附件已添加", icon: "success" });
-  } catch (error) {
-    uni.showToast({ title: (error as Error).message, icon: "none" });
-  } finally {
-    uni.hideLoading();
-  }
+  await chooseAndUploadAttachments(10 - purchase.attachments.length, (url) => purchase.attachments.push(url));
 }
 async function savePrice() {
   if (priceValue.value === "") {
@@ -374,9 +370,12 @@ async function savePurchase() {
       {
         type: "PRIMARY",
         platformId: purchase.platformId,
+        seller: purchase.seller.trim() || undefined,
         price: amount(purchase.price),
+        shippingCost: amount(purchase.shippingCost),
         purchaseDate: purchase.purchaseDate,
-        quantity: 1,
+        quantity: Math.max(1, Number(purchase.quantity || 1)),
+        warrantyMonths: purchase.warrantyMonths ? Number(purchase.warrantyMonths) : undefined,
         productLink: purchase.productLink.trim() || undefined,
         attachments: [...purchase.attachments],
         notes: purchase.notes.trim() || undefined,

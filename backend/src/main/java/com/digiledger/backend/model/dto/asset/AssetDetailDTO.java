@@ -17,6 +17,7 @@ public record AssetDetailDTO(
         BrandDTO brand,
         String model,
         String serialNo,
+        String specifications,
         String status,
         LocalDate purchaseDate,
         LocalDate retiredDate,

@@ -49,6 +49,10 @@
     ><view class="field"
       ><text>型号</text
       ><input v-model="form.model" placeholder="例如 WH-1000XM5" /></view
+    ><view class="field"
+      ><text>序列号</text><input v-model="form.serialNo" placeholder="选填" /></view
+    ><view class="field"
+      ><text>配置规格</text><textarea v-model="form.specifications" placeholder="CPU、内存、存储等，可自由填写" /></view
     ><text class="section-title">购买信息</text
     ><view class="field"
       ><text>购买日期</text
@@ -77,6 +81,12 @@
         @change="pickPurchasePlatform"
         ><view class="picker">{{ purchasePlatformName }}</view></picker
       ></view
+    ><view class="field"
+      ><text>卖家 / 店铺</text><input v-model="primarySeller" placeholder="选填" /></view
+    ><view class="field"
+      ><text>运费</text><input :value="primaryShipping" type="text" inputmode="decimal" placeholder="0.00" @input="onShippingInput" /></view
+    ><view class="field"
+      ><text>数量</text><input v-model="primaryQuantity" type="number" inputmode="numeric" placeholder="1" /></view
     ><view class="warranty-grid"
       ><view class="field"
         ><text>质保时间</text
@@ -106,6 +116,11 @@
         maxlength="1000"
         placeholder="粘贴商品页面链接"
       /></view
+    ><view class="field"
+      ><text>购买备注</text><textarea v-model="primaryNotes" placeholder="订单或购买说明" /></view
+    ><view class="field"
+      ><text>购买附件</text><button class="attachment-add" type="button" @click="addPrimaryAttachments">添加图片或文件（单个不超过 5 MB）</button
+      ><view v-for="(url, index) in primaryAttachments" :key="`${url}-${index}`" class="attachment-item"><text>附件 {{ index + 1 }}</text><text class="touch" @click="primaryAttachments.splice(index, 1)">移除</text></view></view
     ><text class="section-title">状态与记录</text
     ><view class="field"
       ><text>标签</text
@@ -136,6 +151,12 @@
         ></view
       ></view
     ><view class="field"
+      ><text>停用日期</text><input v-model="form.retiredDate" type="date" /></view
+    ><view class="field"
+      ><text>已使用月数</text><input :value="form.manualUseMonths == null ? '' : String(form.manualUseMonths)" type="number" inputmode="numeric" placeholder="选填" @input="onUseMonthsInput" /></view
+    ><view class="field"
+      ><text>其他相关链接</text><view v-for="(link, index) in form.relatedLinks" :key="index" class="related-link"><input v-model="link.url" inputmode="url" placeholder="https://" /><input v-model="link.description" placeholder="说明（选填）" /><text class="touch" @click="form.relatedLinks?.splice(index, 1)">移除</text></view><button class="attachment-add" type="button" @click="form.relatedLinks?.push({ url: '', description: '' })">＋ 添加链接</button></view
+    ><view class="field"
       ><text>备注</text
       ><textarea v-model="form.notes" placeholder="记录保管位置或使用情况" /></view
     ><view class="save-bar"
@@ -164,13 +185,19 @@ import {
   type DictionaryTag,
   type PurchaseRecord,
 } from "@/services/api";
-import { uploadFile } from "@/services/http";
+import { checkUploadSize, uploadFile } from "@/services/http";
+import { chooseAndUploadAttachments } from "@/services/attachments";
 import { resolveMediaUrl } from "@/services/media";
 const id = ref(0),
   saving = ref(false),
   cost = ref(""),
   warrantyMonths = ref(""),
   purchaseLink = ref(""),
+  primarySeller = ref(""),
+  primaryShipping = ref(""),
+  primaryQuantity = ref("1"),
+  primaryNotes = ref(""),
+  primaryAttachments = ref<string[]>([]),
   purchasePlatformId = ref<number>(),
   categoryTree = ref<CategoryNode[]>([]),
   brands = ref<DictionaryBrand[]>([]),
@@ -185,6 +212,9 @@ const form = reactive<AssetPayload>({
   purchaseDate: today,
   coverImageUrl: "",
   model: "",
+  serialNo: "",
+  specifications: "",
+  relatedLinks: [],
   notes: "",
   tagIds: [],
 });
@@ -234,6 +264,18 @@ function cleanMoney(value: string) {
 function onCostInput(event: any) {
   cost.value = cleanMoney(String(event.detail?.value ?? ""));
   return cost.value;
+}
+function onShippingInput(event: any) {
+  primaryShipping.value = cleanMoney(String(event.detail?.value ?? ""));
+  return primaryShipping.value;
+}
+function onUseMonthsInput(event: any) {
+  const value = String(event.detail?.value ?? "").replace(/\D/g, "");
+  form.manualUseMonths = value ? Number(value) : undefined;
+  return value;
+}
+async function addPrimaryAttachments() {
+  await chooseAndUploadAttachments(10 - primaryAttachments.value.length, (url) => primaryAttachments.value.push(url));
 }
 function normalizeCost() {
   cost.value = cleanMoney(cost.value);
@@ -290,7 +332,8 @@ async function chooseImage() {
   });
   uni.showLoading({ title: "上传中" });
   try {
-    const out = await uploadFile(r.tempFilePaths[0]);
+    checkUploadSize(r.tempFiles[0]?.size);
+    const out = await uploadFile(r.tempFilePaths[0], undefined, r.tempFiles[0]?.size);
     form.coverImageUrl = out.url;
   } catch (e) {
     uni.showToast({ title: (e as Error).message, icon: "none" });
@@ -309,6 +352,7 @@ async function submit() {
   const serializePurchase = (
     purchase: PurchaseRecord,
   ): NonNullable<AssetPayload["purchases"]>[number] => ({
+    id: purchase.id,
     type: purchase.type,
     name: purchase.name || undefined,
     platformId: purchase.platformId,
@@ -333,18 +377,34 @@ async function submit() {
           quantity: 1,
         }),
     platformId: purchasePlatformId.value,
+    seller: primarySeller.value.trim() || undefined,
     price: amount,
+    shippingCost: Number(primaryShipping.value || 0),
+    quantity: Math.max(1, Number(primaryQuantity.value || 1)),
     purchaseDate: form.purchaseDate || today,
     warrantyMonths: warrantyMonths.value
       ? Number(warrantyMonths.value)
       : undefined,
     warrantyExpireDate: warrantyExpireDate.value || undefined,
     productLink: purchaseLink.value.trim() || undefined,
+    attachments: [...primaryAttachments.value],
+    notes: primaryNotes.value.trim() || undefined,
   };
   const payload: AssetPayload = {
-    ...form,
-    targetCostValue: amount,
-    targetCostStrategy: "CUSTOM",
+    name: form.name.trim(),
+    categoryId: form.categoryId,
+    brandId: form.brandId || undefined,
+    model: form.model?.trim() || undefined,
+    serialNo: form.serialNo?.trim() || undefined,
+    specifications: form.specifications?.trim() || "",
+    status: form.status,
+    purchaseDate: form.purchaseDate || undefined,
+    retiredDate: form.retiredDate || undefined,
+    coverImageUrl: form.coverImageUrl || undefined,
+    relatedLinks: (form.relatedLinks || []).filter(link => link.url.trim()).map(link => ({ url: link.url.trim(), description: link.description?.trim() || undefined })),
+    manualUseMonths: form.manualUseMonths,
+    notes: form.notes?.trim() || undefined,
+    tagIds: [...(form.tagIds || [])],
     purchases: [
       primaryPurchase,
       ...existingPurchases.value
@@ -385,6 +445,9 @@ onLoad(async (q) => {
     Object.assign(form, a, {
       categoryId: a.categoryId || 0,
       brandId: a.brandId || a.brand?.id,
+      serialNo: a.serialNo || "",
+      specifications: a.specifications || "",
+      relatedLinks: [...(a.relatedLinks || [])],
       purchaseDate: primaryPurchase?.purchaseDate || a.purchaseDate || today,
       tagIds: a.tags?.map((tag) => tag.id) || [],
     });
@@ -392,6 +455,11 @@ onLoad(async (q) => {
       primaryPurchase?.price ?? a.totalInvest ?? a.totalCost ?? "",
     );
     purchasePlatformId.value = primaryPurchase?.platformId;
+    primarySeller.value = primaryPurchase?.seller || "";
+    primaryShipping.value = String(primaryPurchase?.shippingCost ?? "");
+    primaryQuantity.value = String(primaryPurchase?.quantity || 1);
+    primaryNotes.value = primaryPurchase?.notes || "";
+    primaryAttachments.value = [...(primaryPurchase?.attachments || [])];
     warrantyMonths.value = String(
       primaryPurchase?.warrantyMonths ||
         inferWarrantyMonths(
@@ -490,6 +558,38 @@ onLoad(async (q) => {
 }
 .field {
   margin-top: var(--space-md);
+}
+.field textarea {
+  min-height: 96px;
+  padding: var(--space-sm) var(--space-md);
+}
+.attachment-add {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--space-sm);
+  border: 1px dashed var(--color-muted);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  text-align: left;
+  font-size: var(--text-sm);
+}
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 2px;
+  border-bottom: var(--rule-hairline);
+  font-size: var(--text-sm);
+}
+.attachment-item text:last-child,
+.related-link text {
+  color: var(--color-accent-deep);
+}
+.related-link {
+  display: grid;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
 }
 .warranty-grid {
   display: grid;

@@ -13,12 +13,13 @@ export const createWishlist = (payload: {
   brandId?: number
   model?: string
   expectedPrice?: number
+  currentPrice?: number
   link?: string
+  source?: string
   notes?: string
   priority?: number
   imageUrl?: string
   tagIds?: number[]
-  relatedAssetId?: number
 }) => http.post<number>('/wishlist', payload)
 
 // 更新指定心愿条目
@@ -30,12 +31,13 @@ export const updateWishlist = (
     brandId?: number
     model?: string
     expectedPrice?: number
+    currentPrice?: number
     link?: string
+    source?: string
     notes?: string
     priority?: number
     imageUrl?: string
     tagIds?: number[]
-    relatedAssetId?: number
   }
 ) => http.put<void>(`/wishlist/${id}`, payload)
 

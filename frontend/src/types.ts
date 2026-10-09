@@ -115,7 +115,9 @@ export interface AssetDetail extends AssetSummary {
   brand?: BrandInfo | null
   model?: string
   serialNo?: string
+  specifications?: string
   retiredDate?: string
+  manualUseMonths?: number
   notes?: string
   purchases: PurchaseRecord[]
   sales: SaleRecord[]
@@ -131,7 +133,9 @@ export interface WishlistItem {
   brandName?: string
   model?: string
   expectedPrice?: number
+  currentPrice?: number
   link?: string
+  source?: string
   notes?: string
   priority?: number
   status: '待购买' | '已完成' | '已购买'

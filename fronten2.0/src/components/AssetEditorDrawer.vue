@@ -11,6 +11,7 @@
           <el-form-item label="状态"><el-select v-model="form.status"><el-option v-for="s in statuses" :key="s" :label="s" :value="s" /></el-select></el-form-item>
           <el-form-item label="标签"><el-select v-model="form.tagIds" multiple filterable clearable collapse-tags :max-collapse-tags="3" placeholder="选择标签（可多选）"><el-option v-for="tag in flatTags" :key="tag.id" :label="tag.name" :value="tag.id" /></el-select></el-form-item>
         </div>
+        <el-form-item label="配置规格（选填）"><el-input v-model="form.specifications" type="textarea" :rows="4" placeholder="例如：CPU、内存、存储容量、屏幕等，可自由填写" /></el-form-item>
       </section>
       <section class="form-section">
         <div class="section-heading"><div><strong>购买与质保</strong><span>填写主商品的订单信息；质保到期日会自动计算。</span></div></div>
@@ -46,8 +47,8 @@
             <el-form-item label="购买链接"><el-input v-model="purchase.productLink" placeholder="选填" /></el-form-item>
             <el-form-item label="运费"><el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" /></el-form-item>
             <el-form-item label="购买日期"><el-date-picker v-model="purchase.purchaseDate" value-format="YYYY-MM-DD" placeholder="请选择购买日期" :shortcuts="dateShortcuts" /></el-form-item>
-            <el-form-item label="质保月数"><el-input-number v-model="purchase.warrantyMonths" :min="0" :precision="0" /></el-form-item>
-            <el-form-item label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable placeholder="请选择质保到期日" :shortcuts="dateShortcuts" /></el-form-item>
+            <el-form-item v-if="purchase.type !== 'ACCESSORY'" label="质保月数"><el-input-number v-model="purchase.warrantyMonths" :min="0" :precision="0" /></el-form-item>
+            <el-form-item v-if="purchase.type !== 'ACCESSORY'" label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable placeholder="请选择质保到期日" :shortcuts="dateShortcuts" /></el-form-item>
             <el-form-item label="数量"><el-input-number v-model="purchase.quantity" :min="1" :precision="0" /></el-form-item>
           </div>
           <div class="purchase-bottom-grid"><el-form-item label="备注"><el-input v-model="purchase.notes" type="textarea" :rows="5" placeholder="记录补充说明、订单信息或使用场景" /></el-form-item><el-form-item label="附件"><div class="purchase-attachment"><AttachmentDropzone panel label="添加附件" hint="拖拽文件、点击选择，或直接粘贴截图" @files="files => uploadPurchaseAttachments(files, purchase)" /><span v-for="(attachment, attachmentIndex) in purchase.attachments || []" :key="`${attachment}-${attachmentIndex}`" class="attachment-chip">附件 {{ attachmentIndex + 1 }}<button type="button" @click="removePurchaseAttachment(purchase, attachment)">×</button></span></div></el-form-item></div>
@@ -181,7 +182,7 @@ async function loadImageSearchProviders(){const response=await fetchImageSearchP
 async function openImageSearch(){try{await loadImageSearchProviders();resetImageSearchResults();imageSearchOpen.value=true}catch(error){ElMessage.error((error as Error).message)}}
 onMounted(async () => { const [categories, brandList, platformList, tagList] = await Promise.allSettled([fetchCategories(), fetchBrands(), fetchPlatforms(), fetchTags()]); if (categories.status === 'fulfilled') categoryOptions.value = categories.value; if (brandList.status === 'fulfilled') brands.value = brandList.value; if (platformList.status === 'fulfilled') platforms.value = platformList.value; if (tagList.status === 'fulfilled') tags.value = tagList.value })
 function flattenTags(nodes: TagNode[]): TagNode[] { return nodes.flatMap(tag => [tag, ...flattenTags(tag.children || [])]) }
-const addPurchase = () => form.purchases.push({ ...blankPurchase(), type: 'ACCESSORY', name: '' })
+const addPurchase = () => form.purchases.push({ type: 'ACCESSORY', name: '', price: 0, shippingCost: 0, quantity: 1, purchaseDate: new Date().toISOString().slice(0, 10), attachments: [] })
 function setManualUseDuration(years: number | undefined, months: number | undefined) { const total = Math.max(0, Number(years) || 0) * 12 + Math.max(0, Number(months) || 0); form.manualUseMonths = total || undefined }
 function addRelatedLink() { form.relatedLinks = [...(form.relatedLinks || []), { url: '', description: '' }] }
 function removeRelatedLink(index: number) { form.relatedLinks = (form.relatedLinks || []).filter((_, currentIndex) => currentIndex !== index) }
@@ -211,6 +212,7 @@ function buildAssetPayload(): AssetPayload {
     brandId: form.brandId || undefined,
     model: form.model?.trim() || undefined,
     serialNo: form.serialNo?.trim() || undefined,
+    specifications: form.specifications?.trim() || '',
     status: form.status,
     purchaseDate: form.purchaseDate || undefined,
     retiredDate: form.retiredDate || undefined,
@@ -219,7 +221,8 @@ function buildAssetPayload(): AssetPayload {
     manualUseMonths: form.manualUseMonths,
     notes: form.notes?.trim() || undefined,
     tagIds: [...(form.tagIds || [])],
-    purchases: form.purchases.map(({ type, name, platformId, seller, price, shippingCost, quantity, purchaseDate, warrantyMonths, warrantyExpireDate, productLink, attachments, notes }) => ({
+    purchases: form.purchases.map(({ id, type, name, platformId, seller, price, shippingCost, quantity, purchaseDate, warrantyMonths, warrantyExpireDate, productLink, attachments, notes }) => ({
+      id,
       type,
       name: name?.trim() || undefined,
       platformId: platformId || undefined,
@@ -228,8 +231,8 @@ function buildAssetPayload(): AssetPayload {
       shippingCost,
       quantity,
       purchaseDate: type === 'PRIMARY' ? form.purchaseDate || purchaseDate : purchaseDate,
-      warrantyMonths,
-      warrantyExpireDate,
+      warrantyMonths: type === 'ACCESSORY' ? undefined : warrantyMonths,
+      warrantyExpireDate: type === 'ACCESSORY' ? undefined : warrantyExpireDate,
       productLink: productLink?.trim() || undefined,
       attachments: [...(attachments || [])],
       notes: notes?.trim() || undefined

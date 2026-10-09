@@ -1,0 +1,1351 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DigiLedger 对外 Agent API",
+    "version": "1.0.0",
+    "description": "对外接口默认关闭。PC 系统设置生成 Token 并选择只读或读写权限。Token 仅保护 /api/open/**；内部管理页面与接口需保留在可信网络或已有网关认证之后。请求/响应字段为 camelCase，筛选参数为 snake_case。写请求无幂等保证，不应盲目自动重试。"
+  },
+  "servers": [
+    {
+      "url": "/api/open/v1",
+      "description": "当前实例"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/assets": {
+      "get": {
+        "operationId": "listAssets",
+        "summary": "分页查询物品",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AssetPage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "使用中",
+                "已闲置",
+                "待出售",
+                "已出售",
+                "已丢弃"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "category_id",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "in": "query",
+            "name": "brand_id",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform_id",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            },
+            "style": "form",
+            "explode": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createAsset",
+        "summary": "新增物品，需要读写权限",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/{id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getAsset",
+        "summary": "查询完整物品详情",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AssetDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchAsset",
+        "summary": "局部编辑物品，需要读写权限",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetPatch"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAsset",
+        "summary": "删除物品，需要读写权限；关联记录可能阻止删除",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dict/categories/tree": {
+      "get": {
+        "operationId": "getCategories",
+        "summary": "查询分类树",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CategoryNode"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dict/brands": {
+      "get": {
+        "operationId": "getBrands",
+        "summary": "查询品牌列表",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Brand"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dict/platforms": {
+      "get": {
+        "operationId": "getPlatforms",
+        "summary": "查询平台列表",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Platform"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dict/tags/tree": {
+      "get": {
+        "operationId": "getTags",
+        "summary": "查询标签树",
+        "responses": {
+          "200": {
+            "description": "统一响应。HTTP 200 仍须检查 code，错误时 data 可能省略。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Envelope"
+                    }
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TagNode"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "开放 API 已关闭，或 Token 无写入权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "DigiLedger Token"
+      }
+    },
+    "schemas": {
+      "RelatedLink": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "PurchaseCreate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "PRIMARY",
+              "ACCESSORY",
+              "SERVICE"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "platformId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "seller": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "shippingCost": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "nullable": true
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "warrantyMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "warrantyExpireDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "productLink": {
+            "type": "string",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type",
+          "price",
+          "purchaseDate"
+        ],
+        "description": "ACCESSORY/SERVICE 还需 name；ACCESSORY 不保存质保。不要编造价格或日期。"
+      },
+      "AssetCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "brandId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "serialNo": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "使用中",
+              "已闲置",
+              "待出售",
+              "已出售",
+              "已丢弃"
+            ]
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "retiredDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true
+          },
+          "relatedLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelatedLink"
+            },
+            "maxItems": 20,
+            "nullable": true
+          },
+          "manualUseMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "tagIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "nullable": true
+          },
+          "purchases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseCreate"
+            },
+            "nullable": true
+          }
+        },
+        "required": [
+          "name",
+          "categoryId",
+          "status"
+        ]
+      },
+      "AssetPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "brandId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "serialNo": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "使用中",
+              "已闲置",
+              "待出售",
+              "已出售",
+              "已丢弃"
+            ]
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "retiredDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true
+          },
+          "relatedLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelatedLink"
+            },
+            "maxItems": 20,
+            "nullable": true
+          },
+          "manualUseMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "tagIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "nullable": true
+          }
+        },
+        "minProperties": 1,
+        "additionalProperties": false,
+        "description": "仅提交要修改的主档字段。省略字段与购买记录保持原值，null 清空可空字段，空数组清空集合。不能修改 purchases。已丢弃状态会清理出售记录。"
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Brand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true
+          },
+          "initial": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Platform": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "CategoryNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryNode"
+            }
+          }
+        }
+      },
+      "TagNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagNode"
+            }
+          }
+        }
+      },
+      "AssetSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryPath": {
+            "type": "string",
+            "description": "分类 ID 路径，如 /1/3"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "使用中",
+              "已闲置",
+              "待出售",
+              "已出售",
+              "已丢弃"
+            ]
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalInvest": {
+            "type": "number"
+          },
+          "avgCostPerDay": {
+            "type": "number"
+          },
+          "useDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastNetIncome": {
+            "type": "number"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          }
+        }
+      },
+      "Purchase": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "PRIMARY",
+              "ACCESSORY",
+              "SERVICE"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "platformId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "seller": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "shippingCost": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "nullable": true
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "warrantyMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "warrantyExpireDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "productLink": {
+            "type": "string",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "platformName": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Sale": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "saleScope": {
+            "type": "string",
+            "enum": [
+              "ASSET",
+              "ACCESSORY"
+            ]
+          },
+          "purchaseId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "platformId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "platformName": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyer": {
+            "type": "string",
+            "nullable": true
+          },
+          "saleDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "useDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "salePrice": {
+            "type": "number"
+          },
+          "fee": {
+            "type": "number"
+          },
+          "shippingCost": {
+            "type": "number"
+          },
+          "otherCost": {
+            "type": "number"
+          },
+          "netIncome": {
+            "type": "number"
+          },
+          "lossAmount": {
+            "type": "number"
+          },
+          "dailyUsageCost": {
+            "type": "number"
+          },
+          "monthlyUsageCost": {
+            "type": "number"
+          }
+        }
+      },
+      "AssetDetail": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "serialNo": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "使用中",
+              "已闲置",
+              "待出售",
+              "已出售",
+              "已丢弃"
+            ]
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "retiredDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelatedLink"
+            },
+            "maxItems": 20,
+            "nullable": true
+          },
+          "manualUseMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryPath": {
+            "type": "string",
+            "description": "分类 ID 路径，如 /1/3"
+          },
+          "totalInvest": {
+            "type": "number"
+          },
+          "avgCostPerDay": {
+            "type": "number"
+          },
+          "useDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastNetIncome": {
+            "type": "number"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "brand": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Brand"
+              }
+            ],
+            "nullable": true
+          },
+          "purchases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Purchase"
+            }
+          },
+          "sales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sale"
+            }
+          }
+        }
+      },
+      "AssetPage": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        }
+      },
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "200 成功；400 校验失败、404 不存在、409 业务冲突、500 内部错误"
+          },
+          "msg": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "msg"
+        ]
+      }
+    }
+  }
+}

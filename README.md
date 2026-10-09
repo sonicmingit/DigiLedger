@@ -85,6 +85,10 @@ npm run preview
 
 ## API & 调试工具
 
+- 对外 Agent API：`/api/open/v1`，支持 Token 鉴权、只读/读写权限、物品分页查询、详情、新增、局部编辑与删除。
+- PC **系统设置 → 开放 API / Agent Skill**：生成 Token、启用接口、查看安装说明并下载可安装的 Skill；两套 PC 前端均提供入口。
+- [对外 API 指南与 Skill 安装说明](backend/src/main/resources/agent-skill/digiledger/references/api.md)，[OpenAPI JSON](backend/src/main/resources/agent-skill/digiledger/references/openapi.json)。部署后通过 `/api/agent-resources/api.md`、`/api/agent-resources/openapi.json` 与 `/api/agent-resources/digiledger-skill.zip` 获取。
+- Skill 源码：`backend/src/main/resources/agent-skill/digiledger/`，直接随后端打包，无需额外发布步骤。首次升级自动执行 `V11__open_api_access.sql`，开放接口默认关闭。
 - OpenAPI 规范：`deploy/openapi.yaml`
 - Postman 集合：`deploy/postman/DigiLedger.postman_collection.json`（覆盖字典、物品创建/查询等核心流程）
 

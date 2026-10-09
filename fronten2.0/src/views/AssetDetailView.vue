@@ -48,6 +48,7 @@
               <dl>
                 <div><dt>品牌</dt><dd>{{ brandLabel }}</dd></div>
                 <div><dt>型号</dt><dd>{{ asset.model || '未填写' }}</dd></div>
+                <div class="wide"><dt>配置规格</dt><dd style="white-space: pre-wrap; overflow-wrap: anywhere">{{ asset.specifications || '未填写' }}</dd></div>
                 <div><dt>序列号</dt><dd>{{ asset.serialNo || '未填写' }}</dd></div>
                 <div><dt>当前状态</dt><dd>{{ asset.status }}</dd></div>
                 <div><dt>购买日期</dt><dd>{{ asset.purchaseDate || primaryPurchase?.purchaseDate || '未填写' }}</dd></div>
@@ -86,7 +87,7 @@
                   <td>{{ money(record.shippingCost) }}</td>
                   <td>{{ record.quantity || 1 }}</td>
                   <td>{{ record.purchaseDate || '—' }}</td>
-                  <td>{{ record.warrantyExpireDate || '—' }}</td>
+                  <td>{{ record.type === 'ACCESSORY' ? '—' : record.warrantyExpireDate || '—' }}</td>
                   <td><a v-if="record.productLink" :href="record.productLink" target="_blank" rel="noreferrer">查看商品</a><span v-else>—</span></td>
                   <td><button v-if="record.attachments?.length" class="text-button" @click="openAttachmentDialog(recordName(record), record.attachments)">附件 {{ record.attachments.length }}</button><span v-else>—</span></td>
                   <td><div class="row-actions"><button class="text-button" @click="openEditPurchase(record)">编辑</button><button class="text-button danger" @click="confirmDeletePurchase(record)">删除</button></div></td>
@@ -150,8 +151,8 @@
           <el-form-item label="运费"><el-input-number v-model="purchase.shippingCost" :min="0" :precision="2" /></el-form-item>
           <el-form-item label="数量"><el-input-number v-model="purchase.quantity" :min="1" :precision="0" /></el-form-item>
           <el-form-item label="购买日期"><el-date-picker v-model="purchase.purchaseDate" value-format="YYYY-MM-DD" placeholder="请选择购买日期" :shortcuts="dateShortcuts" /></el-form-item>
-          <el-form-item label="质保月数"><el-input-number v-model="purchase.warrantyMonths" :min="0" :precision="0" /></el-form-item>
-          <el-form-item label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable placeholder="请选择质保到期日" :shortcuts="dateShortcuts" /></el-form-item>
+          <el-form-item v-if="purchase.type !== 'ACCESSORY'" label="质保月数"><el-input-number v-model="purchase.warrantyMonths" :min="0" :precision="0" /></el-form-item>
+          <el-form-item v-if="purchase.type !== 'ACCESSORY'" label="质保到期"><el-date-picker v-model="purchase.warrantyExpireDate" value-format="YYYY-MM-DD" clearable placeholder="请选择质保到期日" :shortcuts="dateShortcuts" /></el-form-item>
         </div>
         <el-form-item label="商品链接"><el-input v-model="purchase.productLink" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="purchase.notes" type="textarea" :rows="2" /></el-form-item>
@@ -270,7 +271,7 @@ const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出�
 const nextStatus = ref<AssetStatus>('使用中')
 const today = () => new Date().toISOString().slice(0, 10)
 const dateShortcuts = [{ text: '今天', value: () => new Date() }]
-const blankPurchase = (): EditablePurchase => ({ type: 'ACCESSORY', name: '', price: 0, shippingCost: 0, quantity: 1, purchaseDate: today(), warrantyMonths: 12, attachments: [] })
+const blankPurchase = (): EditablePurchase => ({ type: 'ACCESSORY', name: '', price: 0, shippingCost: 0, quantity: 1, purchaseDate: today(), attachments: [] })
 const blankSale = (): EditableSale => ({ saleScope: 'ASSET', salePrice: 0, saleDate: today(), buyer: '', fee: 0, shippingCost: 0, otherCost: 0, attachments: [], notes: '' })
 const purchase = reactive<EditablePurchase>(blankPurchase())
 const sale = reactive<EditableSale>(blankSale())
@@ -382,6 +383,8 @@ function openEditPurchase(record: PurchaseRecord) {
 function purchasePayload() {
   return {
     ...purchase,
+    warrantyMonths: purchase.type === 'ACCESSORY' ? undefined : purchase.warrantyMonths,
+    warrantyExpireDate: purchase.type === 'ACCESSORY' ? undefined : purchase.warrantyExpireDate,
     assetId: asset.value!.id,
     name: purchase.type === 'PRIMARY' ? undefined : purchase.name || undefined,
     attachments: [...(purchase.attachments || [])]

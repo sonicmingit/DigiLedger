@@ -12,6 +12,8 @@ import java.util.List;
  */
 @Data
 public class PurchaseRequest {
+    @Min(value = 1, message = "购买记录 ID 无效")
+    private Long id;
 
     @NotBlank(message = "购买类型不能为空")
     private String type;
