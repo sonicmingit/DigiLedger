@@ -21,7 +21,7 @@
       </div>
       <div class="spending-panels" :class="{ 'is-loading': loading }">
         <article class="card spending-panel"><div class="spending-panel-title"><h3>每月支出</h3><span>购买日期所在月份</span></div>
-          <div v-if="data.monthlyTrend.length" class="spending-chart-scroll"><div class="spending-bars" :style="{ minWidth: `${Math.max(480, data.monthlyTrend.length * 60)}px` }">
+          <div v-if="data.monthlyTrend.length" class="spending-chart-scroll" role="region" aria-label="每月支出，横向滚动查看更多月份" tabindex="0"><div class="spending-bars" :style="{ minWidth: `${Math.max(480, data.monthlyTrend.length * 76)}px` }">
             <div v-for="point in data.monthlyTrend" :key="point.month" class="spending-bar-column" :title="`${point.month} · ${money(point.amount)}`"><span>{{ compactMoney(point.amount) }}</span><div class="bar-track"><div class="bar-fill" :style="{ height: `${Math.max(3, Number(point.amount) / maxMonth * 100)}%` }" /></div><span>{{ point.month }}</span></div>
           </div></div><div v-else class="spending-empty">该范围内暂无购买记录</div>
         </article>
@@ -104,4 +104,14 @@ onMounted(async () => { load(); const [categoryResult, platformResult] = await P
 .spending-message span{width:100%;font-size:12px}
 @media(max-width:1600px){.spending-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1300px){.spending-panels{grid-template-columns:1fr}.spending-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.spending-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.spending-panels{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.spending-panel{min-width:0}
+.spending-chart-scroll{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:8px;scrollbar-color:#aab79e #edf1e9;scrollbar-width:thin}
+.spending-chart-scroll::-webkit-scrollbar{height:9px}
+.spending-chart-scroll::-webkit-scrollbar-track{border-radius:999px;background:#edf1e9}
+.spending-chart-scroll::-webkit-scrollbar-thumb{border:2px solid #edf1e9;border-radius:999px;background:#aab79e}
+.spending-chart-scroll::-webkit-scrollbar-thumb:hover{background:#82946f}
+.spending-chart-scroll:focus-visible{outline:2px solid #8bbd3f;outline-offset:3px;border-radius:8px}
+.spending-bar-column{flex:1 0 64px;min-width:64px}
+@media(max-width:1300px){.spending-panels{grid-template-columns:minmax(0,1fr)}}
 </style>
