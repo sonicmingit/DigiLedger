@@ -3,6 +3,7 @@ package com.digiledger.backend.model.dto.asset;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +33,18 @@ public class AssetCreateRequest {
     private String serialNo;
 
     private String specifications;
+
+    @Positive(message = "上代产品ID必须为正数")
+    private Long predecessorAssetId;
+
+    /** 省略字段保留关联，显式 null 解除关联，兼容旧客户端。 */
+    @JsonIgnore
+    private boolean predecessorAssetSpecified;
+
+    public void setPredecessorAssetId(Long predecessorAssetId) {
+        this.predecessorAssetId = predecessorAssetId;
+        this.predecessorAssetSpecified = true;
+    }
 
     @NotBlank(message = "状态不能为空")
     private String status;

@@ -3,6 +3,7 @@ package com.digiledger.backend.controller;
 import com.digiledger.backend.common.ApiResponse;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.asset.AssetDetailDTO;
+import com.digiledger.backend.model.dto.asset.AssetPredecessorDTO;
 import com.digiledger.backend.model.dto.asset.AssetSellRequest;
 import com.digiledger.backend.model.dto.asset.AssetStatusUpdateRequest;
 import com.digiledger.backend.model.dto.asset.AssetSummaryDTO;
@@ -68,6 +69,15 @@ public class AssetController {
     @GetMapping("/{id}")
     public ApiResponse<AssetDetailDTO> getAsset(@PathVariable(name = "id") @NotNull @Min(1) Long id) {
         return ApiResponse.success(assetService.getAssetDetail(id));
+    }
+
+    /** 仅搜索同一类别的已有物品，排除当前物品，最多返回 20 条。 */
+    @GetMapping("/predecessor-options")
+    public ApiResponse<List<AssetPredecessorDTO>> predecessorOptions(
+            @RequestParam(name = "category_id") @Min(1) Long categoryId,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "exclude_asset_id", required = false) Long excludeId) {
+        return ApiResponse.success(assetService.predecessorOptions(categoryId, keyword, excludeId));
     }
 
     /**

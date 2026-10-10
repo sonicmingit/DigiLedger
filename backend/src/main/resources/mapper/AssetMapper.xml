@@ -13,6 +13,7 @@
         <result column="model" property="model" />
         <result column="serial_no" property="serialNo" />
         <result column="specifications" property="specifications" />
+        <result column="predecessor_asset_id" property="predecessorAssetId" />
         <result column="status" property="status" />
         <result column="purchase_id" property="purchaseId" />
         <result column="purchase_date" property="purchaseDate" />
@@ -27,7 +28,7 @@
     </resultMap>
 
     <sql id="baseColumns">
-        id, name, category_id, category_path, brand_id, brand, model, serial_no, specifications, status,
+        id, name, category_id, category_path, brand_id, brand, model, serial_no, specifications, predecessor_asset_id, status,
         purchase_id, purchase_date, enabled_date, retired_date,
         cover_image_url, related_links, manual_use_months, notes, created_at, updated_at
     </sql>
@@ -83,13 +84,31 @@
         SELECT <include refid="baseColumns"/> FROM device_asset WHERE id = #{id}
     </select>
 
+    <select id="findPredecessorOptions" resultMap="assetResultMap">
+        SELECT <include refid="baseColumns"/> FROM device_asset
+        WHERE category_id = #{categoryId}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+        <if test="keyword != null and keyword != ''">
+            AND (name LIKE CONCAT('%', #{keyword}, '%')
+                OR brand LIKE CONCAT('%', #{keyword}, '%')
+                OR model LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY purchase_date DESC, id DESC LIMIT 20
+    </select>
+
+    <select id="findSuccessorsInOtherCategoriesForUpdate" resultType="long">
+        SELECT id FROM device_asset
+        WHERE predecessor_asset_id = #{id} AND category_id != #{categoryId}
+        FOR UPDATE
+    </select>
+
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_asset (
-            name, category_id, category_path, brand_id, brand, model, serial_no, specifications, status,
+            name, category_id, category_path, brand_id, brand, model, serial_no, specifications, predecessor_asset_id, status,
             purchase_id, purchase_date, enabled_date, retired_date,
             cover_image_url, related_links, manual_use_months, notes
         ) VALUES (
-            #{name}, #{categoryId}, #{categoryPath}, #{brandId}, #{brand}, #{model}, #{serialNo}, NULLIF(#{specifications}, ''), #{status},
+            #{name}, #{categoryId}, #{categoryPath}, #{brandId}, #{brand}, #{model}, #{serialNo}, NULLIF(#{specifications}, ''), #{predecessorAssetId}, #{status},
             #{purchaseId}, #{purchaseDate}, #{enabledDate}, #{retiredDate},
             #{coverImageUrl}, #{relatedLinks}, #{manualUseMonths}, #{notes}
         )
@@ -106,6 +125,7 @@
             <if test="model != null">model = #{model},</if>
             <if test="serialNo != null">serial_no = #{serialNo},</if>
             <if test="specifications != null">specifications = NULLIF(#{specifications}, ''),</if>
+            predecessor_asset_id = #{predecessorAssetId},
             <if test="status != null">status = #{status},</if>
             <if test="purchaseId != null">purchase_id = #{purchaseId},</if>
             <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>

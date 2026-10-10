@@ -23,6 +23,12 @@ public interface AssetMapper {
 
     DeviceAsset findById(@Param("id") Long id);
 
+    List<DeviceAsset> findPredecessorOptions(@Param("categoryId") Long categoryId,
+                                            @Param("keyword") String keyword,
+                                            @Param("excludeId") Long excludeId);
+
+    List<Long> findSuccessorsInOtherCategoriesForUpdate(@Param("id") Long id, @Param("categoryId") Long categoryId);
+
     @Select("SELECT * FROM device_asset WHERE id = #{id} FOR UPDATE")
     @ResultMap("assetResultMap")
     DeviceAsset findByIdForUpdate(@Param("id") Long id);

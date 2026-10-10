@@ -5,6 +5,7 @@ import com.digiledger.backend.model.dto.asset.AssetDetailDTO;
 import com.digiledger.backend.model.dto.asset.AssetSellRequest;
 import com.digiledger.backend.model.dto.asset.AssetSummaryDTO;
 import com.digiledger.backend.model.dto.asset.AssetPageDTO;
+import com.digiledger.backend.model.dto.asset.AssetPredecessorDTO;
 import com.digiledger.backend.model.dto.asset.SaleDTO;
 
 import java.util.List;
@@ -17,6 +18,8 @@ public interface AssetService {
                             int page, int pageSize, String sortBy, String sortOrder);
 
     AssetDetailDTO getAssetDetail(Long id);
+
+    List<AssetPredecessorDTO> predecessorOptions(Long categoryId, String keyword, Long excludeId);
 
     Long createAsset(AssetCreateRequest request);
 

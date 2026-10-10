@@ -33,15 +33,22 @@ export interface AssetSummary {
 }
 export interface AssetPage { records: AssetSummary[]; total: number; page: number; pageSize: number }
 export interface AssetDetail extends AssetSummary {
+  predecessorAssetId?: number | null; predecessorAsset?: AssetPredecessor | null
   brand?: BrandInfo | null; model?: string; serialNo?: string; specifications?: string; retiredDate?: string; notes?: string; relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   purchases: PurchaseRecord[]; sales: SaleRecord[]
 }
 export interface AssetPayload {
+  predecessorAssetId?: number | null
   name: string; categoryId: number; brandId?: number; brand?: string; model?: string; serialNo?: string; specifications?: string
   status: AssetStatus; purchaseDate?: string; retiredDate?: string; coverImageUrl?: string; notes?: string
   relatedLinks?: AssetRelatedLink[]; manualUseMonths?: number
   tagIds?: number[]; targetCostStrategy?: 'NONE' | 'PRICE' | 'DATE' | 'CUSTOM'; targetCostValue?: number
   attachAssetIds?: number[]; purchases?: PurchaseRecord[]
+}
+export interface AssetPredecessor {
+  id: number; name: string; categoryId: number; categoryPath?: string; brandName?: string; model?: string
+  status: AssetStatus; coverImageUrl?: string; primaryPrice: number | null; primaryPurchaseDate: string | null
+  primaryPriceDelta?: number | null; purchaseGapDays?: number | null
 }
 export interface DashboardSummary {
   totalAssetValue: number; assetCount: number; activeCount: number; idleCount: number; pendingSaleCount: number

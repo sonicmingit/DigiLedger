@@ -18,6 +18,8 @@ public record AssetDetailDTO(
         String model,
         String serialNo,
         String specifications,
+        Long predecessorAssetId,
+        AssetPredecessorDTO predecessorAsset,
         String status,
         LocalDate purchaseDate,
         LocalDate retiredDate,

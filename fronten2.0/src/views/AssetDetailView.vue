@@ -63,6 +63,8 @@
           </div>
         </section>
 
+        <AssetPredecessorSummary :predecessor="asset.predecessorAsset" :current-purchase="primaryPurchase" @manage="edit" @preview="previewPredecessor" />
+
         <section class="detail-metrics" aria-label="物品使用指标">
           <article class="card metric-block"><span>总投入</span><strong>{{ money(asset.totalInvest) }}</strong><small>包含主商品、配件与服务</small></article>
           <article class="card metric-block"><span>日均成本</span><strong>{{ money(asset.avgCostPerDay) }}</strong><small>按当前使用天数计算</small></article>
@@ -134,6 +136,8 @@
         <img v-if="asset?.coverImageUrl" :src="asset.coverImageUrl" :alt="`${asset.name} 完整图片`" />
       </div>
     </el-dialog>
+
+    <AssetPreviewDialog v-model="predecessorPreviewOpen" :asset-id="predecessorPreviewId" :category-label="displayCategoryPath" />
 
     <el-dialog v-model="statusDialog" title="变更物品状态" width="430px">
       <el-form label-position="top" class="dialog-form"><el-form-item label="新状态"><el-select v-model="nextStatus"><el-option v-for="s in statuses" :key="s" :label="s" :value="s" /></el-select></el-form-item></el-form>
@@ -250,6 +254,9 @@ import PageHeader from '@/components/PageHeader.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import AsyncState from '@/components/AsyncState.vue'
 import AttachmentDropzone from '@/components/AttachmentDropzone.vue'
+import AssetPredecessorSummary from '@/components/AssetPredecessorSummary.vue'
+import AssetPreviewDialog from '@/components/AssetPreviewDialog.vue'
+import { primaryPurchaseRecord } from '@/utils/predecessor'
 
 type EditablePurchase = PurchaseRecord & { assetId?: number }
 type EditableSale = SellPayload & { id?: number; attachments: string[] }
@@ -265,6 +272,9 @@ const error = ref('')
 const saving = ref(false)
 const statusDialog = ref(false)
 const coverPreviewOpen = ref(false)
+const predecessorPreviewOpen = ref(false), predecessorPreviewId = ref<number>()
+let loadId = 0
+function previewPredecessor(id: number) { predecessorPreviewId.value = id; predecessorPreviewOpen.value = true }
 const purchaseDialog = ref(false)
 const sellDialog = ref(false)
 const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
@@ -276,7 +286,7 @@ const blankSale = (): EditableSale => ({ saleScope: 'ASSET', salePrice: 0, saleD
 const purchase = reactive<EditablePurchase>(blankPurchase())
 const sale = reactive<EditableSale>(blankSale())
 
-const primaryPurchase = computed(() => asset.value?.purchases?.find(record => record.type === 'PRIMARY'))
+const primaryPurchase = computed(() => primaryPurchaseRecord(asset.value?.purchases))
 const displayRelatedLinks = computed(() => [
   ...(primaryPurchase.value?.productLink ? [{ url: primaryPurchase.value.productLink, description: '购买链接' }] : []),
   ...(asset.value?.relatedLinks || [])
@@ -336,22 +346,26 @@ function displayTagIcon(tag: TagItem) {
 }
 
 async function load() {
+  const current = ++loadId, id = Number(route.params.id)
   loading.value = true
   error.value = ''
+  asset.value = undefined
+  predecessorPreviewOpen.value = false
   try {
     const [detail, dictionary, platformList] = await Promise.all([
-      fetchAsset(Number(route.params.id)),
+      fetchAsset(id),
       fetchCategories().catch(() => [] as CategoryNode[]),
       fetchPlatforms().catch(() => [] as PlatformItem[])
     ])
+    if (current !== loadId) return
     asset.value = detail
     categories.value = dictionary
     platforms.value = platformList
     nextStatus.value = asset.value.status
   } catch (e) {
-    error.value = (e as Error).message
+    if (current === loadId) error.value = (e as Error).message
   } finally {
-    loading.value = false
+    if (current === loadId) loading.value = false
   }
 }
 
@@ -489,6 +503,7 @@ function resetAttachmentDialog() {
 }
 
 watch(() => workspace.refreshKey, load)
+watch(() => route.params.id, load)
 watch(() => sale.saleScope, scope => {
   if (scope === 'ASSET') sale.purchaseId = undefined
   if (scope === 'ACCESSORY' && !sale.purchaseId) sale.purchaseId = accessoryPurchases.value[0]?.id
@@ -500,4 +515,6 @@ onMounted(load)
 .back-button{margin:-12px 0 20px;padding:0;border:0;background:none;color:var(--dl-text-secondary);font-size:12px;font-weight:600;cursor:pointer}.detail-top{display:grid;grid-template-columns:470px 1fr;gap:40px}.product-visual{position:relative;height:410px;display:grid;place-items:center;overflow:hidden;border-radius:var(--dl-radius-lg);background:#f5f6f2;box-shadow:var(--dl-shadow)}.product-image-button{position:relative;width:100%;height:100%;padding:12px;border:0;background:transparent;cursor:zoom-in}.product-image-button img{display:block;width:100%;height:100%;object-fit:contain;transition:transform .2s ease}.product-image-button:hover img{transform:scale(1.018)}.product-image-button span{position:absolute;right:24px;bottom:20px;padding:6px 10px;border-radius:999px;background:rgba(15,20,15,.76);color:#fff;font-size:11px;font-weight:700;opacity:0;transition:opacity .18s}.product-image-button:hover span,.product-image-button:focus-visible span{opacity:1}.product-image-button:focus-visible{outline:2px solid var(--dl-accent);outline-offset:-4px}.product-visual>.tag{z-index:1;position:absolute;top:24px;right:30px;pointer-events:none}.product-orbit{width:270px;height:270px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 30px rgba(183,255,60,.4)}.product-orbit strong{font-size:70px}.cover-image-stage{display:grid;place-items:center;min-height:300px;max-height:74vh;overflow:auto;border-radius:18px;background:#f5f6f2}.cover-image-stage img{display:block;max-width:100%;max-height:74vh;object-fit:contain}.detail-info{min-width:0}.detail-title{height:88px;display:flex;align-items:flex-start;justify-content:space-between;padding-top:4px}.detail-title h2{margin:0;font-size:30px}.detail-title p{margin:8px 0;color:var(--dl-text-secondary);font-size:13px}.detail-title>strong{font-size:22px}.info-card{min-height:322px;padding:19px 22px}.info-card h3,.records-card h3{margin:0;font-size:17px}.category-line{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:13px 14px;border-radius:22px;background:#f5f6f2}.category-pill,.asset-tag{display:inline-flex;min-height:28px;align-items:center;border:1px solid transparent;border-radius:999px;padding:0 12px;font-size:11px;font-weight:700;white-space:nowrap}.tag-list{min-width:0;display:flex;justify-content:flex-end;gap:8px;overflow:hidden}.asset-tag.empty{background:#eceee9;color:var(--dl-muted)}.tag-icon{margin-right:5px}.info-card dl{display:grid;grid-template-columns:1fr 1fr;gap:13px 42px;margin-top:18px}.info-card dl div{min-width:0;display:flex;flex-direction:column;gap:5px}.info-card dl .wide{grid-column:1/-1}.info-card dt{color:var(--dl-text-secondary);font-size:10px}.info-card dd{margin:0;overflow:hidden;color:var(--dl-text);font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.info-card .wide dd{white-space:normal;line-height:1.7}.detail-related-links{display:flex;flex-wrap:wrap;gap:7px}.detail-related-links a{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:999px;background:#edf5e3;color:#45660c;font-size:10px;line-height:1.2;text-decoration:none}.detail-related-links a:hover{background:#e2f5ca;text-decoration:none}.detail-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px}.metric-block{min-height:116px;padding:17px 19px}.metric-block span{color:var(--dl-text-secondary);font-size:12px}.metric-block strong{display:block;margin-top:8px;font-size:23px}.metric-block small{display:block;margin-top:7px;color:var(--dl-muted);font-size:10px}.records-card{margin-top:24px;padding:20px 22px}.card-heading{display:flex;justify-content:space-between;align-items:center}.card-heading>div{display:flex;flex-direction:column;gap:5px}.card-heading span{color:var(--dl-muted);font-size:10px}.table-scroll{margin-top:18px;overflow-x:auto}.records-card table{width:100%;min-width:920px;border-collapse:collapse;font-size:11px}.sale-records table{min-width:960px}.records-card th{padding:10px 8px;border-bottom:1px solid #dfe2db;color:var(--dl-text-secondary);font-size:10px;font-weight:600;text-align:left;white-space:nowrap}.records-card td{padding:13px 8px;border-bottom:1px solid #eceee9;color:var(--dl-text-secondary);vertical-align:middle;white-space:nowrap}.records-card tbody tr:last-child td{border-bottom:0}.records-card td strong,.records-card td b{color:var(--dl-text)}.records-card a{color:var(--dl-text);font-weight:600;text-decoration:none}.records-card a:hover{text-decoration:underline}.record-tag{display:inline-flex;min-height:25px;align-items:center;padding:0 9px;border-radius:999px;background:var(--dl-bg-alt);color:var(--dl-text-secondary);font-size:10px;font-weight:600}.record-tag.primary{background:var(--dl-accent-soft);color:var(--dl-text)}.record-tag.sale{background:#fff1df;color:#a96a00}.income{color:var(--dl-success)!important}.cost-metrics{display:flex;flex-direction:column;gap:3px}.cost-metrics span{color:var(--dl-muted);font-size:9px}.cost-metrics .loss{color:var(--dl-danger)}.cost-metrics .gain{color:var(--dl-success)}.cost-metrics .neutral{color:var(--dl-text-secondary)}.row-actions{display:flex;align-items:center;gap:8px}.inline-empty{height:88px;display:grid;place-items:center;color:var(--dl-muted);font-size:12px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.dialog-form :deep(.el-input-number),.dialog-form :deep(.el-date-editor),.dialog-form :deep(.el-select){width:100%}.attachment-editor{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.attachment-chip{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;border-radius:999px;background:#f1f3ee;color:var(--dl-text-secondary);font-size:11px;font-weight:700}.attachment-chip button{width:18px;height:18px;border:0;border-radius:50%;background:#fff;color:var(--dl-danger);cursor:pointer}.attachment-viewer{display:grid;grid-template-columns:170px 1fr;gap:18px;min-height:430px}.attachment-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto}.attachment-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e1e4dd;border-radius:18px;background:#f7f8f5;color:var(--dl-text-secondary);cursor:pointer;text-align:left}.attachment-list-item.active{border-color:var(--dl-accent);background:var(--dl-accent-soft);color:var(--dl-text)}.attachment-list-item span{font-size:10px}.attachment-list-item strong{font-size:12px}.attachment-preview{min-width:0;height:430px;display:grid;place-items:center;overflow:hidden;border-radius:24px;background:#f5f6f2}.preview-image{width:100%;height:100%;display:grid;place-items:center}.preview-image :deep(img){max-width:100%;max-height:430px;object-fit:contain}.preview-frame{width:100%;height:100%;border:0;background:#fff}
 .detail-title{height:54px}.title-category-line{margin:0 0 16px}.info-card{min-height:0}.sale-records table{min-width:900px;font-size:10px}.sale-records th,.sale-records td{padding-left:5px;padding-right:5px}.record-tag.sale-primary{background:var(--dl-accent-soft);color:#4b6d09}.record-tag.sale-accessory{background:#fff1df;color:#a96a00}.sale-wizard-button{background:#0f1410;color:#fff}.sale-wizard-button:hover:not(:disabled){background:#2b3528}.dialog-footer-actions{display:flex;justify-content:flex-end;gap:10px}.dialog-footer-actions :deep(button){display:inline-flex;justify-content:center;align-items:center;box-sizing:border-box;min-width:94px;height:36px;padding:0 14px;font-size:12px}.attachment-editor{align-items:stretch}.attachment-editor :deep(.attachment-dropzone){flex:1 1 100%}
 @media (max-width:1100px){.detail-top{grid-template-columns:1fr}.product-visual{height:360px}.detail-metrics{grid-template-columns:repeat(2,1fr)}}@media (max-width:760px){.detail-metrics,.info-card dl,.dialog-grid,.attachment-viewer{grid-template-columns:1fr}.category-line{align-items:flex-start;flex-direction:column}.tag-list{justify-content:flex-start;flex-wrap:wrap}.attachment-preview{height:320px}.preview-image :deep(img){max-height:320px}}
+.detail-title{height:auto;min-height:54px;gap:16px}.detail-title>div{min-width:0}.detail-title h2{overflow-wrap:anywhere}.detail-title>strong{flex:none;white-space:nowrap}
+@media(min-width:1101px) and (max-width:1280px){.detail-top{grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr);gap:28px}.detail-title h2{font-size:26px}.detail-title>strong{font-size:19px}}
 </style>

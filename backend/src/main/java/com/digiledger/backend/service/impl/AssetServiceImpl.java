@@ -158,6 +158,8 @@ public class AssetServiceImpl implements AssetService {
                 asset.getModel(),
                 asset.getSerialNo(),
                 asset.getSpecifications(),
+                asset.getPredecessorAssetId(),
+                buildPredecessor(asset, primaryPurchase(purchases)),
                 asset.getStatus(),
                 asset.getPurchaseDate(),
                 asset.getRetiredDate(),
@@ -176,6 +178,72 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
+    public List<AssetPredecessorDTO> predecessorOptions(Long categoryId, String keyword, Long excludeId) {
+        if (categoryId == null || dictCategoryMapper.findById(categoryId) == null) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "请先选择有效分类");
+        }
+        return assetMapper.findPredecessorOptions(categoryId, keyword == null ? null : keyword.trim(), excludeId)
+                .stream().filter(candidate -> !leadsTo(candidate, excludeId))
+                .map(candidate -> predecessorSummary(candidate, null)).toList();
+    }
+
+    private boolean leadsTo(DeviceAsset candidate, Long targetId) {
+        Set<Long> visited = new HashSet<>();
+        while (candidate != null) {
+            if (Objects.equals(candidate.getId(), targetId) || !visited.add(candidate.getId())) return true;
+            candidate = candidate.getPredecessorAssetId() == null ? null
+                    : assetMapper.findById(candidate.getPredecessorAssetId());
+        }
+        return false;
+    }
+
+    private AssetPredecessorDTO buildPredecessor(DeviceAsset asset, Purchase currentPrimary) {
+        if (asset.getPredecessorAssetId() == null) return null;
+        DeviceAsset predecessor = assetMapper.findById(asset.getPredecessorAssetId());
+        return predecessor == null ? null : predecessorSummary(predecessor, currentPrimary);
+    }
+
+    private Purchase primaryPurchase(List<Purchase> purchases) {
+        return purchases.stream().filter(p -> "PRIMARY".equals(p.getType()))
+                .min(Comparator.comparing(Purchase::getPurchaseDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Purchase::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .orElse(null);
+    }
+
+    private AssetPredecessorDTO predecessorSummary(DeviceAsset predecessor, Purchase currentPrimary) {
+        Purchase previousPrimary = primaryPurchase(purchaseMapper.findByAssetId(predecessor.getId()));
+        BigDecimal price = previousPrimary == null ? null : previousPrimary.getPrice();
+        LocalDate date = previousPrimary == null ? null : previousPrimary.getPurchaseDate();
+        BigDecimal delta = currentPrimary == null || currentPrimary.getPrice() == null || price == null ? null
+                : currentPrimary.getPrice().subtract(price);
+        Long gap = currentPrimary == null || currentPrimary.getPurchaseDate() == null || date == null ? null
+                : ChronoUnit.DAYS.between(date, currentPrimary.getPurchaseDate());
+        return new AssetPredecessorDTO(predecessor.getId(), predecessor.getName(), predecessor.getCategoryId(),
+                predecessor.getCategoryPath(), predecessor.getBrand(), predecessor.getModel(), predecessor.getStatus(),
+                storagePathHelper.toBrowserUrl(predecessor.getCoverImageUrl()), price, date, delta, gap);
+    }
+
+    /** 锁住关联链，避免并发编辑互相引用；同类别、非自身、无循环。 */
+    private void validatePredecessor(Long assetId, Long categoryId, Long predecessorId) {
+        Set<Long> visited = new HashSet<>();
+        Long cursor = predecessorId;
+        while (cursor != null) {
+            if (Objects.equals(cursor, assetId)) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "上代产品不能关联自身或形成循环");
+            }
+            if (!visited.add(cursor)) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "上代产品关联链存在循环");
+            }
+            DeviceAsset predecessor = assetMapper.findByIdForUpdate(cursor);
+            if (predecessor == null) throw new BizException(ErrorCode.VALIDATION_ERROR, "上代产品不存在或已被删除");
+            if (Objects.equals(cursor, predecessorId) && !Objects.equals(predecessor.getCategoryId(), categoryId)) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "上代产品必须与当前物品同类别，请重新选择或取消关联");
+            }
+            cursor = predecessor.getPredecessorAssetId();
+        }
+    }
+
+    @Override
     @Transactional
     public Long createAsset(AssetCreateRequest request) {
         validateDates(request);
@@ -185,6 +253,7 @@ public class AssetServiceImpl implements AssetService {
         DictBrand brand = resolveBrand(request.getBrandId());
         List<Long> tagIds = validateTagIds(request.getTagIds());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
+        validatePredecessor(null, category.getId(), asset.getPredecessorAssetId());
         assetMapper.insert(asset);
         persistTags(asset.getId(), tagIds);
         persistPurchases(asset.getId(), request.getPurchases(), new HashMap<>());
@@ -195,8 +264,13 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public void updateAsset(Long id, AssetCreateRequest request) {
-        Optional.ofNullable(assetMapper.findById(id))
+        DeviceAsset existing = Optional.ofNullable(assetMapper.findById(id))
                 .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        if (existing.getPredecessorAssetId() != null || request.getPredecessorAssetId() != null
+                || !Objects.equals(existing.getCategoryId(), request.getCategoryId())) {
+            existing = Optional.ofNullable(assetMapper.findByIdForUpdate(id))
+                    .orElseThrow(() -> new BizException(ErrorCode.ASSET_NOT_FOUND));
+        }
         validateDates(request);
         Map<Long, DictCategory> categoryMap = loadCategoryMap();
         DictCategory category = resolveCategory(request.getCategoryId(), categoryMap);
@@ -205,6 +279,12 @@ public class AssetServiceImpl implements AssetService {
         List<Long> tagIds = validateTagIds(request.getTagIds());
         DeviceAsset asset = buildDeviceAsset(request, category, categoryPath, brand);
         asset.setId(id);
+        if (!request.isPredecessorAssetSpecified()) asset.setPredecessorAssetId(existing.getPredecessorAssetId());
+        validatePredecessor(id, category.getId(), asset.getPredecessorAssetId());
+        if (!Objects.equals(existing.getCategoryId(), category.getId())
+                && !assetMapper.findSuccessorsInOtherCategoriesForUpdate(id, category.getId()).isEmpty()) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "该物品已被关联为上代产品，请先解除关联再修改分类");
+        }
         assetMapper.update(asset);
         persistTags(id, tagIds);
         syncPurchases(id, request.getPurchases(), new HashMap<>());
@@ -345,6 +425,7 @@ private DeviceAsset buildDeviceAsset(AssetCreateRequest request, DictCategory ca
         asset.setModel(request.getModel());
         asset.setSerialNo(request.getSerialNo());
         asset.setSpecifications(request.getSpecifications());
+        asset.setPredecessorAssetId(request.getPredecessorAssetId());
         asset.setStatus(request.getStatus());
         asset.setPurchaseDate(request.getPurchaseDate());
         // 历史库仍保留 enabled_date 的 NOT NULL 约束；新建物品以购买日作为启用日。

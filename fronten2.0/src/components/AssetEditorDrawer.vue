@@ -12,6 +12,7 @@
           <el-form-item label="标签"><el-select v-model="form.tagIds" multiple filterable clearable collapse-tags :max-collapse-tags="3" placeholder="选择标签（可多选）"><el-option v-for="tag in flatTags" :key="tag.id" :label="tag.name" :value="tag.id" /></el-select></el-form-item>
         </div>
         <el-form-item label="配置规格（选填）"><el-input v-model="form.specifications" type="textarea" :rows="4" placeholder="例如：CPU、内存、存储容量、屏幕等，可自由填写" /></el-form-item>
+        <el-form-item label="上代产品（选填）"><AssetPredecessorPicker v-model="form.predecessorAssetId" :category-id="form.categoryId" :exclude-asset-id="workspace.editingAsset?.id" :selected="workspace.editingAsset?.predecessorAsset" :current-purchase="primaryPurchase" @preview="previewPredecessor" /></el-form-item>
       </section>
       <section class="form-section">
         <div class="section-heading"><div><strong>购买与质保</strong><span>填写主商品的订单信息；质保到期日会自动计算。</span></div></div>
@@ -57,6 +58,7 @@
     </el-form>
     <template #footer><button class="secondary-button" @click="workspace.closeAssetEditor()">取消</button><PrimaryButton label="保存物品" :loading="saving" @click="submit" /></template>
   </el-drawer>
+  <AssetPreviewDialog v-model="predecessorPreviewOpen" :asset-id="predecessorPreviewId" new-tab />
   <el-dialog v-model="imageSearchOpen" title="从外接服务搜图" width="760px">
     <div class="image-search-bar">
       <el-select v-model="imageProvider" @change="resetImageSearchResults">
@@ -107,22 +109,27 @@ import PrimaryButton from './PrimaryButton.vue'
 import AttachmentDropzone from './AttachmentDropzone.vue'
 import QuickBrandSelect from './QuickBrandSelect.vue'
 import QuickCategorySelect from './QuickCategorySelect.vue'
+import AssetPredecessorPicker from './AssetPredecessorPicker.vue'
+import AssetPreviewDialog from './AssetPreviewDialog.vue'
+import { primaryPurchaseRecord } from '@/utils/predecessor'
 
 type AssetForm = Omit<AssetPayload, 'purchases'> & { purchases: PurchaseRecord[] }
 const workspace = useWorkspaceStore(); const formRef = ref<FormInstance>(); const saving = ref(false); const uploading = ref(false)
 const brands = ref<BrandItem[]>([]); const categoryOptions = ref<CategoryNode[]>([]); const platforms = ref<PlatformItem[]>([]); const tags = ref<TagNode[]>([]); const statuses: AssetStatus[] = ['使用中', '已闲置', '待出售', '已出售', '已丢弃']
 const dateShortcuts = [{ text: '今天', value: () => new Date() }]
 const blankPurchase = (): PurchaseRecord => ({ type: 'PRIMARY', price: 0, shippingCost: 0, quantity: 1, purchaseDate: new Date().toISOString().slice(0, 10), warrantyMonths: 12, attachments: [] })
-const blank = (): AssetForm => ({ name: '', categoryId: undefined as unknown as number, status: '使用中', tagIds: [], relatedLinks: [], purchases: [blankPurchase()] })
+const blank = (): AssetForm => ({ name: '', categoryId: undefined as unknown as number, status: '使用中', predecessorAssetId: null, tagIds: [], relatedLinks: [], purchases: [blankPurchase()] })
 const form = reactive<AssetForm>(blank())
 const imageSearchOpen=ref(false),imageSearching=ref(false),imageSearched=ref(false),imageSelecting=ref(false),imageQuery=ref(''),imageProvider=ref(''),imageResults=ref<ExternalApiTestItem[]>([]),enabledImageProviders=ref<ImageSearchProvider[]>([])
 const imageSearchMode=ref<'KEYWORD'|'CLIP'>('CLIP'),imageSearchPage=ref(1),imageSearchTotalPages=ref(1),imageSearchTotalCount=ref(0)
 const coverPreviewOpen=ref(false)
+const predecessorPreviewOpen=ref(false), predecessorPreviewId=ref<number>()
+function previewPredecessor(id: number) { predecessorPreviewId.value = id; predecessorPreviewOpen.value = true }
 const attachmentPreviewOpen=ref(false),attachmentPreviewIndex=ref(0)
 const currentAttachment = computed(() => primaryPurchase.value.attachments?.[attachmentPreviewIndex.value])
 const removeBgPreviewOpen=ref(false),removeBgLoading=ref(false),removeBgApplying=ref(false),removeBgPreviewUrl=ref(''),removeBgPreviewFile=ref<File>()
 const isMtPhotos = computed(() => imageProvider.value === 'MT_PHOTOS')
-const primaryPurchase = computed<PurchaseRecord>(() => form.purchases.find(purchase => purchase.type === 'PRIMARY') || form.purchases[0]!)
+const primaryPurchase = computed<PurchaseRecord>(() => primaryPurchaseRecord(form.purchases) || form.purchases[0]!)
 const manualUseYears = computed({ get: () => Math.floor((form.manualUseMonths || 0) / 12), set: value => setManualUseDuration(value, manualUseRemainingMonths.value) })
 const manualUseRemainingMonths = computed({ get: () => (form.manualUseMonths || 0) % 12, set: value => setManualUseDuration(manualUseYears.value, value) })
 const extraPurchases = computed(() => form.purchases.map((purchase, index) => ({ purchase, index })).filter(({ purchase }) => purchase.type !== 'PRIMARY'))
@@ -131,7 +138,7 @@ const rules: FormRules = { name: [{ required: true, message: '请输入物品名
 
 function normalizePurchases(purchases: PurchaseRecord[] = []) {
   const copied = purchases.map(purchase => ({ ...purchase }))
-  const primaryIndex = copied.findIndex(purchase => purchase.type === 'PRIMARY')
+  const primaryIndex = copied.indexOf(primaryPurchaseRecord(copied)!)
   if (primaryIndex > 0) copied.unshift(copied.splice(primaryIndex, 1)[0])
   if (primaryIndex < 0) copied.unshift(blankPurchase())
   return copied
@@ -153,16 +160,17 @@ function editorValues(): AssetForm {
     categoryId: workspace.editingAsset.categoryId ?? (undefined as unknown as number),
     brand: undefined,
     brandId: workspace.editingAsset.brand?.id ?? undefined,
+    predecessorAssetId: workspace.editingAsset.predecessorAssetId ?? null,
     tagIds: workspace.editingAsset.tags?.map(tag => tag.id) || [],
     purchases: normalizePurchases(workspace.editingAsset.purchases)
   }
 }
-watch(() => workspace.assetEditorOpen, open => { if (open) replaceForm(editorValues()) })
+watch(() => workspace.assetEditorOpen, open => { if (open) replaceForm(editorValues()); else predecessorPreviewOpen.value = false })
 function fillBlankNameFromBrandAndModel(){if(form.name.trim())return;const brand=brands.value.find(item=>item.id===form.brandId)?.name?.trim();const model=form.model?.trim();if(brand&&model)form.name=`${brand}-${model}`}
 watch([()=>form.brandId,()=>form.model,brands],fillBlankNameFromBrandAndModel)
 // 后端会以主商品购买记录的日期回写物品购买日期，两个字段必须始终保持一致。
 watch(() => form.purchaseDate, purchaseDate => {
-  if (purchaseDate && primaryPurchase.value) primaryPurchase.value.purchaseDate = purchaseDate
+  if (primaryPurchase.value) primaryPurchase.value.purchaseDate = purchaseDate || ''
 })
 function warrantyExpiryDate(purchaseDate?: string, warrantyMonths?: number) {
   if (!purchaseDate || warrantyMonths === undefined || warrantyMonths === null) return undefined
@@ -213,6 +221,7 @@ function buildAssetPayload(): AssetPayload {
     model: form.model?.trim() || undefined,
     serialNo: form.serialNo?.trim() || undefined,
     specifications: form.specifications?.trim() || '',
+    predecessorAssetId: form.predecessorAssetId ?? null,
     status: form.status,
     purchaseDate: form.purchaseDate || undefined,
     retiredDate: form.retiredDate || undefined,

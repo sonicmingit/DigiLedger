@@ -16,7 +16,7 @@ import java.util.Set;
 @Service
 public class OpenAssetService {
     static final Set<String> FIELDS = Set.of("name", "categoryId", "brandId", "brand", "model", "serialNo",
-            "specifications", "status", "purchaseDate", "retiredDate", "coverImageUrl", "relatedLinks",
+            "specifications", "predecessorAssetId", "status", "purchaseDate", "retiredDate", "coverImageUrl", "relatedLinks",
             "manualUseMonths", "notes", "tagIds");
     private final AssetService assets;
     private final AssetMapper mapper;
