@@ -63,7 +63,8 @@
           </div>
         </section>
 
-        <AssetPredecessorSummary :predecessor="asset.predecessorAsset" :current-purchase="primaryPurchase" @manage="edit" @preview="previewPredecessor" />
+        <AssetPredecessorSummary :predecessor="asset.predecessorAsset" :current-purchase="primaryPurchase" @manage="managePredecessor" @preview="previewPredecessor" />
+        <AssetPredecessorManageDialog v-if="asset" v-model="predecessorManageOpen" :asset="asset" :category-label="displayCategoryPath" @saved="load" />
 
         <section class="detail-metrics" aria-label="物品使用指标">
           <article class="card metric-block"><span>总投入</span><strong>{{ money(asset.totalInvest) }}</strong><small>包含主商品、配件与服务</small></article>
@@ -255,6 +256,7 @@ import PrimaryButton from '@/components/PrimaryButton.vue'
 import AsyncState from '@/components/AsyncState.vue'
 import AttachmentDropzone from '@/components/AttachmentDropzone.vue'
 import AssetPredecessorSummary from '@/components/AssetPredecessorSummary.vue'
+import AssetPredecessorManageDialog from '@/components/AssetPredecessorManageDialog.vue'
 import AssetPreviewDialog from '@/components/AssetPreviewDialog.vue'
 import { primaryPurchaseRecord } from '@/utils/predecessor'
 
@@ -273,6 +275,7 @@ const saving = ref(false)
 const statusDialog = ref(false)
 const coverPreviewOpen = ref(false)
 const predecessorPreviewOpen = ref(false), predecessorPreviewId = ref<number>()
+const predecessorManageOpen = ref(false)
 let loadId = 0
 function previewPredecessor(id: number) { predecessorPreviewId.value = id; predecessorPreviewOpen.value = true }
 const purchaseDialog = ref(false)
@@ -370,6 +373,7 @@ async function load() {
 }
 
 function edit() { if (asset.value) workspace.openAssetEditor(asset.value) }
+function managePredecessor() { predecessorManageOpen.value = true }
 function openCoverPreview() { if (asset.value?.coverImageUrl) coverPreviewOpen.value = true }
 async function execute(task: () => Promise<unknown>, done: () => void, message = '操作已保存') {
   saving.value = true

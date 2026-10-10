@@ -187,6 +187,15 @@ public class AssetServiceImpl implements AssetService {
                 .map(candidate -> predecessorSummary(candidate, null)).toList();
     }
 
+    @Override
+    @Transactional
+    public void updateAssetPredecessor(Long id, Long predecessorId) {
+        DeviceAsset asset = assetMapper.findByIdForUpdate(id);
+        if (asset == null) throw new BizException(ErrorCode.ASSET_NOT_FOUND);
+        validatePredecessor(id, asset.getCategoryId(), predecessorId);
+        assetMapper.updatePredecessor(id, predecessorId);
+    }
+
     private boolean leadsTo(DeviceAsset candidate, Long targetId) {
         Set<Long> visited = new HashSet<>();
         while (candidate != null) {

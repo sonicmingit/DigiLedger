@@ -1,6 +1,8 @@
 package com.digiledger.backend.controller;
 
 import com.digiledger.backend.common.ApiResponse;
+import com.digiledger.backend.common.BizException;
+import com.digiledger.backend.common.ErrorCode;
 import com.digiledger.backend.model.dto.asset.AssetCreateRequest;
 import com.digiledger.backend.model.dto.asset.AssetDetailDTO;
 import com.digiledger.backend.model.dto.asset.AssetPredecessorDTO;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -120,6 +123,26 @@ public class AssetController {
     public ApiResponse<Void> updateStatus(@PathVariable(name = "id") @NotNull @Min(1) Long id,
                                           @RequestBody @Valid AssetStatusUpdateRequest request) {
         assetService.updateAssetStatus(id, request.getStatus());
+        return ApiResponse.success();
+    }
+
+    /** 仅更新上代产品关联，字段必传；null 表示解除关联。 */
+    @PatchMapping("/{id}/predecessor")
+    public ApiResponse<Void> updatePredecessor(
+            @PathVariable(name = "id") @NotNull @Min(1) Long id,
+            @RequestBody JsonNode request) {
+        if (request == null || !request.has("predecessorAssetId")) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "请提供 predecessorAssetId；null 可解除关联");
+        }
+        JsonNode value = request.get("predecessorAssetId");
+        Long predecessorId = null;
+        if (!value.isNull()) {
+            if (!value.isIntegralNumber() || !value.canConvertToLong() || value.longValue() <= 0) {
+                throw new BizException(ErrorCode.VALIDATION_ERROR, "上代产品ID必须为正数或 null");
+            }
+            predecessorId = value.longValue();
+        }
+        assetService.updateAssetPredecessor(id, predecessorId);
         return ApiResponse.success();
     }
 

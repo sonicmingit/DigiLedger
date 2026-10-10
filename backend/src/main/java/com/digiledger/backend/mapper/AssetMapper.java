@@ -29,6 +29,8 @@ public interface AssetMapper {
 
     List<Long> findSuccessorsInOtherCategoriesForUpdate(@Param("id") Long id, @Param("categoryId") Long categoryId);
 
+    int updatePredecessor(@Param("id") Long id, @Param("predecessorId") Long predecessorId);
+
     @Select("SELECT * FROM device_asset WHERE id = #{id} FOR UPDATE")
     @ResultMap("assetResultMap")
     DeviceAsset findByIdForUpdate(@Param("id") Long id);

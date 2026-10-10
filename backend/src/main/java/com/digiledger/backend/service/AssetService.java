@@ -21,6 +21,8 @@ public interface AssetService {
 
     List<AssetPredecessorDTO> predecessorOptions(Long categoryId, String keyword, Long excludeId);
 
+    void updateAssetPredecessor(Long id, Long predecessorId);
+
     Long createAsset(AssetCreateRequest request);
 
     void updateAsset(Long id, AssetCreateRequest request);

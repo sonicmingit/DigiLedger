@@ -129,7 +129,9 @@ type ServerProfile = {
 ## 6. 上代产品关联（PC 物品编辑与详情）
 
 - `POST /api/assets`、`PUT /api/assets/{id}` 新增可选 `predecessorAssetId`；省略字段保留原关联，显式 `null` 解除关联。开放 API 的物品 PATCH 同样支持此字段。
+- `PATCH /api/assets/{id}/predecessor` 只更新上代产品关联；请求必须含 `predecessorAssetId`，传 `null` 表示解除关联。
 - `GET /api/assets/predecessor-options?category_id={id}&q={关键词}&exclude_asset_id={当前物品ID}` 按同一分类 ID 搜索名称、品牌、型号，最多返回 20 条，排除自身及会形成循环的物品。
+- `PATCH /api/assets/{id}/predecessor` 单独保存关联，只更新物品关联列；锁定当前物品和关联链并沿用同类别、无自身和无循环校验。响应不含完整编辑物品的必填字段。
 - 详情增加 `predecessorAssetId` 与可空 `predecessorAsset`，后者包含 `id/name/categoryId/categoryPath/brandName/model/status/coverImageUrl/primaryPrice/primaryPurchaseDate/primaryPriceDelta/purchaseGapDays`。
 - 差价 = 当前主商品购买价 − 上代主商品购买价；不含运费、配件和服务。购买间隔 = 两件主商品购买日期之间的自然日数。存在多条主商品记录时，取最早购买日期，同日取 ID 较大的记录。
 - 缺少主商品价格或日期，对应指标返回 `null`；零价格、零天数保留。负间隔保留符号，页面提示核对日期。

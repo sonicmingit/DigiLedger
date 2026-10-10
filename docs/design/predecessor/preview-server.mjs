@@ -44,6 +44,17 @@ createServer(async (req, res) => {
       const categoryId = Number(url.searchParams.get('category_id')), exclude = Number(url.searchParams.get('exclude_asset_id')), q = (url.searchParams.get('q') || '').toLowerCase()
       return send([...assets.values()].filter(a => a.categoryId === categoryId && a.id !== exclude && a.predecessorAssetId !== exclude && `${a.name} ${a.model}`.toLowerCase().includes(q)).map(a => summary(a)))
     }
+    const predecessorUpdate = url.pathname.match(/^\/api\/assets\/(\d+)\/predecessor$/)
+    if (predecessorUpdate && req.method === 'PATCH') {
+      const asset = assets.get(Number(predecessorUpdate[1]))
+      let body = ''; for await (const chunk of req) body += chunk
+      const payload = JSON.parse(body), nextId = payload.predecessorAssetId
+      const previous = nextId == null ? null : assets.get(nextId)
+      if (!asset) return send(null, 404, '物品不存在')
+      if (nextId != null && (!previous || previous.categoryId !== asset.categoryId || previous.id === asset.id)) return send(null, 400, '上代产品必须与当前物品同类别且不能为自身')
+      asset.predecessorAssetId = nextId ?? null
+      return send(null)
+    }
     const match = url.pathname.match(/^\/api\/assets\/(\d+)$/)
     if (match) {
       const id = Number(match[1]), asset = assets.get(id)

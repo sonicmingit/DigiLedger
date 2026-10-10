@@ -102,6 +102,11 @@
         FOR UPDATE
     </select>
 
+    <update id="updatePredecessor">
+        UPDATE device_asset SET predecessor_asset_id = #{predecessorId}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
     <insert id="insert" parameterType="com.digiledger.backend.model.entity.DeviceAsset" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_asset (
             name, category_id, category_path, brand_id, brand, model, serial_no, specifications, predecessor_asset_id, status,
