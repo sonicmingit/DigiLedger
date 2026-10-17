@@ -29,6 +29,6 @@ class AgentResourcesTest {
                 }
             }
         }
-        assertEquals(java.util.Set.of("digiledger/SKILL.md", "digiledger/scripts/digiledger.py", "digiledger/references/api.md", "digiledger/references/openapi.json"), files);
+        assertEquals(java.util.Set.of("digiledger/SKILL.md", "digiledger/scripts/digiledger.py", "digiledger/references/api.md", "digiledger/references/mcp.md", "digiledger/references/openapi.json"), files);
     }
 }

@@ -13,7 +13,7 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping("/api/agent-resources")
 public class AgentResourcesController {
     private static final String ROOT = "agent-skill/digiledger/";
-    private static final String[] FILES = {"SKILL.md", "scripts/digiledger.py", "references/api.md", "references/openapi.json"};
+    private static final String[] FILES = {"SKILL.md", "scripts/digiledger.py", "references/api.md", "references/mcp.md", "references/openapi.json"};
 
     @GetMapping("/api.md") public ResponseEntity<byte[]> documentation() throws IOException {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/plain;charset=UTF-8"))
@@ -21,6 +21,10 @@ public class AgentResourcesController {
     }
     @GetMapping("/openapi.json") public ResponseEntity<byte[]> openapi() throws IOException {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(read("references/openapi.json"));
+    }
+    @GetMapping("/mcp.md") public ResponseEntity<byte[]> mcp() throws IOException {
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/plain;charset=UTF-8"))
+                .body(read("references/mcp.md"));
     }
     @GetMapping("/digiledger-skill.zip") public ResponseEntity<byte[]> skill() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();

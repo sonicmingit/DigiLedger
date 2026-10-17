@@ -40,7 +40,7 @@ const tabOptions = [
   { label: '品牌管理', value: 'brands' },
   { label: '上传测试', value: 'upload' },
   { label: '智能找图', value: 'image-search' },
-  { label: '开放 API / Agent Skill', value: 'open-api' }
+  { label: '开放 API / Skill / MCP', value: 'open-api' }
 ]
 const { load } = useDictionaries()
 

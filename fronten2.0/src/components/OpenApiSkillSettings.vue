@@ -5,11 +5,11 @@
       <header class="intro"><div><span class="eyebrow">DIGILEDGER · AGENT ACCESS</span><h2>让 Agent 帮你管理物品</h2><p>查询库存、整理设备信息，或把一句话中的购买信息直接录入账本。</p></div><span class="state-badge" :class="{ enabled: savedEnabled }">{{ savedEnabled ? '开放 API 已启用' : '开放 API 未启用' }}</span></header>
       <div class="access-grid">
         <section class="access-card">
-          <h3>访问配置</h3><p class="hint">所有开放接口均需 Bearer Token。先生成 Token，再启用访问。</p>
+          <h3>访问配置</h3><p class="hint">Skill 与 MCP 共用 Bearer Token、启用状态和访问权限。先生成 Token，再启用访问。</p>
           <el-form label-position="top" @submit.prevent>
-            <el-form-item label="开放 API 地址"><el-input v-model="connectionUrl" /><span class="hint">填写 Agent 能访问的系统地址，保留 /api/open/v1 后缀。</span></el-form-item>
+            <el-form-item label="Skill / 开放 API 地址"><el-input v-model="connectionUrl" type="url" /><span class="hint">填写 Agent 能访问的系统地址，保留 /api/open/v1 后缀。连接地址保存在当前浏览器。</span></el-form-item>
             <el-form-item label="访问权限"><el-radio-group v-model="settings.allowWrite" :disabled="saving"><el-radio :value="false" :label="false">只读 · 查询物品</el-radio><el-radio :value="true" :label="true">读写 · 新增、编辑、删除</el-radio></el-radio-group></el-form-item>
-            <div class="toggle-row"><div><strong>启用开放 API</strong><p class="hint">关闭后，所有对外物品请求都会被拒绝。</p></div><el-switch v-model="settings.enabled" :disabled="!settings.tokenConfigured || saving" /></div>
+            <div class="toggle-row"><div><strong>启用开放 API / MCP</strong><p class="hint">关闭后，Skill 与 MCP 的物品请求都会被拒绝。</p></div><el-switch v-model="settings.enabled" :disabled="!settings.tokenConfigured || saving" /></div>
             <div class="token-status"><span>{{ settings.tokenConfigured ? `已配置 Token：${settings.tokenPrefix || ''}…` : '尚未生成 Token' }}</span><el-button :loading="rotating" :disabled="saving || loading" @click="rotate">{{ settings.tokenConfigured ? '重新生成 Token' : '生成 Token' }}</el-button></div>
             <div v-if="token" class="token-box"><strong>请保存此 Token，离开页面后无法再次查看</strong><el-input :model-value="token" type="password" show-password readonly autocomplete="off" /><div><el-button size="small" @click="copy(token)">复制 Token</el-button><el-button size="small" text @click="token=''">已保存，隐藏</el-button></div></div>
             <div class="save-row"><span class="hint">{{ settings.allowWrite ? '读写权限可修改当前账本的所有物品。' : '只读权限适合日常查询。' }}</span><el-button type="primary" :loading="saving" :disabled="loading || rotating" @click="save">保存配置</el-button></div>
@@ -25,6 +25,13 @@
           </ol>
         </section>
       </div>
+      <section class="access-card mcp-card">
+        <div class="reference-heading"><div><span class="eyebrow">REMOTE MCP</span><h3>通过 MCP 连接账本</h3><p class="hint">使用 Streamable HTTP（JSON 响应），直接远程连接，无需安装 Skill 或启动本地进程。</p></div><a :href="resourceUrl('mcp.md')" target="_blank" rel="noopener">MCP 接入说明 ↗</a></div>
+        <div class="mcp-grid">
+          <div class="mcp-connection"><label for="digiledger-mcp-url">MCP 服务地址</label><el-input id="digiledger-mcp-url" v-model="mcpUrl" type="url" placeholder="https://你的系统地址/api/open/mcp" /><p class="hint">可填写域名、IP、端口或反向代理地址，默认路径为 /api/open/mcp。修改后点击“保存配置”，地址保存在当前浏览器；自定义路径需由网关转发至默认路径。</p><dl class="connection-facts"><div><dt>传输方式</dt><dd>Streamable HTTP</dd></div><div><dt>身份验证</dt><dd>Authorization: Bearer &lt;同一个 Token&gt;</dd></div><div><dt>可用操作</dt><dd>物品查询、详情、分类、品牌、平台、标签；读写权限另可新增、编辑、删除。</dd></div></dl></div>
+          <div><strong class="config-label">客户端配置示例</strong><div class="code-block"><pre>{{ mcpExample }}</pre><el-button size="small" @click="copyMcp">复制 MCP 配置</el-button></div><p class="hint">将 &lt;你的 Token&gt; 替换为访问配置中生成的 Token。客户端选择 HTTP / Streamable HTTP；字段名称以客户端要求为准。仅支持旧版 SSE 的客户端需升级。</p></div>
+        </div>
+      </section>
       <section class="access-card api-reference"><div class="reference-heading"><div><h3>对外 API 文档</h3><p class="hint">基地址 /api/open/v1 · JSON 响应 {code,data,msg}</p></div><div class="doc-links"><a :href="resourceUrl('api.md')" target="_blank" rel="noopener">完整接口说明 ↗</a><a :href="resourceUrl('openapi.json')" target="_blank" rel="noopener">OpenAPI JSON ↗</a></div></div>
         <div class="table-scroll"><table><thead><tr><th>方法</th><th>路径</th><th>说明</th><th>权限</th></tr></thead><tbody><tr v-for="endpoint in endpoints" :key="endpoint.method+endpoint.path"><td><code class="method">{{ endpoint.method }}</code></td><td><code>{{ endpoint.path }}</code></td><td>{{ endpoint.description }}</td><td>{{ endpoint.write ? '读写' : '只读' }}</td></tr></tbody></table></div>
         <p class="boundary-note">Token 仅保护开放接口，当前账本内的物品共享访问。公网接入请使用 HTTPS，并将现有管理页面及内部 API 放在可信网络或网关认证之后。</p>
@@ -43,6 +50,16 @@ const apiRoot = (import.meta.env.VITE_API_BASE || '/api').replace(/\/+$/, '')
 const apiUrl = new URL(`${apiRoot}/`, window.location.href)
 const resourceUrl = (file: string) => new URL(`agent-resources/${file}`, apiUrl).href
 const connectionUrl = ref(new URL('open/v1', apiUrl).href)
+const mcpUrl = ref(new URL('open/mcp', apiUrl).href)
+const connectionStorageKey = `digiledger.agent-connections:${apiUrl.href}`
+try {
+  const saved = JSON.parse(localStorage.getItem(connectionStorageKey) || '{}')
+  if (typeof saved.apiUrl === 'string') connectionUrl.value = saved.apiUrl
+  if (typeof saved.mcpUrl === 'string') mcpUrl.value = saved.mcpUrl
+} catch { /* Storage may be unavailable; defaults remain usable. */ }
+const mcpExample = computed(() => JSON.stringify({ mcpServers: { digiledger: {
+  type: 'http', url: mcpUrl.value.trim(), headers: { Authorization: 'Bearer <你的 Token>' }
+} } }, null, 2))
 const settings = reactive<AccessSettings>({ enabled: false, allowWrite: false, tokenConfigured: false })
 const token = ref(''), loading = ref(true), saving = ref(false), rotating = ref(false), loadError = ref('')
 const savedEnabled = ref(false), shell = ref('powershell')
@@ -74,13 +91,23 @@ async function load() {
 }
 async function save() {
   saving.value = true
-  try { await request('PUT', { enabled: settings.enabled, allowWrite: settings.allowWrite }); await load(); ElMessage.success('开放 API 配置已保存') }
+  try {
+    connectionUrl.value = validConnectionUrl(connectionUrl.value)
+    mcpUrl.value = validConnectionUrl(mcpUrl.value)
+    await request('PUT', { enabled: settings.enabled, allowWrite: settings.allowWrite })
+    let stored = true
+    try { localStorage.setItem(connectionStorageKey, JSON.stringify({ apiUrl: connectionUrl.value, mcpUrl: mcpUrl.value })) }
+    catch { stored = false }
+    await load()
+    if (stored) ElMessage.success('开放 API / MCP 配置已保存')
+    else ElMessage.warning('权限配置已保存；浏览器无法保存连接地址，本次页面仍可使用')
+  }
   catch (error) { ElMessage.error(errorMessage(error)) }
   finally { saving.value = false }
 }
 async function rotate() {
   if (settings.tokenConfigured) {
-    try { await ElMessageBox.confirm('重新生成后，旧 Token 会立即失效。请同步更新 Agent 的连接配置。', '重新生成 Token', { confirmButtonText: '重新生成', cancelButtonText: '取消', type: 'warning' }) }
+    try { await ElMessageBox.confirm('重新生成后，旧 Token 会立即失效。请同步更新 Skill 和 MCP 客户端的连接配置。', '重新生成 Token', { confirmButtonText: '重新生成', cancelButtonText: '取消', type: 'warning' }) }
     catch { return }
   }
   rotating.value = true
@@ -92,9 +119,22 @@ async function copy(value: string) {
   try { await navigator.clipboard.writeText(value); ElMessage.success('已复制') }
   catch { ElMessage.warning('浏览器不支持复制，请选中文字手动复制') }
 }
+function validConnectionUrl(value: string) {
+  let url: URL
+  try { url = new URL(value.trim()) } catch { throw new Error('请填写完整的 HTTP 或 HTTPS 连接地址') }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new Error('连接地址仅支持 HTTP / HTTPS，请通过 Authorization 配置 Token，勿在地址中包含凭据、查询参数或片段')
+  }
+  return url.href.replace(/\/+$/, '')
+}
+async function copyMcp() {
+  try { mcpUrl.value = validConnectionUrl(mcpUrl.value); await copy(mcpExample.value) }
+  catch (error) { ElMessage.error(errorMessage(error)) }
+}
 onMounted(load)
 </script>
 
 <style scoped>
+.mcp-card .eyebrow{display:block;margin-bottom:8px}.mcp-card a{color:inherit;font-size:12px;text-underline-offset:4px}.mcp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:30px;margin-top:24px}.mcp-connection label,.config-label{display:block;font-size:12px;font-weight:600;margin-bottom:10px}.connection-facts{font-size:12px;margin:22px 0 0}.connection-facts div{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--el-border-color-lighter)}.connection-facts dt{color:var(--dl-text-secondary,var(--el-text-color-secondary))}.connection-facts dd{margin:0;line-height:1.7;overflow-wrap:anywhere}@media(max-width:1100px){.mcp-grid{grid-template-columns:1fr}}
 .open-api-settings{color:var(--dl-text,var(--el-text-color-primary));display:grid;gap:22px}.intro{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:8px 0 6px}.eyebrow{font-size:10px;letter-spacing:1.6px;color:var(--dl-text-secondary,var(--el-text-color-secondary));font-weight:700}.intro h2{font-size:25px;margin:10px 0}.intro p,.hint{font-size:12px;line-height:1.7;color:var(--dl-text-secondary,var(--el-text-color-secondary));margin:5px 0}.state-badge{font-size:11px;white-space:nowrap;border:1px solid var(--el-border-color-light);padding:8px 12px;border-radius:20px}.state-badge.enabled{background:var(--dl-accent-soft,#eaf7de);border-color:var(--el-color-success-light-5)}.access-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:22px}.access-card{border:1px solid var(--el-border-color-light);border-radius:18px;padding:24px;background:var(--dl-surface,var(--el-bg-color))}.access-card h3{font-size:16px;margin:0 0 8px}.access-card .el-form{margin-top:22px}.toggle-row,.token-status,.save-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px}.toggle-row strong{font-size:13px}.token-status{font-size:12px;flex-wrap:wrap;border-top:1px solid var(--el-border-color-lighter);padding-top:20px}.token-box{display:grid;gap:12px;padding:16px;margin-top:16px;border-radius:12px;background:var(--dl-accent-soft,var(--el-fill-color-light));font-size:12px}.save-row{margin-top:26px}.steps{padding-left:22px;font-size:13px;margin:22px 0 0}.steps li{padding-left:8px;margin-bottom:24px}.steps li:last-child{margin-bottom:0}.steps p{color:var(--dl-text-secondary,var(--el-text-color-secondary));font-size:12px;line-height:1.7;margin:7px 0;overflow-wrap:anywhere}code,pre{font-family:Consolas,'SFMono-Regular',monospace;font-size:12px}.download-link,.doc-links a{color:var(--dl-text,var(--el-color-primary));font-size:12px;text-decoration:underline;text-underline-offset:4px}.download-link{display:inline-block;margin-top:7px;font-weight:600}.code-block{padding:12px 14px;background:var(--dl-bg-alt,var(--el-fill-color-light));border-radius:10px}.code-block pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 10px;line-height:1.7}.steps .example{color:var(--dl-text,var(--el-text-color-primary));border-left:2px solid var(--dl-lime,var(--el-color-primary));padding-left:10px}.reference-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.doc-links{display:flex;gap:20px;flex-wrap:wrap}.table-scroll{overflow:auto;margin-top:20px}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}th{color:var(--dl-text-secondary,var(--el-text-color-secondary));font-size:11px;font-weight:500}th,td{padding:12px;border-bottom:1px solid var(--el-border-color-lighter)}td:first-child,td:nth-child(2){white-space:nowrap}.method{font-weight:700}.boundary-note{font-size:11px;line-height:1.8;color:var(--dl-text-secondary,var(--el-text-color-secondary));margin:18px 0 0}.error-line{color:var(--el-color-danger);padding:20px}@media(max-width:1100px){.access-grid{grid-template-columns:1fr}.reference-heading{align-items:flex-start;flex-direction:column}.intro h2{font-size:22px}}
 </style>

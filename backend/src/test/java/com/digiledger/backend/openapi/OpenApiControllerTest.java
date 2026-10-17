@@ -81,6 +81,7 @@ class OpenApiControllerTest {
     }
     @Test void publicResourcesAreAccessibleWithoutToken() throws Exception {
         mvc.perform(get("/api/agent-resources/api.md")).andExpect(status().isOk()).andExpect(content().contentType("text/plain;charset=UTF-8"));
+        mvc.perform(get("/api/agent-resources/mcp.md")).andExpect(status().isOk()).andExpect(content().contentType("text/plain;charset=UTF-8"));
         mvc.perform(get("/api/agent-resources/openapi.json")).andExpect(status().isOk()).andExpect(jsonPath("$.servers[0].url").value("/api/open/v1"));
         mvc.perform(get("/api/agent-resources/digiledger-skill.zip")).andExpect(status().isOk()).andExpect(content().contentType("application/zip"));
     }

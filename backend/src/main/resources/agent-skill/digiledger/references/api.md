@@ -30,6 +30,9 @@ Codex 安装目录依据 [官方技能说明](https://learn.chatgpt.com/docs/bui
 
 技能本身不携带凭据。下载文档和技能包无需 Token。
 
+也可通过远程 MCP 连接，默认地址 `/api/open/mcp`，使用相同 Token 和读写权限，功能与本 Skill 对应。
+采用基础 Streamable HTTP（JSON 响应），无需安装 Python 或 Skill。接入配置与工具清单见 [mcp.md](mcp.md)，部署后可访问 `/api/agent-resources/mcp.md`。
+
 ## 接口清单
 
 以下路径均相对于基地址。
@@ -67,6 +70,7 @@ Codex 安装目录依据 [官方技能说明](https://learn.chatgpt.com/docs/bui
 | status | string | 必填：使用中、已闲置、待出售、已出售、已丢弃 |
 | brandId / brand | integer / string | 可选，字典品牌 ID / 自定义品牌名称（最多 100 字） |
 | model / serialNo | string | 可选，各最多 200 字 |
+| predecessorAssetId | integer | 可选，正整数，关联上代物品；编辑时 null 解除关联 |
 | specifications / notes | string | 可选，配置规格 / 备注 |
 | purchaseDate / retiredDate | string | 可选，YYYY-MM-DD；退役日期不得早于购买日期 |
 | coverImageUrl | string | 可选，最多 500 字；现有封面地址或对象存储 key |

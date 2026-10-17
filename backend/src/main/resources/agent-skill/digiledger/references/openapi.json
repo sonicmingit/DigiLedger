@@ -689,6 +689,12 @@
             "maxLength": 200,
             "nullable": true
           },
+          "predecessorAssetId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "nullable": true
+          },
           "specifications": {
             "type": "string",
             "nullable": true
@@ -787,6 +793,12 @@
           "serialNo": {
             "type": "string",
             "maxLength": 200,
+            "nullable": true
+          },
+          "predecessorAssetId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
             "nullable": true
           },
           "specifications": {

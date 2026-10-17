@@ -86,7 +86,8 @@ npm run preview
 ## API & 调试工具
 
 - 对外 Agent API：`/api/open/v1`，支持 Token 鉴权、只读/读写权限、物品分页查询、详情、新增、局部编辑与删除。
-- PC **系统设置 → 开放 API / Agent Skill**：生成 Token、启用接口、查看安装说明并下载可安装的 Skill；两套 PC 前端均提供入口。
+- 远程 MCP：`/api/open/mcp`，采用基础 Streamable HTTP（JSON 响应），提供与 Skill 对应的九个工具，复用相同 Token、启用开关与读写权限。详见 [MCP 接入说明](backend/src/main/resources/agent-skill/digiledger/references/mcp.md)。
+- PC **系统设置 → 开放 API / Skill / MCP**：生成 Token、启用接口、下载 Skill，或自定义 MCP 连接地址并复制配置；两套 PC 前端均提供入口。连接地址保存在当前浏览器，自定义外部路径通过反向代理映射。
 - [对外 API 指南与 Skill 安装说明](backend/src/main/resources/agent-skill/digiledger/references/api.md)，[OpenAPI JSON](backend/src/main/resources/agent-skill/digiledger/references/openapi.json)。部署后通过 `/api/agent-resources/api.md`、`/api/agent-resources/openapi.json` 与 `/api/agent-resources/digiledger-skill.zip` 获取。
 - Skill 源码：`backend/src/main/resources/agent-skill/digiledger/`，直接随后端打包，无需额外发布步骤。首次升级自动执行 `V11__open_api_access.sql`，开放接口默认关闭。
 - OpenAPI 规范：`deploy/openapi.yaml`
