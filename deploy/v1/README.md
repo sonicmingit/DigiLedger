@@ -1,5 +1,13 @@
 # 部署版本 1：后端 + frontend
 
+部署前必须在本地 `config.env` 中增加 `DL_AUTH_PASSWORD`（12–256 个字符），没有默认密码；未设置时所有业务数据均拒绝访问。已有部署的 `config.env` 会保留，请手动补上该变量。
+
+公网通过 HTTPS 访问，保持 `DL_AUTH_COOKIE_SECURE=true`；本机 HTTP 调试才设置为 `false`。登录后七天未操作会过期；退出、后端重启后需要重新登录。修改环境变量中的密码并重建后端即可重置密码，同时使全部旧会话失效。无需创建用户或迁移数据库。
+
+PC 前端与 API 推荐同源反代。跨站 H5 / Capacitor Android 需要 `DL_AUTH_COOKIE_SAME_SITE=none`、`DL_AUTH_COOKIE_SECURE=true` 和 HTTPS，并通过 `DL_CORS_ALLOWED_ORIGIN_PATTERNS` 列出准确的客户端来源（例如 `https://localhost`）。客户端必须允许第三方 Cookie；如浏览器阻止跨站 Cookie，请改为同站部署 H5。
+
+对外 API / MCP 仍使用原有独立 Token。物品图片与附件的 `/oss/**` 入口同样需要登录，已有对象存储应保持私有，避免外部直链绕过本系统。
+
 在服务器克隆仓库后运行（Linux/macOS）：
 
 ```bash

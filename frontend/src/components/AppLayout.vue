@@ -15,6 +15,7 @@
         <el-header class="header">
           <span class="header-title">数码物品全生命周期管理</span>
           <div class="header-actions">
+            <el-button text :loading="loggingOut" @click="signOut">退出登录</el-button>
             <el-select v-model="currentTheme" size="small" class="theme-select">
               <el-option
                 v-for="item in themeOptions"
@@ -34,11 +35,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { logout, authError } from '@/auth'
 import { RouterView, useRoute } from 'vue-router'
 import { useTheme } from '@/composables/theme'
 
 const route = useRoute()
+const loggingOut = ref(false)
+async function signOut() {
+  loggingOut.value = true
+  try { await logout() } catch (error) { ElMessage.error(authError(error)) }
+  finally { loggingOut.value = false }
+}
 const active = computed(() => {
   if (route.path.startsWith('/assets')) return '/assets'
   if (route.path.startsWith('/wishlist')) return '/wishlist'

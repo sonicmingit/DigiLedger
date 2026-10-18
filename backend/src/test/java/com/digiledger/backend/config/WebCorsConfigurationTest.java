@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
 
-@WebMvcTest(DashboardController.class)
+@WebMvcTest(value = DashboardController.class, properties = "app.auth.password=test-password-12345")
 @Import(WebCorsConfiguration.class)
 class WebCorsConfigurationTest {
 
@@ -57,12 +57,11 @@ class WebCorsConfigurationTest {
     }
 
     @Test
-    void allowsLanH5PreflightRequest() throws Exception {
+    void rejectsLanOriginUnlessExplicitlyConfigured() throws Exception {
         mockMvc.perform(options("/api/dashboard/summary")
                         .header(ORIGIN, "http://192.168.1.20:5173")
                         .header(ACCESS_CONTROL_REQUEST_METHOD, "PATCH"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(ACCESS_CONTROL_ALLOW_ORIGIN, "http://192.168.1.20:5173"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -75,7 +74,10 @@ class WebCorsConfigurationTest {
 
     @Test
     void bindsSpendingQueryWithoutCompilerParameterMetadata() throws Exception {
+        var session = new org.springframework.mock.web.MockHttpSession();
+        session.setAttribute(com.digiledger.backend.auth.LoginService.AUTHENTICATED, true);
         mockMvc.perform(get("/api/dashboard/spending")
+                        .session(session)
                         .param("dateFrom", "2026-01-01")
                         .param("dateTo", "2026-01-31")
                         .param("categoryId", "3")

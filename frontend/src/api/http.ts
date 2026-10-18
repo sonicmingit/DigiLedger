@@ -1,4 +1,5 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { apiClient as axiosInstance } from '@/auth'
 import { ElMessage } from 'element-plus'
 import { normalizeMediaUrls } from '@/utils/storage'
 
@@ -9,10 +10,6 @@ interface ApiEnvelope<T> {
 }
 
 // 统一创建 axios 实例，保持所有请求指向同一 API 前缀
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '/api',
-  timeout: 15000
-})
 
 // 解包 `{code,data,msg}` 响应结构，统一处理业务错误
 const unwrap = async <T>(promise: Promise<AxiosResponse<ApiEnvelope<T>>>) => {

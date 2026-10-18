@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { installAuthGuard } from '@/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
     { path: '/', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
     { path: '/assets', name: 'assets', component: () => import('@/views/AssetsView.vue') },
     { path: '/assets/:id', name: 'asset-detail', component: () => import('@/views/AssetDetailView.vue') },
@@ -14,4 +16,5 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 })
 })
 
+installAuthGuard(router)
 export default router

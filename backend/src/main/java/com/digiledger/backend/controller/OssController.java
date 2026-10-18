@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -26,9 +25,7 @@ import java.util.Optional;
 public class OssController {
 
     private static final CacheControl CACHE_CONTROL = CacheControl
-            .maxAge(Duration.ofHours(1))
-            .cachePublic()
-            .noTransform();
+            .noStore();
 
     private final FileService fileService;
     private final StorageProperties storageProperties;

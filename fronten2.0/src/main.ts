@@ -7,4 +7,5 @@ import App from './App.vue'
 import router from './router'
 import './styles/global.css'
 
-createApp(App).use(createPinia()).use(router).use(ElementPlus, { locale: zhCn }).mount('#app')
+const app = createApp(App).use(createPinia()).use(router).use(ElementPlus, { locale: zhCn })
+router.isReady().then(() => app.mount('#app'))

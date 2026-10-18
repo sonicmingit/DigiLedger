@@ -14,7 +14,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({OpenApiController.class, AgentResourcesController.class, OpenApiSettingsController.class})
+@WebMvcTest(value = {OpenApiController.class, AgentResourcesController.class, OpenApiSettingsController.class}, properties = "app.auth.password=test-password-12345")
 class OpenApiControllerTest {
     @Autowired private MockMvc mvc;
     @MockBean private AssetService assets;
@@ -72,11 +72,14 @@ class OpenApiControllerTest {
         verifyNoInteractions(assets, edits);
     }
     @Test void tokenIsOnlyReturnedOnRotationAndNotInSettings() throws Exception {
+        var session = new org.springframework.mock.web.MockHttpSession();
+        session.setAttribute(com.digiledger.backend.auth.LoginService.AUTHENTICATED, true);
+        session.setAttribute(com.digiledger.backend.auth.LoginService.CSRF, "test-csrf");
         OpenApiAccess config = new OpenApiAccess(); config.setTokenHash("SECRET_HASH"); config.setTokenPrefix("dl_prefix");
         when(access.get()).thenReturn(config); when(access.rotate()).thenReturn("dl_only-once");
-        mvc.perform(get("/api/settings/open-api")).andExpect(jsonPath("$.data.tokenHash").doesNotExist())
+        mvc.perform(get("/api/settings/open-api").session(session)).andExpect(jsonPath("$.data.tokenHash").doesNotExist())
                 .andExpect(jsonPath("$.data.token").doesNotExist()).andExpect(jsonPath("$.data.tokenConfigured").value(true));
-        mvc.perform(post("/api/settings/open-api/token")).andExpect(header().string("Cache-Control", "no-store"))
+        mvc.perform(post("/api/settings/open-api/token").session(session).header("X-CSRF-Token", "test-csrf")).andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.data.token").value("dl_only-once"));
     }
     @Test void publicResourcesAreAccessibleWithoutToken() throws Exception {

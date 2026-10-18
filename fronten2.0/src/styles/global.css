@@ -8,7 +8,8 @@
   font-synthesis: none; background: var(--dl-bg);
 }
 * { box-sizing: border-box; }
-html, body, #app { margin: 0; min-width: 1180px; min-height: 100%; background: var(--dl-bg); }
+html, body, #app { margin: 0; min-height: 100%; background: var(--dl-bg); }
+.app-shell { min-width: 1180px; }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; }
 .app-shell { min-height: 100vh; background: var(--dl-bg); }

@@ -34,6 +34,22 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 
 ## 后端快速开始
 
+### 单人密码登录
+
+系统使用一个访问密码，无需注册账号或分配角色。启动前设置环境变量 `DL_AUTH_PASSWORD`（12–256 个字符），未设置时业务接口、设置、上传与 `/oss/**` 图片附件均拒绝访问。两套 PC 前端和移动端均提供登录与退出入口；登录成功会返回原页面。七天未操作、退出登录或重启后端后需重新登录。登录错误每分钟最多尝试十次。
+
+本地 PowerShell 示例（请替换示例内容）：
+
+```powershell
+$env:DL_AUTH_PASSWORD = '请替换成自己的长密码'
+cd backend
+mvn spring-boot:run
+```
+
+Docker 部署在 `deploy/v1/config.env` 或 `deploy/v2/config.env` 中设置上述变量（已有配置需手动补上），再执行部署脚本。公网使用 HTTPS，并设置 `DL_AUTH_COOKIE_SECURE=true`；本地 HTTP 调试设为 `false`。通过修改该环境变量并重启后端重置密码，全部旧会话自动失效。密码不保存在前端或数据库中。
+
+跨站 H5 / Capacitor 客户端的 Cookie 与 CORS 配置见对应部署说明；默认仅允许本机开发来源，其他跨域客户端须配置准确来源。开放 API / MCP 保持现有 Token 鉴权。对象存储应保持私有，图片和附件通过已鉴权的 `/oss` 代理访问。
+
 ### 本地开发
 
 1. 安装 JDK 17 与 Maven。
@@ -134,6 +150,10 @@ Windows PowerShell 可执行：
 | `DL_DB_PASS`          | -             | 外部数据库密码                 |
 | `DL_SERVER_PORT`      | 8080          | Spring Boot 服务端口           |
 | `DL_FLYWAY_ENABLED`   | true          | 是否在启动时执行数据库迁移     |
+| `DL_AUTH_PASSWORD`    | 空（拒绝业务访问） | 单人登录密码，12–256 个字符 |
+| `DL_AUTH_COOKIE_SECURE` | 本地 false / Compose true | 公网 HTTPS 设为 true |
+| `DL_AUTH_COOKIE_SAME_SITE` | lax | 跨站客户端使用 none，须启用 HTTPS 与 Secure |
+| `DL_CORS_ALLOWED_ORIGIN_PATTERNS` | 本机开发来源 | 逗号分隔的可信跨域前端来源 |
 | `DL_STORAGE_PROVIDER` | minio         | 对象存储提供方                 |
 | `DL_STORAGE_ENDPOINT` | -             | 外部对象存储服务地址           |
 | `DL_STORAGE_BUCKET`   | digiledger    | 上传使用的桶名称               |
@@ -143,7 +163,6 @@ Windows PowerShell 可执行：
 
 ## 下一步计划
 
-- 补充认证授权、多用户权限模型。
 - 增强导入导出能力，支持常见电商账单。
 - 构建统计报表与仪表盘，支持多维分析。
 

@@ -1,4 +1,5 @@
-import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { apiClient as client } from '@/auth'
 import type { ApiEnvelope } from '@/types'
 import { normalizeMediaUrls } from '@/utils/storage'
 
@@ -6,7 +7,6 @@ export class ApiError extends Error {
   constructor(message: string, public readonly status?: number) { super(message); this.name = 'ApiError' }
 }
 
-const client = axios.create({ baseURL: import.meta.env.VITE_API_BASE || '/api', timeout: 15000 })
 
 // Unwrap exactly once so every screen treats transport and business failures consistently.
 async function unwrap<T>(request: Promise<AxiosResponse<ApiEnvelope<T>>>): Promise<T> {

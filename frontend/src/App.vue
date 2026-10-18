@@ -1,6 +1,6 @@
 <template>
   <ThemeProvider>
-    <RouterView v-if="isMobileRoute" />
+    <RouterView v-if="isMobileRoute || route.name === 'login'" />
     <AppLayout v-else />
   </ThemeProvider>
 </template>

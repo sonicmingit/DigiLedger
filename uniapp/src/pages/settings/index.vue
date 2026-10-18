@@ -81,7 +81,7 @@
         ><image :src="item.icon" /><text>{{ item.label }}</text
         ><text class="count">{{ counts[item.key] || 0 }} 个</text
         ><view class="chevron" /></view></view
-    ><BottomNav active="settings"
+    ><button class="primary" @click="signOut">退出登录</button><BottomNav active="settings"
   /></view>
 </template>
 <script setup lang="ts">
@@ -95,7 +95,11 @@ import {
   type NodeName,
   type ServerProfile,
 } from "@/services/server-profile";
-import { testNode } from "@/services/http";
+import { testNode, mobileLogout } from "@/services/http";
+async function signOut() {
+  try { await mobileLogout(); }
+  catch (error) { uni.showToast({ title: (error as Error).message, icon: 'none' }); }
+}
 import { api } from "@/services/api";
 import { flattenTree } from "@/utils/dictionaries";
 const form = reactive<ServerProfile>(getServerProfile()),

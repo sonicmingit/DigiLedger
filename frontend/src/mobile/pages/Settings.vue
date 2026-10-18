@@ -7,6 +7,7 @@
     </header>
 
     <section class="mobile-card-section">
+      <article class="mobile-settings-card"><button type="button" @click="signOut">退出登录</button></article>
       <article class="mobile-settings-card" v-if="profile">
         <div class="user-card">
           <img :src="buildOssUrl(profile.avatar) || fallbackAvatar" alt="头像" />
@@ -67,6 +68,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { logout, authError } from '@/auth'
 import {
   fetchMobilePreferences,
   fetchMobileProfile,
@@ -80,6 +82,9 @@ const router = useRouter()
 const fallbackAvatar = 'https://cdn.jsdelivr.net/gh/itellboy/assets@main/avatar-default.png'
 const profile = ref<MobileUserProfile | null>(null)
 const toast = ref('')
+async function signOut() {
+  try { await logout() } catch (error) { toast.value = authError(error) }
+}
 const preferences = reactive<MobilePreferencePayload>({
   viewMode: 'card',
   currency: 'CNY',

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * H5 客户端跨域配置。
  *
- * <p>默认仅允许本机开发地址和常见局域网地址。部署到公网域名时，应通过
+ * <p>默认仅允许本机开发地址。其他跨域客户端应通过
  * {@code DL_CORS_ALLOWED_ORIGIN_PATTERNS} 显式设置允许的前端来源。</p>
  */
 @ConfigurationProperties(prefix = "app.cors")
@@ -19,10 +19,7 @@ public class CorsProperties {
             "https://localhost",
             "https://localhost:[*]",
             "http://127.0.0.1:[*]",
-            "http://[::1]:[*]",
-            "http://10.*:[*]",
-            "http://172.*:[*]",
-            "http://192.168.*:[*]"
+            "http://[::1]:[*]"
     ));
 
     public List<String> getAllowedOriginPatterns() {

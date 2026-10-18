@@ -1,5 +1,6 @@
 {
   "pages": [
+    { "path": "pages/login/index", "style": { "navigationStyle": "custom" } },
     {
       "path": "pages/assets/home",
       "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }

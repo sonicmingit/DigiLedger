@@ -1,4 +1,4 @@
-const CACHE_NAME = 'digiledger-mobile-v1'
+const CACHE_NAME = 'digiledger-mobile-v2-auth'
 const APP_SHELL = [
   '/',
   '/mobile/index',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
 
   // 不拦截后端 API 请求，直接走网络
-  if (request.url.includes('/api/')) {
+  if (/\/(api|oss)(\/|$)/.test(new URL(request.url).pathname)) {
     event.respondWith(fetch(request))
     return
   }

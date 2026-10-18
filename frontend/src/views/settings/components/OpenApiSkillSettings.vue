@@ -43,6 +43,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { apiClient } from '@/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface AccessSettings { enabled: boolean; allowWrite: boolean; tokenConfigured: boolean; tokenPrefix?: string }
@@ -78,7 +79,7 @@ const endpoints = [
   { method: 'GET', path: '/dict/tags/tree', description: '查询标签树', write: false }
 ]
 async function request<T>(method: 'GET' | 'POST' | 'PUT', data?: unknown): Promise<T> {
-  const response = await axios.request<{ code: number; data: T; msg: string }>({ method, url: `${apiRoot}/settings/open-api${method==='POST' ? '/token' : ''}`, data, timeout: 15000 })
+  const response = await apiClient.request<{ code: number; data: T; msg: string }>({ method, url: `/settings/open-api${method==='POST' ? '/token' : ''}`, data })
   if (response.data.code !== 200) throw new Error(response.data.msg || '操作失败')
   return response.data.data
 }

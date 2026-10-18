@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { installAuthGuard } from '@/auth'
 import AssetOverview from '@/views/AssetOverview.vue'
 import AssetList from '@/views/assets/AssetList.vue'
 import AssetDetail from '@/views/assets/AssetDetail.vue'
@@ -20,6 +21,7 @@ const MobileDetail = () => import('@/mobile/pages/Detail.vue')
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
     {
       path: '/',
       name: 'assetOverview',
@@ -117,4 +119,5 @@ const router = createRouter({
   ]
 })
 
+installAuthGuard(router)
 export default router

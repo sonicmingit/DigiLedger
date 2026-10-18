@@ -12,7 +12,7 @@ import './styles/element-plus-overrides.css'
 const app = createApp(App)
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
-app.mount('#app')
+router.isReady().then(() => app.mount('#app'))
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
