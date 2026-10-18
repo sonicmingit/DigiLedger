@@ -9,14 +9,24 @@ class LoginServiceTest {
     private LoginProperties properties(String password) {
         var properties = new LoginProperties(); properties.setPassword(password); return properties;
     }
-    @Test void missingPasswordFailsClosedAndWeakPasswordIsRejected() {
+    @Test void missingPasswordFailsClosed() {
         var service = new LoginService(properties(""));
         var request = new MockHttpServletRequest();
         request.getSession().setAttribute(LoginService.AUTHENTICATED, true);
         assertFalse(service.configured());
         assertFalse(service.authenticated(request));
         assertEquals(503, service.login("", request));
-        assertThrows(IllegalArgumentException.class, () -> new LoginService(properties("short")));
+    }
+    @Test void passwordsBelowAndAbovePreviousLengthLimitsCanAuthenticate() {
+        for (String password : new String[]{"1", "123456", "x".repeat(257), "x".repeat(1024)}) {
+            var service = new LoginService(properties(password));
+            var request = new MockHttpServletRequest();
+            assertTrue(service.configured());
+            assertEquals(401, service.login(password + "wrong", request));
+            assertFalse(service.authenticated(request));
+            assertEquals(200, service.login(password, request));
+            assertTrue(service.authenticated(request));
+        }
     }
     @Test void throttlingCannotBeBypassedWithANewSessionAndExpiresAfterOneMinute() {
         var clock = new MutableClock();

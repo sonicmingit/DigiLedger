@@ -12,7 +12,7 @@
         <p class="login-description">输入访问密码，继续管理你的数码收藏。</p>
         <label for="access-password">访问密码</label>
         <input id="access-password" v-model="password" type="password" autocomplete="current-password"
-          placeholder="请输入密码" required maxlength="256" :disabled="busy || !configured" aria-describedby="login-message" />
+          placeholder="请输入密码" required :disabled="busy || !configured" aria-describedby="login-message" />
         <p id="login-message" class="login-message" role="status" aria-live="polite">{{ message }}</p>
         <button class="login-submit" type="submit" :disabled="busy || checking || !configured">{{ busy ? '正在登录…' : '进入物品库 →' }}</button>
         <button v-if="loadFailed" class="login-retry" type="button" @click="load">重新连接</button>

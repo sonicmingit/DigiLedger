@@ -36,12 +36,12 @@ DigiLedger 是一款面向个人、家庭与小团队的数码物品（后端沿
 
 ### 单人密码登录
 
-系统使用一个访问密码，无需注册账号或分配角色。启动前设置环境变量 `DL_AUTH_PASSWORD`（12–256 个字符），未设置时业务接口、设置、上传与 `/oss/**` 图片附件均拒绝访问。两套 PC 前端和移动端均提供登录与退出入口；登录成功会返回原页面。七天未操作、退出登录或重启后端后需重新登录。登录错误每分钟最多尝试十次。
+系统使用一个访问密码，无需注册账号或分配角色。启动前设置环境变量 `DL_AUTH_PASSWORD`（非空，不限制长度），未设置时业务接口、设置、上传与 `/oss/**` 图片附件均拒绝访问。两套 PC 前端和移动端均提供登录与退出入口；登录成功会返回原页面。七天未操作、退出登录或重启后端后需重新登录。登录错误每分钟最多尝试十次。
 
 本地 PowerShell 示例（请替换示例内容）：
 
 ```powershell
-$env:DL_AUTH_PASSWORD = '请替换成自己的长密码'
+$env:DL_AUTH_PASSWORD = '请替换成自己的密码'
 cd backend
 mvn spring-boot:run
 ```
@@ -150,7 +150,7 @@ Windows PowerShell 可执行：
 | `DL_DB_PASS`          | -             | 外部数据库密码                 |
 | `DL_SERVER_PORT`      | 8080          | Spring Boot 服务端口           |
 | `DL_FLYWAY_ENABLED`   | true          | 是否在启动时执行数据库迁移     |
-| `DL_AUTH_PASSWORD`    | 空（拒绝业务访问） | 单人登录密码，12–256 个字符 |
+| `DL_AUTH_PASSWORD`    | 空（拒绝业务访问） | 单人登录密码，非空，不限制长度 |
 | `DL_AUTH_COOKIE_SECURE` | 本地 false / Compose true | 公网 HTTPS 设为 true |
 | `DL_AUTH_COOKIE_SAME_SITE` | lax | 跨站客户端使用 none，须启用 HTTPS 与 Secure |
 | `DL_CORS_ALLOWED_ORIGIN_PATTERNS` | 本机开发来源 | 逗号分隔的可信跨域前端来源 |

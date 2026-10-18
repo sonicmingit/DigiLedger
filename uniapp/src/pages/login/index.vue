@@ -8,7 +8,7 @@
       <text class="login-label">服务器地址</text>
       <input v-model="server" placeholder="https://server.example.com/api" :disabled="busy" />
       <text class="login-label">访问密码</text>
-      <input v-model="password" password placeholder="请输入密码" :maxlength="256" :disabled="busy" @confirm="submit" />
+      <input v-model="password" password placeholder="请输入密码" :maxlength="-1" :disabled="busy" @confirm="submit" />
       <text class="login-error">{{ message }}</text>
       <button class="login-button" :loading="busy" :disabled="busy" @click="submit">进入物品库 →</button>
     </view>

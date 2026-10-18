@@ -30,9 +30,6 @@ public class LoginService {
         this.clock = clock;
         random.nextBytes(salt);
         String password = properties.getPassword();
-        if (password != null && !password.isEmpty() && (password.isBlank() || password.length() < 12 || password.length() > 256)) {
-            throw new IllegalArgumentException("DL_AUTH_PASSWORD 必须为 12 至 256 个字符");
-        }
         passwordHash = password == null || password.isEmpty() ? null : hash(password);
     }
 
@@ -70,7 +67,7 @@ public class LoginService {
         long now = clock.millis();
         while (!failures.isEmpty() && failures.peekFirst() <= now - WINDOW_MILLIS) failures.removeFirst();
         if (failures.size() >= MAX_FAILURES) return 429;
-        if (password == null || password.length() > 256 || !MessageDigest.isEqual(passwordHash, hash(password))) {
+        if (password == null || !MessageDigest.isEqual(passwordHash, hash(password))) {
             failures.addLast(now);
             return 401;
         }
