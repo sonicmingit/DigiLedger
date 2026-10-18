@@ -6,6 +6,8 @@
 
 PC 前端与 API 推荐同源反代。跨站 H5 / Capacitor Android 需要 `DL_AUTH_COOKIE_SAME_SITE=none`、`DL_AUTH_COOKIE_SECURE=true` 和 HTTPS，并通过 `DL_CORS_ALLOWED_ORIGIN_PATTERNS` 列出准确的客户端来源（例如 `https://localhost`）。客户端必须允许第三方 Cookie；如浏览器阻止跨站 Cookie，请改为同站部署 H5。
 
+内置 Nginx 会保留访问域名、端口和协议，Compose 后端启用转发头解析。同源 PC 访问无需额外加入 CORS 白名单。使用外层 HTTPS 反代时，请将原始 `Host`（含非默认端口）传给前端容器，并覆盖设置 `X-Forwarded-Proto=https`。转发头由可信代理维护；后端端口应仅向可信客户端或代理开放。更新代理配置后需重建前后端两个容器。
+
 对外 API / MCP 仍使用原有独立 Token。物品图片与附件的 `/oss/**` 入口同样需要登录，已有对象存储应保持私有，避免外部直链绕过本系统。
 
 在服务器克隆仓库后运行（Linux/macOS）：

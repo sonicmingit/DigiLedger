@@ -38,7 +38,18 @@ export async function logout() {
   window.location.replace('/login')
 }
 export function authError(error: unknown): string {
-  return axios.isAxiosError(error) ? error.response?.data?.msg || '无法连接服务器，请稍后重试' : (error as Error).message
+  if (!axios.isAxiosError(error)) return (error as Error).message
+  const response = error.response
+  if (response?.data?.msg) return response.data.msg
+  if (response?.status === 403 && String(response.data).includes('Invalid CORS request')) {
+    return '请求被跨域校验拒绝（HTTP 403），请检查反向代理的域名、端口和协议配置'
+  }
+  if (response?.status === 502 || response?.status === 504) {
+    return `代理无法连接后端或等待超时（HTTP ${response.status}），请检查后端和代理日志`
+  }
+  if (response) return `服务器请求失败（HTTP ${response.status}），请查看请求响应和服务日志`
+  if (error.code === 'ECONNABORTED') return '请求超时，请检查网络和后端服务'
+  return '无法连接服务器，请检查网络或服务地址'
 }
 export function safeRedirect(value: unknown): string {
   return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') &&

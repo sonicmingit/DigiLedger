@@ -149,6 +149,7 @@ Windows PowerShell 可执行：
 | `DL_DB_USER`          | -             | 外部数据库用户名               |
 | `DL_DB_PASS`          | -             | 外部数据库密码                 |
 | `DL_SERVER_PORT`      | 8080          | Spring Boot 服务端口           |
+| `DL_FORWARD_HEADERS_STRATEGY` | 本地 none / Compose framework | 解析可信代理传递的域名、端口和协议 |
 | `DL_FLYWAY_ENABLED`   | true          | 是否在启动时执行数据库迁移     |
 | `DL_AUTH_PASSWORD`    | 空（拒绝业务访问） | 单人登录密码，非空，不限制长度 |
 | `DL_AUTH_COOKIE_SECURE` | 本地 false / Compose true | 公网 HTTPS 设为 true |

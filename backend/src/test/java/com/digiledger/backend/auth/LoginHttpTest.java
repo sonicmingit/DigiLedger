@@ -62,4 +62,40 @@ class LoginHttpTest {
             assertEquals(401, replay.statusCode());
         }
     }
+
+    @Test void loginWorksBehindHttpAndHttpsProxiesWithoutAllowlistingOwnOrigin() throws Exception {
+        try (var context = new SpringApplicationBuilder(AuthApplication.class)
+                .run("--server.port=0", "--app.auth.password=1234", "--server.servlet.session.cookie.secure=false",
+                        "--server.forward-headers-strategy=framework")) {
+            int port = ((ServletWebServerApplicationContext) context).getWebServer().getPort();
+            URI root = URI.create("http://127.0.0.1:" + port);
+            var json = new ObjectMapper();
+            for (String origin : new String[]{"http://ledger.example:5200", "https://ledger.example", "https://ledger.example:8443"}) {
+                URI external = URI.create(origin);
+                var client = HttpClient.newBuilder().cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL)).build();
+                var status = client.send(HttpRequest.newBuilder(root.resolve("/api/auth/status"))
+                        .header("X-Forwarded-Host", external.getAuthority()).header("X-Forwarded-Proto", external.getScheme())
+                        .GET().build(), HttpResponse.BodyHandlers.ofString());
+                String csrf = json.readTree(status.body()).path("data").path("csrfToken").asText();
+                var loggedIn = client.send(HttpRequest.newBuilder(root.resolve("/api/auth/login"))
+                        .header("X-Forwarded-Host", external.getAuthority()).header("X-Forwarded-Proto", external.getScheme())
+                        .header("Origin", origin).header("Content-Type", "application/json").header("X-CSRF-Token", csrf)
+                        .POST(HttpRequest.BodyPublishers.ofString("{\"password\":\"1234\"}")).build(), HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, loggedIn.statusCode(), origin + ": " + loggedIn.body());
+                assertTrue(json.readTree(loggedIn.body()).path("data").path("authenticated").asBoolean());
+                var missingCsrf = client.send(HttpRequest.newBuilder(root.resolve("/api/test/private"))
+                        .header("X-Forwarded-Host", external.getAuthority()).header("X-Forwarded-Proto", external.getScheme())
+                        .header("Origin", origin).POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+                assertEquals(403, missingCsrf.statusCode());
+                assertTrue(json.readTree(missingCsrf.body()).path("msg").asText().contains("登录校验"));
+                String authenticatedCsrf = json.readTree(loggedIn.body()).path("data").path("csrfToken").asText();
+                var forged = client.send(HttpRequest.newBuilder(root.resolve("/api/auth/login"))
+                        .header("X-Forwarded-Host", external.getAuthority()).header("X-Forwarded-Proto", external.getScheme())
+                        .header("Origin", "https://untrusted.example").header("Content-Type", "application/json").header("X-CSRF-Token", authenticatedCsrf)
+                        .POST(HttpRequest.BodyPublishers.ofString("{\"password\":\"1234\"}")).build(), HttpResponse.BodyHandlers.ofString());
+                assertEquals(403, forged.statusCode());
+                assertEquals("Invalid CORS request", forged.body());
+            }
+        }
+    }
 }
