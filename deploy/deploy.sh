@@ -70,14 +70,16 @@ AFTER="$(git rev-parse HEAD)"
 
 if [[ "$FORCE" == true ]]; then
   deploy
-elif [[ "$BEFORE" != "$AFTER" ]]; then
-  echo "Source code was updated ($(git rev-list --count "$BEFORE..$AFTER") commit(s))."
+else
+  if [[ "$BEFORE" != "$AFTER" ]]; then
+    echo "Source code was updated ($(git rev-list --count "$BEFORE..$AFTER") commit(s))."
+  else
+    echo "Already up to date; no Git updates were found."
+  fi
   read -r -p "Redeploy now? [Y/n] " REPLY
   if [[ ! "$REPLY" =~ ^[Nn]$ ]]; then
     deploy
   else
     echo "Redeployment skipped. Run $0 $VERSION --force when ready."
   fi
-else
-  echo "Already up to date; no redeployment is needed. Use --force to rebuild anyway."
 fi
